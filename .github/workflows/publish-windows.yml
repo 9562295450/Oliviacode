@@ -31,6 +31,8 @@ jobs:
       # The public installer is the prod channel: appId ai.oliviacode.desktop, productName
       # Oliviacode, no ".dev" suffix in Add/Remove Programs.
       OPENCODE_CHANNEL: "prod"
+      # Pinned engine: the CLI package published to npm as 2.2.6.
+      OLIVIACODE_CLI_VERSION: "2.2.6"
       # electron-builder reads this for the GitHub release feed; the fork itself stays feed-less.
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:

@@ -42,10 +42,10 @@ credential, or you don't, and the app sits there with nothing selected until you
 
 Grab the installer from [Releases](https://github.com/Oliviacode/Oliviacode/releases):
 
-- **Windows** — `Oliviacode-Setup-<version>.exe`. Assisted installer: accept the license,
+- **Windows** - `Oliviacode-Setup-<version>.exe`. Assisted installer: accept the license,
   press Install. A desktop shortcut and Start menu entry are created for the current user.
-- **macOS** — `Oliviacode-<version>.dmg`, drag to Applications.
-- **Linux** — `Oliviacode-<version>.AppImage`, `chmod +x` and run.
+- **macOS / Linux** - build from source with the commands below. Prebuilt artifacts are added
+  when those runners are enabled in the release workflow.
 
 The Windows build is unsigned. SmartScreen may ask you to confirm the publisher; the release
 attaches `SHA256SUMS.txt` so you can check the file you downloaded instead of trusting the
@@ -66,7 +66,7 @@ The dev build downloads the engine binary into `packages/desktop/resources/` on 
 
 ```bash
 # pin the engine version so the build is reproducible
-OLIVIACODE_CLI_VERSION=2.2.5 bun run --cwd packages/desktop build
+OLIVIACODE_CLI_VERSION=2.2.6 bun run --cwd packages/desktop build
 
 # Windows: unpacked app first, then the NSIS installer around it
 bun run --cwd packages/desktop pack

@@ -16,6 +16,7 @@ a one-shot HTTP header; it is never written to `.git/config`, the remote URL, or
    ```powershell
    cd packages/desktop
    $env:OPENCODE_CHANNEL = "prod"
+   $env:OLIVIACODE_CLI_VERSION = "2.2.6"
    bun run build
    bun run pack
    $env:OPENCODE_DESKTOP_APP = (Resolve-Path "../../dist/desktop/app").Path
