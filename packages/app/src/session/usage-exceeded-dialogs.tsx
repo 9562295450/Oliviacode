@@ -9,6 +9,7 @@ import { useDialog, useI18n } from "@opencode/ui/context"
 import { DialogUsageExceeded } from "@/providers/connect/usage-exceeded"
 import { GoUpsellHero } from "@/providers/connect/go-upsell-hero"
 import { useLocal, type ModelSelection } from "@/providers/models/selection"
+import { BRAND } from "@/runtime/brand"
 
 const GO_UPSELL_FREE_TIER_LAST_SEEN_AT = "go_upsell_last_seen_at"
 
@@ -16,7 +17,7 @@ const GO_UPSELL_FREE_TIER_DONT_SHOW = "go_upsell_dont_show"
 
 const GO_UPSELL_WINDOW = 86_400_000 // 24 hrs
 
-const GO_URL = "https://opencode.ai/go"
+const GO_URL = BRAND.docs
 
 const MAX_RETRY_AFTER_MS = 45 * 86_400_000
 

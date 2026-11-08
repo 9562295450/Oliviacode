@@ -10,6 +10,7 @@ import { Tooltip } from "@opencode/ui/tooltip"
 
 import { useLayout } from "@/shell/state/layout"
 import { usePlatform } from "@/runtime/platform/platform"
+import { BRAND } from "@/runtime/brand"
 import { useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useSettings } from "@/settings/model"
@@ -693,7 +694,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement }; minima
                                 class="flex h-7 shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
                                 onClick={() => {
                                   closeMobileTabs()
-                                  platform.openExternal("https://opencode.ai/desktop-feedback")
+                                  platform.openExternal(BRAND.issues)
                                 }}
                               >
                                 <Icon name="help" size="small" />

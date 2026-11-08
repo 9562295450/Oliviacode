@@ -101,6 +101,7 @@ export const api: ElectronAPI = {
   infiniteArm: (armed: boolean) => invoke("InfiniteArm", { armed }).then(() => undefined),
   infiniteCheckLanes: () => invoke("InfiniteCheckLanes").then(mutable),
   infiniteSetSettings: (next: InfiniteSettings) => invoke("InfiniteSetSettings", { settings: next }).then(() => undefined),
+  presetFetch: (url: string) => invoke("PresetFetch", { url }).then(mutable),
   presetList: () => invoke("PresetList").then(mutable),
   presetApply: (id: string) => invoke("PresetApply", { id }),
 }

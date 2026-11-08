@@ -677,7 +677,7 @@ export const dict = {
   "settings.about.otherContributor.other": "өөр {{count}}",
   "settings.about.firstPublished": "Анх АНУ-ын Миссури мужид хэвлэгдсэн",
   "settings.about.firstIllustrated": "Анх Английн Лондон хотод зурагласан",
-  "settings.about.website": "www.opencode.ai",
+  "settings.about.website": "github.com/Oliviacode/Oliviacode",
   "settings.about.description": "OpenCode, нээлттэй эхийн кодчиллын агент",
   "settings.about.trademark": "OpenCode нь Anomaly Innovations, Inc.-ийн бүртгэлтэй барааны тэмдэг юм.",
   "settings.about.typeset": "Inter болон IBM Plex Mono үсгийн хэвээр өрсөн",

@@ -688,7 +688,7 @@ export const dict = {
   "settings.about.otherContributor.other": "他{{count}}人",
   "settings.about.firstPublished": "米国ミズーリ州で初公開",
   "settings.about.firstIllustrated": "イングランド、ロンドンで最初のイラスト",
-  "settings.about.website": "www.opencode.ai",
+  "settings.about.website": "github.com/Oliviacode/Oliviacode",
   "settings.about.description": "オープンソースのコーディングエージェントであるOpenCode",
   "settings.about.trademark": "OpenCodeはAnomaly Innovations, Inc.の登録商標です。",
   "settings.about.typeset": "InterおよびIBM Plex Monoのタイプセット",

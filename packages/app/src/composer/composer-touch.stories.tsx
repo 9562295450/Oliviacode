@@ -42,7 +42,7 @@ const drafts: Record<State, string> = {
 const selectedModel = {
   id: STORY_MODEL.id,
   providerID: STORY_MODEL.providerID,
-  api: { id: STORY_MODEL.id, url: "https://opencode.ai", npm: "@ai-sdk/anthropic" },
+  api: { id: STORY_MODEL.id, url: "https://example.invalid", npm: "@ai-sdk/anthropic" },
   name: "Claude Opus 5.5",
   family: "claude-opus",
   capabilities: {

@@ -11,7 +11,7 @@ import {
 } from "./machine"
 
 const limits = (name: string): UsageLimitsInfo => ({
-  workspace: { id: `wrk_${name}`, name, usageURL: `https://opencode.ai/wrk_${name}/activity/overview` },
+  workspace: { id: `wrk_${name}`, name, usageURL: `https://example.invalid/wrk_${name}/activity/overview` },
   budgets: [],
 })
 

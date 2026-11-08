@@ -36,7 +36,10 @@ if (app) {
   // The installer uses the channel's icons; the rest of the app is already built and signed.
   await $`bun ./script/copy-icons.ts ${resolveChannel()}`
   await $`bunx electron-builder ${flags} --prepackaged ${app}`
-  await cp(`dist/oliviacode-desktop-win-${cli.cpu}.exe`, path.join(out, `oliviacode-desktop-win-${cli.cpu}.exe`))
+  const setup = (await readdir("dist")).find((file) => /^Oliviacode-Setup-.*\.exe$/.test(file))
+
+  if (!setup) throw new Error("electron-builder produced no Oliviacode-Setup-*.exe")
+  await cp(path.join("dist", setup), path.join(out, setup))
 }
 
 if (!app && os === "linux") {
@@ -61,6 +64,8 @@ if (!app && os === "win") {
   await writeUpdateConfig(path.join(unpacked, "resources"))
   await cp(unpacked, path.join(out, "app"), { recursive: true })
 }
+
+await $`bun ./script/checksums.ts ${out}`
 
 // electron-builder writes resources/app-update.yml only for dmg, zip and nsis targets, not for --dir builds.
 // electron-updater reads its feed from that file, so write the one those targets would.

@@ -475,7 +475,7 @@ function createStoryFetch(): typeof fetch {
           location,
           data: {
             attemptID: "con_story_1",
-            url: "https://opencode.ai/auth/authorize",
+            url: "https://example.invalid/auth/authorize",
             instructions: "",
             mode: "auto",
             time: { created: now, expires: now + 600_000 },

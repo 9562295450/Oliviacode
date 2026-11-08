@@ -745,7 +745,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} lainnya",
   "settings.about.firstPublished": "Pertama kali diterbitkan di Missouri, AS",
   "settings.about.firstIllustrated": "Pertama kali diilustrasikan di London, Inggris",
-  "settings.about.website": "www.opencode.ai",
+  "settings.about.website": "github.com/Oliviacode/Oliviacode",
   "settings.about.description": "OpenCode, agen pengkodean sumber terbuka",
   "settings.about.trademark": "OpenCode adalah merek dagang terdaftar dari Anomaly Innovations, Inc.",
   "settings.about.typeset": "Pengesetan di Inter dan IBM Plex Mono",

@@ -10,9 +10,10 @@ import { useWorkspaceLocation } from "@/workspaces/location"
 import { isFreeModel } from "@/providers/models/models"
 import type { ModelSelection } from "@/providers/models/selection"
 import { formatLimitReset } from "../usage-exceeded-dialogs"
+import { BRAND } from "@/runtime/brand"
 import { Grow } from "./spring-height"
 
-// OpenCode Console names the workspace and the limit (5 hour, weekly or monthly) in its Go usage limit refusal.
+// The provider names the workspace and the limit (5 hour, weekly or monthly) in its usage refusal.
 const decodeGoLimitBody = Schema.decodeUnknownOption(
   Schema.fromJsonString(
     Schema.Struct({
@@ -25,18 +26,17 @@ type GoLimit = { name?: string; reset?: string; link: string }
 
 function goLimit(locale: string, event: SessionStepFailed): GoLimit {
   const metadata = Option.getOrUndefined(decodeGoLimitBody(event.data.error.response?.body))?.metadata
-  const workspace = metadata?.workspace
 
   return {
     name: metadata?.limitName,
     reset: formatLimitReset(locale, event.created, event.data.error.retryAfterMs),
-    // The Go page is where the workspace turns on Extra Usage to keep going on its balance.
-    link: workspace ? `https://opencode.ai/console/${encodeURIComponent(workspace)}/go` : "https://opencode.ai/console",
+    // The client links only to its own documentation; a provider's own console belongs in its add-on entry.
+    link: BRAND.docs,
   }
 }
 
-// A tray that grows out from under the composer, like the queue panel, when an OpenCode Go subscriber reaches a usage
-// limit: when Go is back, and how to keep going now.
+// A tray that grows out from under the composer, like the queue panel, when a provider reports a usage limit:
+// when it resets, and where the client's own documentation lives.
 export function SessionGoLimitTray(props: {
   sessionID: string | undefined
   selection: () => ModelSelection | undefined

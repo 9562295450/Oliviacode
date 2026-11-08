@@ -1,4 +1,5 @@
 import type { DesktopNativeKey } from "@/runtime/i18n/desktop-native"
+import { BRAND } from "@/runtime/brand"
 
 export type DesktopMenuPlatform = "macos" | "windows"
 
@@ -272,8 +273,8 @@ export const DESKTOP_MENU: DesktopMenu[] = [
     id: "help",
     labelKey: "desktop.menu.help",
     items: [
-      { type: "item", labelKey: "desktop.menu.documentation", href: "https://opencode.ai/docs" },
-      { type: "item", labelKey: "desktop.menu.supportForum", href: "https://discord.com/invite/opencode" },
+      { type: "item", labelKey: "desktop.menu.documentation", href: BRAND.docs },
+      { type: "item", labelKey: "desktop.menu.supportForum", href: BRAND.discussions },
       { type: "item", labelKey: "desktop.menu.exportLogs", command: "logs.export" },
       { type: "separator" },
       {

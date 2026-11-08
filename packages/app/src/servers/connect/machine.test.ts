@@ -458,7 +458,7 @@ describe("server connect form", () => {
     expect(
       formatServerConnectError(
         { type: "connection-failed", url: input.url },
-        { surface: input.surface, pageHref: "https://app.opencode.ai/", t: (key) => key },
+        { surface: input.surface, pageHref: "https://app.example.invalid/", t: (key) => key },
       ),
     ).toBe(input.key)
   })

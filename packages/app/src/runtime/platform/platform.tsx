@@ -153,9 +153,20 @@ export type PresetInfo = {
   provider: string
   baseURL: string
   docsURL?: string
+  origin?: "local" | "community"
+}
+
+export type PresetRegistry = {
+  ok: boolean
+  url: string
+  addons: PresetInfo[]
+  error?: string
 }
 
 export type PresetPlatform = {
+  /** Fetch a community registry by URL. Only ever called from an explicit user action. */
+  fetch(url: string): Promise<PresetRegistry>
+  /** Entries known locally, from the user-editable template beside the app. */
   list(): Promise<PresetInfo[]>
   apply(id: string): Promise<{ ok: boolean; path: string; error?: string }>
 }

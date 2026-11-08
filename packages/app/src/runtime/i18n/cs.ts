@@ -683,7 +683,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} dalších",
   "settings.about.firstPublished": "Poprvé publikováno v Missouri, USA",
   "settings.about.firstIllustrated": "Poprvé ilustrováno v Londýně, Anglie",
-  "settings.about.website": "www.opencode.ai",
+  "settings.about.website": "github.com/Oliviacode/Oliviacode",
   "settings.about.description": "OpenCode, open source kódovací agent",
   "settings.about.trademark": "OpenCode je registrovaná ochranná známka společnosti Anomaly Innovations, Inc.",
   "settings.about.typeset": "Typová sada v Inter a IBM Plex Mono",

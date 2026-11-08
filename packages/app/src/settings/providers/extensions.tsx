@@ -7,6 +7,7 @@ import { Switch } from "@opencode/ui/switch"
 import { Tabs } from "@opencode/ui/tabs"
 import { TruncatedText } from "@opencode/ui/truncated-text"
 import { useLanguage } from "@/runtime/i18n/language"
+import { BRAND } from "@/runtime/brand"
 import { useData } from "@/runtime/server/current"
 import { useServerSDK } from "@/runtime/server/client"
 import { ServerConnection } from "@/runtime/server/registry"
@@ -227,7 +228,7 @@ export const SettingsExtensions: Component<{
                 <span class="settings-extension-heading text-13-medium">
                   {language.t("settings.extensions.availableAll")}
                 </span>
-                <ExternalLink class="settings-extension-link text-13-regular" href="https://opencode.ai/docs/skills">
+                <ExternalLink class="settings-extension-link text-13-regular" href={BRAND.docs}>
                   {language.t("settings.extensions.addSkills")}
                 </ExternalLink>
               </div>

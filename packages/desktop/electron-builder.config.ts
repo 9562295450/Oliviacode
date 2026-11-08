@@ -206,10 +206,24 @@ const getBase = (appId: string): Configuration => {
     },
     nsis: {
       include: path.join(packageDir, "resources", "windows", "installer.nsh"),
-      oneClick: true,
+      // Assisted install: one page for the license, one for the progress bar, one for Finish.
+      // The license page carries the disclaimer, so it is not skippable by a silent flag.
+      oneClick: false,
       perMachine: false,
+      allowElevation: true,
+      allowToChangeInstallationDirectory: false,
+      createDesktopShortcut: true,
+      createStartMenuShortcut: true,
+      shortcutName: "Oliviacode",
+      runAfterFinish: true,
+      deleteAppDataOnUninstall: false,
       installerIcon: `resources/icons/icon.ico`,
       installerHeaderIcon: `resources/icons/icon.ico`,
+      installerHeader: path.join(packageDir, "resources", "windows", "installerHeader.bmp"),
+      installerSidebar: path.join(packageDir, "resources", "windows", "installerSidebar.bmp"),
+      uninstallerSidebar: path.join(packageDir, "resources", "windows", "installerSidebar.bmp"),
+      license: path.join(packageDir, "resources", "license.txt"),
+      artifactName: "Oliviacode-Setup-${version}.${ext}",
     },
     linux: {
       icon: `resources/icons`,
@@ -268,7 +282,7 @@ export function getConfig() {
       return {
         ...base,
         appId,
-        productName: "oliviacode",
+        productName: "Oliviacode",
         protocols: { name: "oliviacode", schemes: ["opencode"] },
         // An Icon Composer package compiles to Assets.car, which macOS 26 and later draw the app icon from
         // (Dock, Finder, system dialogs and the system icon styles). Older macOS keeps using the ICNS.

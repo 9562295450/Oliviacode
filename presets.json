@@ -1,13 +1,14 @@
 {
+  "_readme": [
+    "LOCAL PROVIDER TEMPLATE. EMPTY BY DEFAULT.",
+    "Oliviacode ships no provider endpoints. This file exists only so a user can keep local",
+    "addon entries without editing anything else. Add entries here yourself, or load a",
+    "community registry by URL from the provider picker.",
+    "Nothing in this file is required for the app to work. Delete it and the addon block",
+    "disappears. Each entry fills one field only: provider.<id>.options.baseURL in",
+    "~/.config/opencode/opencode.json. Never put a credential in this file.",
+    "See PRESETS.md."
+  ],
   "version": 1,
-  "presets": [
-    {
-      "id": "opencode",
-      "label": "OpenCode Zen",
-      "description": "Points the OpenCode provider at its hosted gateway. Bring your own token.",
-      "provider": "opencode",
-      "baseURL": "https://opencode.ai/zen/v1",
-      "docsURL": "https://opencode.ai/auth"
-    }
-  ]
+  "presets": []
 }

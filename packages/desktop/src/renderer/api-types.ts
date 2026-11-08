@@ -92,6 +92,25 @@ export type ElectronAPI = {
   infiniteArm(armed: boolean): Promise<void>
   infiniteCheckLanes(): Promise<InfiniteState>
   infiniteSetSettings(next: InfiniteSettings): Promise<void>
-  presetList(): Promise<Array<{ id: string; label: string; description: string; provider: string; baseURL: string; docsURL?: string }>>
+  presetFetch(url: string): Promise<PresetRegistryResult>
+  presetList(): Promise<ProviderAddon[]>
   presetApply(id: string): Promise<{ ok: boolean; path: string; error?: string }>
+}
+
+/** An entry from a local template file or a community registry. Never carries a credential. */
+export type ProviderAddon = {
+  id: string
+  label: string
+  description: string
+  provider: string
+  baseURL: string
+  docsURL?: string
+  origin: "local" | "community"
+}
+
+export type PresetRegistryResult = {
+  ok: boolean
+  url: string
+  addons: ProviderAddon[]
+  error?: string
 }

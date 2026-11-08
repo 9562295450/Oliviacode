@@ -1,6 +1,18 @@
 # Notice
 
-oliviacode is a modified distribution of the OpenCode desktop application.
+> **Disclaimer**
+>
+> Oliviacode is an open-source network client. It is not affiliated with OpenCode. The default
+> presets are community-provided and users are responsible for complying with the Terms of
+> Service of any API they connect to.
+>
+> Oliviacode ships no provider endpoint, credential, or account. Provider entries come from a
+> local file you can edit or a community registry you choose to load; neither is a built-in
+> feature, an endorsement, or a permission to use any service.
+
+oliviacode is a modified distribution of the OpenCode desktop application. That derivation is
+a licensing fact recorded below and required by the MIT License; it is not an affiliation,
+sponsorship, endorsement, or approval by OpenCode or its maintainers.
 
 - Upstream project: https://github.com/anomalyco/opencode
 - Upstream license: MIT
@@ -18,7 +30,8 @@ requires.
 | Product identity | Name, application id, icons, splash, wordmark, and visible strings are oliviacode. |
 | Design | Four-lane desktop shell, owl mark, own colour tokens and theme (`owl` is the default). |
 | Egress | Multi-lane egress manager with health checks and rotation, surfaced in the UI. |
-| Providers | No provider is configured or selected at launch. Provider presets are opt-in. |
+| Providers | No provider is configured or selected at launch. Add-ons are community data, loaded from a local file or a registry URL the user supplies. |
+| Branding | No provider domain is compiled into the client; external links point at this project's repository. |
 | Updates | No update feed is shipped by default. See the update section of the README. |
 | Engines | The bundled CLI engine is consumed from the upstream published package at build time. |
 

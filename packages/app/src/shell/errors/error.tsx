@@ -6,6 +6,7 @@ import { Component, createEffect, createSignal, on, onCleanup, onMount, Show, un
 import { Predicate } from "effect"
 import { Updater } from "@opencode/plugin/gui/updater"
 import { usePlatform } from "@/runtime/platform/platform"
+import { BRAND } from "@/runtime/brand"
 import { useLanguage } from "@/runtime/i18n/language"
 import { createIpcClients } from "@/runtime/plugin/ipc"
 import { Icon } from "@opencode/ui/icon"
@@ -497,7 +498,7 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
             <button
               type="button"
               class="flex items-center text-text-interactive-base gap-1"
-              onClick={() => platform.openExternal("https://opencode.ai/desktop-feedback")}
+              onClick={() => platform.openExternal(BRAND.issues)}
             >
               <div>{language.t("error.page.report.discord")}</div>
               <Icon name="discord" class="text-text-interactive-base" />

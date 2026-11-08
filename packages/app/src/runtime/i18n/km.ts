@@ -673,7 +673,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} ផ្សេងទៀត។",
   "settings.about.firstPublished": "បោះពុម្ព​លើក​ដំបូង​នៅ​រដ្ឋ Missouri សហរដ្ឋ​អាមេរិក",
   "settings.about.firstIllustrated": "គូរដំបូងនៅទីក្រុងឡុង ប្រទេសអង់គ្លេស",
-  "settings.about.website": "www.opencode.ai",
+  "settings.about.website": "github.com/Oliviacode/Oliviacode",
   "settings.about.description": "OpenCode ដែលជាភ្នាក់ងារសរសេរកូដប្រភពបើកចំហ",
   "settings.about.trademark": "OpenCode គឺជាពាណិជ្ជសញ្ញាដែលបានចុះបញ្ជីរបស់ Anomaly Innovations, Inc.",
   "settings.about.typeset": "Typeset នៅក្នុង Inter និង IBM Plex Mono",

@@ -203,6 +203,14 @@ function NewSessionTips(props: { selection: ComposerModel["model"]["selection"];
     })
   }
 
+  const openCommunity = () => {
+    if (!tip()) return
+
+    void import("@/providers/connect/community").then(({ DialogCommunityAddons }) => {
+      void dialog.show(() => <DialogCommunityAddons />)
+    })
+  }
+
   const dismiss = () => {
     if (!tip()) return
 
@@ -225,6 +233,20 @@ function NewSessionTips(props: { selection: ComposerModel["model"]["selection"];
             onClick={open}
           >
             <span class="truncate">{language.t("home.providerTip")}</span>
+            <span class="flex size-6 shrink-0 items-center justify-center" aria-hidden="true">
+              <Icon name="chevron-down" size="small" class="-rotate-90" />
+            </span>
+          </button>
+          <span class="shrink-0 text-[13px] leading-text-compact text-v2-text-text-faint" aria-hidden="true">
+            ·
+          </span>
+          <button
+            type="button"
+            data-action="new-session-community-addons"
+            class="flex h-6 min-w-0 items-center rounded-[4px] pl-1.5 text-[13px] leading-text-compact tracking-[-0.04px] text-v2-text-text-faint transition-[background-color,color] duration-150 ease-in-out hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-muted focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-muted focus-visible:outline-none"
+            onClick={openCommunity}
+          >
+            <span class="truncate">{language.t("home.communityTip")}</span>
             <span class="flex size-6 shrink-0 items-center justify-center" aria-hidden="true">
               <Icon name="chevron-down" size="small" class="-rotate-90" />
             </span>

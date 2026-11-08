@@ -682,7 +682,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} egyebek",
   "settings.about.firstPublished": "Először az Egyesült Államokban, Missouriban jelent meg",
   "settings.about.firstIllustrated": "Először Londonban, Angliában illusztrálták",
-  "settings.about.website": "www.opencode.ai",
+  "settings.about.website": "github.com/Oliviacode/Oliviacode",
   "settings.about.description": "OpenCode, a nyílt forráskódú kódoló ügynök",
   "settings.about.trademark": "A OpenCode a Anomaly Innovations, Inc. bejegyzett védjegye.",
   "settings.about.typeset": "Betűkészlet Inter és IBM Plex Mono nyelven",

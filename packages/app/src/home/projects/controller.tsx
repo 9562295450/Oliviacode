@@ -3,6 +3,7 @@ import { useServerActionsController } from "@/servers/registry/controller"
 import { useSettingsCommand } from "@/settings/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
+import { BRAND } from "@/runtime/brand"
 import { ServerConnection } from "@/runtime/server/registry"
 import { isServerFailed } from "@/runtime/server/health-machine"
 import { homeProjectDirectories } from "@/shell/layout/helpers"
@@ -101,7 +102,7 @@ export function createHomeProjectsController(home: HomeController) {
     },
     utility: {
       settings: openSettings,
-      help: () => platform.openExternal("https://opencode.ai/desktop-feedback"),
+      help: () => platform.openExternal(BRAND.issues),
     },
   }
 }

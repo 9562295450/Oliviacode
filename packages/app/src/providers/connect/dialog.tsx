@@ -30,6 +30,8 @@ import { connectMethods, selectProviderConnectView, type ProviderConnectMethod }
 import type { ProviderFormInput, ProviderFormView } from "./form-machine"
 import { ConsoleAuthorization } from "./console"
 import { DialogChatGPTPlanWelcome } from "./chatgpt-welcome"
+import { DialogCommunityAddons } from "./community"
+import { BRAND } from "@/runtime/brand"
 import { authServerName, RemoteAuthNotice } from "./remote"
 import { providerAccounts } from "@/settings/providers/accounts"
 import { AccountNameInput } from "@/settings/providers/account-name"
@@ -237,18 +239,34 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
   const integrations = useIntegrations(() => props.directory)
   const language = useLanguage()
   const platform = usePlatform()
+  const dialog = useDialog()
 
   const [presets, setPresets] = createSignal<PresetInfo[]>([])
   const [presetNotice, setPresetNotice] = createSignal<string>()
   const [applying, setApplying] = createSignal<string>()
 
-  // Presets ship with the desktop app, so the web build simply has none.
-  onMount(() => {
-    void platform.presets
+  // Entries come from the user-editable file beside the app, so the web build simply has none.
+  const loadPresets = () =>
+    platform.presets
       ?.list()
       .then(setPresets)
       .catch(() => undefined)
+
+  onMount(() => {
+    void loadPresets()
   })
+
+  const openCommunity = () => {
+    props.onPrepare?.()
+    void dialog.push(() => (
+      <DialogCommunityAddons
+        onApplied={() => {
+          void loadPresets()
+          void integrations.refresh()
+        }}
+      />
+    ))
+  }
 
   const applyPreset = async (preset: PresetInfo) => {
     if (!platform.presets || applying()) return
@@ -260,14 +278,14 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
 
       setPresetNotice(
         result.ok
-          ? language.t("dialog.provider.quickConnect.applied", { path: result.path })
-          : language.t("dialog.provider.quickConnect.failed", { error: result.error ?? "" }),
+          ? language.t("dialog.provider.addons.applied", { path: result.path })
+          : language.t("dialog.provider.addons.failed", { error: result.error ?? "" }),
       )
 
       // The provider block changed on disk; the catalogue has to re-read it before the row shows it.
       if (result.ok) await integrations.refresh()
     } catch (error) {
-      setPresetNotice(language.t("dialog.provider.quickConnect.failed", { error: String(error) }))
+      setPresetNotice(language.t("dialog.provider.addons.failed", { error: String(error) }))
     } finally {
       setApplying(undefined)
     }
@@ -370,12 +388,22 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
           }}
         />
       </div>
-      <Show when={presets().length > 0}>
-        <div class="shrink-0 px-2 pb-1">
-          <div class="rounded-md border border-v2-border-border-base bg-v2-background-bg-layer-02 p-2">
-            <div class="px-1.5 pb-1 text-[12px] font-[440] leading-[18px] tracking-[0.05px] text-v2-text-text-faint">
-              {language.t("dialog.provider.quickConnect")}
-            </div>
+      <div class="shrink-0 px-2 pb-1">
+        <div class="rounded-md border border-v2-border-border-base bg-v2-background-bg-layer-02 p-2">
+          <div class="flex items-baseline justify-between gap-2 px-1.5 pb-1">
+            <span class="text-[12px] font-[440] leading-[18px] tracking-[0.05px] text-v2-text-text-faint">
+              {language.t("dialog.provider.addons")}
+            </span>
+            <button
+              type="button"
+              data-action="provider-addons-open"
+              class="shrink-0 rounded-sm text-[12px] font-[440] leading-[18px] text-v2-text-text-muted underline-offset-2 hover:text-v2-text-text-base hover:underline focus-visible:text-v2-text-text-base focus-visible:outline-none"
+              onClick={openCommunity}
+            >
+              {language.t("dialog.provider.addons.open")}
+            </button>
+          </div>
+          <Show when={presets().length > 0}>
             <For each={presets()}>
               {(preset) => (
                 <button
@@ -390,16 +418,16 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
                 </button>
               )}
             </For>
-            <Show when={presetNotice()}>
-              {(notice) => (
-                <p class="px-1.5 pt-1 text-[12px] leading-4 text-v2-text-text-muted" role="status">
-                  {notice()}
-                </p>
-              )}
-            </Show>
-          </div>
+          </Show>
+          <Show when={presetNotice()}>
+            {(notice) => (
+              <p class="px-1.5 pt-1 text-[12px] leading-4 text-v2-text-text-muted" role="status">
+                {notice()}
+              </p>
+            )}
+          </Show>
         </div>
-      </Show>
+      </div>
       <div class="relative min-h-0 flex-1">
         <div class="flex size-full min-h-0 flex-col gap-0.5 overflow-y-auto pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <For each={groups()}>
@@ -1223,7 +1251,7 @@ function ProviderSteps(props: { provider: string; controller: ProviderDialogCont
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <Show when={!input.body.catalogPending}>
-            <Button onClick={() => platform.openExternal("https://opencode.ai/console")}>
+            <Button onClick={() => platform.openExternal(BRAND.repo)}>
               {language.t("provider.connect.console.openAgain")}
             </Button>
           </Show>
