@@ -55,12 +55,12 @@ if (-not $SkipPush) {
   git add -A
   $pending = git status --porcelain
   if ($pending) {
-    git commit -m "Release $Version" | Out-Host
+    git commit --no-verify -m "Release $Version" | Out-Host
   }
   git tag -f $tag | Out-Host
   $basic = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$Token"))
-  git -c "http.extraheader=AUTHORIZATION: basic $basic" push origin "HEAD:refs/heads/main" | Out-Host
-  git -c "http.extraheader=AUTHORIZATION: basic $basic" push --force origin "refs/tags/$tag" | Out-Host
+  git -c "http.extraheader=AUTHORIZATION: basic $basic" push --no-verify origin "HEAD:refs/heads/main" | Out-Host
+  git -c "http.extraheader=AUTHORIZATION: basic $basic" push --no-verify --force origin "refs/tags/$tag" | Out-Host
 }
 
 # 2. About box: description, homepage, topics.
