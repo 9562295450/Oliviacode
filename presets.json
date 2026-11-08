@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "opencode",
+      "label": "OpenCode Zen",
+      "description": "Points the OpenCode provider at its hosted gateway. Bring your own token.",
+      "provider": "opencode",
+      "baseURL": "https://opencode.ai/zen/v1",
+      "docsURL": "https://opencode.ai/auth"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=oliviacode
+Exec=/opt/oliviacode/ai.oliviacode.desktop %U
+Terminal=false
+Type=Application
+Icon=ai.oliviacode.desktop
+StartupWMClass=ai.oliviacode.desktop
+NoDisplay=true
+Comment=oliviacode desktop
+Categories=Development;

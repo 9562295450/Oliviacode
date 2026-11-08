@@ -1,0 +1,32 @@
+[data-component="session-progress-indicator-v2"] {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+  color: var(--owl-violet, var(--v2-icon-icon-muted, #808080));
+}
+
+[data-component="session-progress-indicator-v2"] .owl-progress-eye {
+  animation: owl-progress-blink 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+[data-component="session-progress-indicator-v2"] .owl-progress-eye-right {
+  animation-delay: 0.75s;
+}
+
+@keyframes owl-progress-blink {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  45%,
+  55% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="session-progress-indicator-v2"] .owl-progress-eye {
+    animation: none;
+    opacity: 0.85;
+  }
+}

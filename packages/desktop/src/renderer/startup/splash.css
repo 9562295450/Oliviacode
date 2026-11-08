@@ -1,0 +1,49 @@
+/* Tailwind's pulse drops the mark to half opacity; on a near-black canvas that
+   reads as a smudge, so the splash breathes between 1 and 0.78 instead. */
+[data-component="startup-splash"] [data-component="logo-owl-splash"] {
+  animation: owl-splash-breathe 2400ms ease-in-out infinite;
+}
+
+@keyframes owl-splash-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="startup-splash"] [data-component="logo-owl-splash"] {
+    animation: none;
+  }
+}
+
+[data-component="first-launch-splash"] path {
+  /* Outline paths use a normalized length so the drawing scales with the wordmark. */
+  stroke-dasharray: 1;
+  animation: first-launch-wordmark-draw 1000ms ease-out both;
+}
+
+[data-component="first-launch-splash"][data-drawing="pending"] path {
+  animation-play-state: paused;
+}
+
+@keyframes first-launch-wordmark-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="first-launch-splash"] path {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}

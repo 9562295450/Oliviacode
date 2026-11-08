@@ -1,0 +1,598 @@
+/* ── the strip ──────────────────────────────────────────────────────────────
+   One row, window-wide, under the panels. Everything in it is a control; nothing
+   in it is decoration, so the eye can learn it once and stop reading it. */
+
+[data-slot="egress-status"] {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-top: 1px solid var(--v2-border-border-muted);
+  background: var(--v2-background-bg-layer-01);
+  color: var(--v2-text-text-muted);
+  font-size: 11px;
+  line-height: 1;
+  user-select: none;
+  overflow: hidden;
+}
+
+[data-slot="egress-status"] svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+/* The brand doubles as the panel's door: the strip never needs its own settings icon. */
+[data-slot="egress-brand"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--v2-text-text-muted);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+[data-slot="egress-brand"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="egress-lanes"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px;
+  border-radius: 6px;
+  background: var(--v2-background-bg-layer-02);
+}
+
+[data-slot="egress-lane"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--v2-text-text-muted);
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+[data-slot="egress-lane"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="egress-lane"][data-active] {
+  background: var(--v2-background-bg-layer-04);
+  box-shadow: inset 0 0 0 1px var(--v2-border-border-base);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="egress-dot"] {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--v2-grey-500);
+}
+
+[data-slot="egress-dot"][data-state="current"] {
+  background: var(--v2-state-fg-success);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--v2-state-fg-success) 20%, transparent);
+}
+
+[data-slot="egress-dot"][data-state="ok"] {
+  background: color-mix(in srgb, var(--v2-state-fg-success) 60%, var(--v2-grey-500));
+}
+
+[data-slot="egress-dot"][data-state="down"] {
+  background: var(--v2-state-fg-danger);
+}
+
+[data-slot="egress-dot"][data-state="busy"] {
+  background: var(--v2-state-fg-warning);
+  animation: egress-pulse 900ms ease-in-out infinite;
+}
+
+[data-slot="egress-trace"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--v2-font-family-mono);
+  font-size: 11px;
+}
+
+[data-slot="egress-ip"] {
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="egress-ip"][data-muted] {
+  font-family: var(--v2-font-family-sans);
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="egress-loc"],
+[data-slot="egress-colo"] {
+  color: var(--v2-text-text-muted);
+  white-space: nowrap;
+}
+
+[data-slot="egress-colo"]::before {
+  content: "·";
+  margin-inline-end: 6px;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="egress-actions"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+  min-width: 0;
+}
+
+[data-slot="egress-phase"] {
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--v2-text-text-muted);
+  white-space: nowrap;
+}
+
+[data-slot="egress-fault"] {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--v2-state-fg-danger);
+  font-family: var(--v2-font-family-mono);
+}
+
+[data-slot="egress-button"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid var(--v2-border-border-base);
+  border-radius: 5px;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-text-text-base);
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+[data-slot="egress-button"]:hover:not(:disabled) {
+  background: var(--v2-background-bg-layer-04);
+}
+
+[data-slot="egress-button"]:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+[data-slot="egress-button"][data-tone="accent"] {
+  border-color: color-mix(in srgb, var(--v2-text-text-accent) 45%, transparent);
+  color: var(--v2-text-text-accent);
+}
+
+[data-slot="egress-button"][data-tone="armed"] {
+  border-color: color-mix(in srgb, var(--v2-state-fg-success) 45%, transparent);
+  background: color-mix(in srgb, var(--v2-state-fg-success) 10%, transparent);
+  color: var(--v2-state-fg-success);
+}
+
+@keyframes egress-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* A narrow window keeps the dots and drops the words before it drops a control. */
+@media (max-width: 1080px) {
+  [data-slot="egress-lane"] [data-slot="egress-lane-label"] {
+    display: none;
+  }
+
+  [data-slot="egress-lane"] {
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 860px) {
+  [data-slot="egress-colo"],
+  [data-slot="egress-phase"],
+  [data-slot="egress-button"] span {
+    display: none;
+  }
+
+  [data-slot="egress-button"] {
+    padding: 0 6px;
+  }
+}
+
+/* ── the panel ───────────────────────────────────────────────────────────── */
+
+.egress-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+[data-slot="egress-notice"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--v2-border-border-muted);
+  background: var(--v2-background-bg-layer-01);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--v2-text-text-muted);
+  overflow-wrap: anywhere;
+}
+
+[data-slot="egress-notice"] svg {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  flex: 0 0 auto;
+}
+
+[data-slot="egress-notice"][data-tone="ok"] svg {
+  color: var(--v2-state-fg-success);
+}
+
+[data-slot="egress-notice"][data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--v2-state-fg-danger) 40%, transparent);
+  color: var(--v2-state-fg-danger);
+}
+
+[data-slot="egress-section"] {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+[data-slot="egress-section-head"] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 22px;
+}
+
+[data-slot="egress-section-head"] h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--v2-text-text-muted);
+}
+
+[data-slot="egress-section-head"] > :last-child {
+  margin-inline-start: auto;
+}
+
+[data-slot="egress-phase-pill"] {
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--v2-border-border-base);
+  background: var(--v2-background-bg-layer-02);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v2-text-text-muted);
+}
+
+[data-slot="egress-phase-pill"][data-phase="ready"],
+[data-slot="egress-phase-pill"][data-phase="armed"] {
+  border-color: color-mix(in srgb, var(--v2-state-fg-success) 40%, transparent);
+  color: var(--v2-state-fg-success);
+}
+
+[data-slot="egress-phase-pill"][data-phase="error"] {
+  border-color: color-mix(in srgb, var(--v2-state-fg-danger) 45%, transparent);
+  color: var(--v2-state-fg-danger);
+}
+
+[data-slot="egress-phase-pill"][data-phase="rotating"],
+[data-slot="egress-phase-pill"][data-phase="probing"] {
+  border-color: color-mix(in srgb, var(--v2-state-fg-warning) 45%, transparent);
+  color: var(--v2-state-fg-warning);
+}
+
+[data-slot="egress-readout"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--v2-border-border-muted);
+}
+
+[data-slot="egress-readout"] > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--v2-background-bg-layer-01);
+}
+
+[data-slot="egress-readout"] > div[data-slot="egress-wide"] {
+  grid-column: span 2;
+}
+
+[data-slot="egress-readout"] dt {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="egress-readout"] dd {
+  margin: 0;
+  font-size: 12px;
+  color: var(--v2-text-text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="egress-readout"] dd[data-tone="bad"] {
+  color: var(--v2-state-fg-danger);
+}
+
+[data-slot="egress-readout"] dd[data-tone="ok"] {
+  color: var(--v2-state-fg-success);
+}
+
+[data-slot="egress-mono"] {
+  font-family: var(--v2-font-family-mono);
+  font-size: 11px !important;
+}
+
+[data-slot="egress-sub"] {
+  color: var(--v2-text-text-faint);
+  font-size: 11px;
+}
+
+[data-slot="egress-dirty"] {
+  color: var(--v2-state-fg-warning);
+  font-size: 11px;
+}
+
+[data-slot="egress-watch"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--v2-state-fg-warning) 35%, transparent);
+  background: color-mix(in srgb, var(--v2-state-fg-warning) 8%, transparent);
+  font-family: var(--v2-font-family-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--v2-text-text-muted);
+  overflow-wrap: anywhere;
+}
+
+[data-slot="egress-watch"] svg {
+  width: 13px;
+  height: 13px;
+  margin-top: 1px;
+  flex: 0 0 auto;
+  color: var(--v2-state-fg-warning);
+}
+
+[data-slot="egress-cards"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  gap: 8px;
+}
+
+[data-slot="egress-card"] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--v2-border-border-muted);
+  background: var(--v2-background-bg-layer-01);
+}
+
+[data-slot="egress-card"][data-active] {
+  border-color: color-mix(in srgb, var(--v2-state-fg-success) 45%, transparent);
+  background: color-mix(in srgb, var(--v2-state-fg-success) 6%, var(--v2-background-bg-layer-01));
+}
+
+[data-slot="egress-card"] header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+[data-slot="egress-card"] strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="egress-live"] {
+  margin-inline-start: auto;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--v2-state-fg-success);
+}
+
+[data-slot="egress-card"] p {
+  margin: 0;
+  font-family: var(--v2-font-family-mono);
+  font-size: 11px;
+  color: var(--v2-text-text-muted);
+}
+
+[data-slot="egress-card-actions"] {
+  display: flex;
+  gap: 4px;
+}
+
+[data-slot="egress-card-actions"] button {
+  flex: 1;
+}
+
+[data-slot="egress-history"] {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+[data-slot="egress-history"] li {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 10px;
+  background: var(--v2-background-bg-layer-01);
+  font-size: 11px;
+  color: var(--v2-text-text-muted);
+}
+
+[data-slot="egress-history"] li[data-ok] {
+  background: color-mix(in srgb, var(--v2-state-fg-success) 5%, var(--v2-background-bg-layer-01));
+}
+
+[data-slot="egress-history-lane"] {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="egress-history-route"] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--v2-font-family-mono);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="egress-history-meta"] {
+  color: var(--v2-text-text-faint);
+  white-space: nowrap;
+}
+
+[data-slot="egress-history-error"] {
+  grid-column: 2 / -1;
+  color: var(--v2-state-fg-danger);
+  overflow-wrap: anywhere;
+}
+
+[data-slot="egress-empty"] {
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--v2-border-border-muted);
+  font-size: 11px;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="egress-form"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px 14px;
+}
+
+[data-slot="egress-form"] > [data-component="switch"] {
+  grid-column: 1 / -1;
+}
+
+[data-slot="egress-field"] {
+  display: grid;
+  grid-template-columns: auto minmax(64px, 88px);
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 12px;
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="egress-field"][data-wide] {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+[data-slot="egress-field"] > span {
+  white-space: nowrap;
+}
+
+[data-slot="egress-field"] input {
+  grid-column: 2;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--v2-border-border-base);
+  border-radius: 6px;
+  background: var(--v2-background-bg-layer-01);
+  color: var(--v2-text-text-base);
+  font: inherit;
+  font-family: var(--v2-font-family-mono);
+  font-size: 12px;
+}
+
+[data-slot="egress-field"] input:focus-visible {
+  outline: none;
+  border-color: var(--v2-border-border-focus);
+}
+
+[data-slot="egress-field"] input::placeholder {
+  color: var(--v2-text-text-faint);
+  font-family: var(--v2-font-family-sans);
+}
+
+[data-slot="egress-field"] em {
+  grid-column: 2;
+  font-size: 10px;
+  font-style: normal;
+  color: var(--v2-text-text-faint);
+}

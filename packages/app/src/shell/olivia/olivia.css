@@ -1,0 +1,1494 @@
+/* oliviacode's left column, in the Kilo shape: brand, primary action, search, workspace
+   header, the active list, then the two blocks that are ours — egress and theme. */
+
+[data-slot="olivia-sidebar"] {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  width: 268px;
+  min-height: 0;
+  padding: 2px 10px 8px;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--v2-text-text-muted);
+  font-family: var(--v2-font-family-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: 12.5px;
+  line-height: 1.35;
+  user-select: none;
+  transition: width 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-slot="olivia-sidebar"][data-collapsed] {
+  width: 52px;
+  padding-inline: 6px;
+}
+
+/* ── brand ─────────────────────────────────────────────────────────────── */
+
+[data-slot="olivia-head"] {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding-inline: 2px;
+}
+
+[data-slot="olivia-logo"] {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--v2-text-text-accent);
+}
+
+[data-slot="olivia-mark"] {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+[data-slot="olivia-wordmark"] {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-text-text-strong);
+  font-family: var(--owl-font-display);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="olivia-beta"] {
+  flex: 0 0 auto;
+  padding: 2px 5px;
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 999px;
+  color: var(--v2-text-text-faint);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ── shared controls ──────────────────────────────────────────────────── */
+
+[data-slot="olivia-icon"] {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--v2-text-text-faint);
+  font: inherit;
+  cursor: pointer;
+}
+
+[data-slot="olivia-icon"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-icon"]:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--v2-border-border-focus);
+}
+
+[data-slot="olivia-icon"] svg {
+  width: 14px;
+  height: 14px;
+}
+
+[data-slot="olivia-icon"][data-push] {
+  margin-inline-start: auto;
+}
+
+/* ── new session / search ─────────────────────────────────────────────── */
+
+[data-slot="olivia-actions"] {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+[data-slot="olivia-new"],
+[data-slot="olivia-search"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--v2-text-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: start;
+  cursor: pointer;
+}
+
+[data-slot="olivia-new"] {
+  background: var(--v2-background-bg-layer-02);
+  box-shadow: inset 0 0 0 1px var(--v2-border-border-muted);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-new"]:hover {
+  background: var(--v2-background-bg-layer-03);
+}
+
+[data-slot="olivia-search"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-new"] svg,
+[data-slot="olivia-search"] svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+[data-slot="olivia-search"] kbd {
+  margin-inline-start: auto;
+  overflow: hidden;
+  color: var(--v2-text-text-faint);
+  font-family: var(--v2-font-family-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: 9.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── workspace header ─────────────────────────────────────────────────── */
+
+[data-slot="olivia-section-head"] {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  height: 26px;
+  margin-top: 5px;
+  padding-inline-start: 2px;
+}
+
+[data-slot="olivia-section-grow"] {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 22px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--v2-text-text-faint);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+[data-slot="olivia-section-grow"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-section-grow"] svg {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  transition: transform 140ms ease;
+}
+
+[data-slot="olivia-section-grow"]:not([data-open]) svg {
+  transform: rotate(-90deg);
+}
+
+[data-slot="olivia-section-grow"] span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="olivia-count"] {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-text-text-faint);
+  font-size: 9.5px;
+  line-height: 15px;
+}
+
+[data-slot="olivia-section-head"] [data-slot="olivia-icon"] {
+  margin-inline-start: auto;
+  width: 22px;
+  height: 22px;
+}
+
+/* ── active list ──────────────────────────────────────────────────────── */
+
+[data-slot="olivia-group-label"] {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px;
+  color: var(--v2-text-text-faint);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+[data-slot="olivia-sessions"] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 40px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+[data-slot="olivia-row"] {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 5px;
+  border-radius: 6px;
+  color: var(--v2-text-text-muted);
+  cursor: pointer;
+  outline: none;
+}
+
+[data-slot="olivia-row"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-row"]:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--v2-border-border-focus);
+}
+
+[data-slot="olivia-row"][data-active] {
+  background: transparent;
+  color: var(--v2-text-text-strong);
+}
+
+[data-slot="olivia-avatar"] {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  background: light-dark(hsl(var(--olivia-hue) 55% 45% / 0.14), hsl(var(--olivia-hue) 55% 60% / 0.18));
+  color: light-dark(hsl(var(--olivia-hue) 45% 32%), hsl(var(--olivia-hue) 60% 72%));
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+[data-slot="olivia-row-title"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="olivia-row-close"] {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--v2-text-text-faint);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+[data-slot="olivia-row"]:hover [data-slot="olivia-row-close"],
+[data-slot="olivia-row"]:focus-within [data-slot="olivia-row-close"],
+[data-slot="olivia-row"][data-active] [data-slot="olivia-row-close"] {
+  opacity: 1;
+}
+
+[data-slot="olivia-row-close"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-row-close"] svg {
+  width: 11px;
+  height: 11px;
+}
+
+[data-slot="olivia-empty"] {
+  margin: 0;
+  padding: 8px 6px;
+  color: var(--v2-text-text-faint);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ── footer blocks ────────────────────────────────────────────────────── */
+
+[data-slot="olivia-sidebar-bottom"] {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+[data-slot="olivia-egress"],
+[data-slot="olivia-theme"] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 9px;
+  background: var(--v2-background-bg-layer-01);
+}
+
+[data-slot="olivia-block-head"] {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 16px;
+  min-width: 0;
+  color: var(--v2-text-text-faint);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+[data-slot="olivia-block-note"] {
+  min-width: 0;
+  margin-inline-start: auto;
+  overflow: hidden;
+  color: var(--v2-text-text-faint);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+[data-slot="olivia-block-note"][data-truncate] {
+  max-width: 96px;
+}
+
+[data-slot="olivia-block-head"] [data-slot="olivia-icon"] {
+  width: 18px;
+  height: 18px;
+  margin-inline-start: 2px;
+  border-radius: 4px;
+}
+
+[data-slot="olivia-block-head"] [data-slot="olivia-icon"] svg {
+  width: 12px;
+  height: 12px;
+}
+
+[data-slot="olivia-theme-glyph"] {
+  display: inline-flex;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="olivia-theme-glyph"] svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* ── egress ───────────────────────────────────────────────────────────── */
+
+[data-slot="olivia-phase-dot"] {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--v2-grey-600);
+}
+
+[data-slot="olivia-phase-dot"][data-phase="ready"],
+[data-slot="olivia-phase-dot"][data-phase="armed"] {
+  background: var(--v2-state-fg-success);
+}
+
+[data-slot="olivia-phase-dot"][data-phase="probing"],
+[data-slot="olivia-phase-dot"][data-phase="rotating"] {
+  background: var(--v2-state-fg-warning);
+  animation: olivia-pulse 900ms ease-in-out infinite;
+}
+
+[data-slot="olivia-phase-dot"][data-phase="error"] {
+  background: var(--v2-state-fg-danger);
+}
+
+[data-slot="olivia-egress-trace"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+[data-slot="olivia-egress-ip"] {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-text-text-base);
+  font-family: var(--v2-font-family-mono, ui-monospace, monospace);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="olivia-egress-ip"][data-muted] {
+  color: var(--v2-text-text-faint);
+  font-family: var(--v2-font-family-sans, ui-sans-serif, system-ui, sans-serif);
+}
+
+[data-slot="olivia-egress-loc"] {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-text-text-muted);
+  font-size: 9.5px;
+  white-space: nowrap;
+}
+
+[data-slot="olivia-lanes"] {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--v2-background-bg-deep);
+}
+
+[data-slot="olivia-lane"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  height: 20px;
+  padding: 0 2px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--v2-text-text-faint);
+  font: inherit;
+  font-size: 9.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+[data-slot="olivia-lane"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-lane"][data-active] {
+  background: var(--v2-background-bg-layer-03);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-live-dot"] {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--v2-grey-600);
+}
+
+[data-slot="olivia-live-dot"][data-state="current"] {
+  background: var(--v2-state-fg-success);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--v2-state-fg-success) 22%, transparent);
+}
+
+[data-slot="olivia-live-dot"][data-state="ok"] {
+  background: color-mix(in srgb, var(--v2-state-fg-success) 55%, var(--v2-grey-600));
+}
+
+[data-slot="olivia-live-dot"][data-state="down"] {
+  background: var(--v2-state-fg-danger);
+}
+
+[data-slot="olivia-live-dot"][data-state="busy"] {
+  background: var(--v2-state-fg-warning);
+  animation: olivia-pulse 900ms ease-in-out infinite;
+}
+
+[data-slot="olivia-egress-actions"] {
+  display: flex;
+  gap: 4px;
+}
+
+[data-slot="olivia-rotate"] {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--v2-text-text-accent) 38%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--v2-text-text-accent) 10%, transparent);
+  color: var(--v2-text-text-accent);
+  font: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+[data-slot="olivia-rotate"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--v2-text-text-accent) 18%, transparent);
+}
+
+[data-slot="olivia-rotate"]:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+[data-slot="olivia-rotate"] svg {
+  width: 12px;
+  height: 12px;
+}
+
+[data-slot="olivia-arm"] {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--v2-text-text-muted);
+  font: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+[data-slot="olivia-arm"]:hover {
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-arm"][data-armed] {
+  border-color: color-mix(in srgb, var(--v2-state-fg-success) 40%, transparent);
+  background: color-mix(in srgb, var(--v2-state-fg-success) 10%, transparent);
+  color: var(--v2-state-fg-success);
+}
+
+[data-slot="olivia-arm"] svg {
+  width: 12px;
+  height: 12px;
+}
+
+[data-slot="olivia-egress-watch"] {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--v2-text-text-faint);
+  font-size: 10px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+[data-slot="olivia-egress-error"] {
+  margin: 0;
+  overflow: hidden;
+  color: var(--v2-state-fg-danger);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── theme ────────────────────────────────────────────────────────────── */
+
+[data-slot="olivia-swatches"] {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 1px 0 2px;
+  scrollbar-width: none;
+}
+
+[data-slot="olivia-swatches"]::-webkit-scrollbar {
+  display: none;
+}
+
+[data-slot="olivia-swatch"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: var(--olivia-swatch);
+  box-shadow: inset 0 0 0 1px light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.14));
+  cursor: pointer;
+}
+
+[data-slot="olivia-swatch"]:hover {
+  transform: translateY(-1px);
+}
+
+[data-slot="olivia-swatch"][data-active] {
+  outline: 1.5px solid var(--v2-text-text-base);
+  outline-offset: 1px;
+}
+
+[data-slot="olivia-schemes"] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--v2-background-bg-deep);
+}
+
+[data-slot="olivia-scheme"] {
+  height: 19px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--v2-text-text-faint);
+  font: inherit;
+  font-size: 9.5px;
+  cursor: pointer;
+}
+
+[data-slot="olivia-scheme"]:hover {
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-scheme"][data-active] {
+  background: var(--v2-background-bg-layer-03);
+  color: var(--v2-text-text-base);
+}
+
+/* ── footer ───────────────────────────────────────────────────────────── */
+
+[data-slot="olivia-footer"] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding-inline: 2px;
+}
+
+[data-slot="olivia-settings"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--v2-text-text-faint);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+[data-slot="olivia-settings"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-settings"] svg {
+  width: 13px;
+  height: 13px;
+}
+
+[data-slot="olivia-version"] {
+  margin-inline-start: auto;
+  padding-inline-end: 4px;
+  color: var(--v2-text-text-faint);
+  font-size: 9.5px;
+}
+
+/* ── collapsed rail ───────────────────────────────────────────────────── */
+
+[data-slot="olivia-rail"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  padding-top: 2px;
+}
+
+[data-slot="olivia-rail-brand"] {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--v2-text-text-accent);
+  cursor: pointer;
+}
+
+[data-slot="olivia-rail-brand"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+}
+
+[data-slot="olivia-rail-spacer"] {
+  flex: 1 1 auto;
+}
+
+[data-slot="olivia-rail-phase"] {
+  width: 6px;
+  height: 6px;
+  margin-bottom: 2px;
+  border-radius: 999px;
+  background: var(--v2-grey-600);
+}
+
+[data-slot="olivia-rail-phase"][data-phase="ready"],
+[data-slot="olivia-rail-phase"][data-phase="armed"] {
+  background: var(--v2-state-fg-success);
+}
+
+[data-slot="olivia-rail-phase"][data-phase="probing"],
+[data-slot="olivia-rail-phase"][data-phase="rotating"] {
+  background: var(--v2-state-fg-warning);
+  animation: olivia-pulse 900ms ease-in-out infinite;
+}
+
+[data-slot="olivia-rail-phase"][data-phase="error"] {
+  background: var(--v2-state-fg-danger);
+}
+
+@keyframes olivia-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="olivia-sidebar"],
+  [data-slot="olivia-swatch"],
+  [data-slot="olivia-section-grow"] svg,
+  [data-slot="olivia-row-close"] {
+    transition: none;
+  }
+
+  [data-slot="olivia-swatch"]:hover {
+    transform: none;
+  }
+}
+
+/* The sidebar never disappears: below 860px it keeps the rail, wired in the component. */
+
+/* ── transcript grammar ───────────────────────────────────────────────────
+   Claude Code's transcript is the reference: a turn marker in the gutter, prose in
+   the measure, receipts in mono. The marker is decorative, so it never enters the
+   accessibility tree. */
+
+[data-slot="session-turn-assistant-content"] {
+  position: relative;
+}
+
+[data-slot="text-part-body"] {
+  position: relative;
+}
+
+[data-slot="session-turn-assistant-content"] [data-slot="text-part-body"]::before {
+  content: "\25CF";
+  position: absolute;
+  inset-inline-start: -17px;
+  inset-block-start: 0.35em;
+  color: var(--owl-violet);
+  font-size: 9px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+[data-slot="session-turn-message-content"] [data-slot="text-part-body"] {
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--v2-text-text-base);
+}
+
+/* The user turn is a command, not a chat bubble: one hairline chip, right aligned,
+   with the prompt in body text and no avatar. */
+
+[data-slot="user-message-body"] {
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: var(--owl-radius-control);
+  background: var(--v2-background-bg-layer-01);
+  padding: 8px 12px;
+}
+
+[data-slot="user-message-text"] {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--v2-text-text-strong);
+}
+
+[data-slot="user-message-meta-label"],
+[data-slot="text-part-meta-item"],
+[data-slot="text-part-meta-speed"] {
+  font-family: var(--owl-font-mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Tool calls read as receipts: mono, one hairline, no fill until hover. */
+
+[data-component="tool-trigger"] {
+  font-family: var(--owl-font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+}
+
+[data-component="tool-trigger"] [data-slot="basic-tool-tool-title"] {
+  font-family: var(--owl-font-mono);
+  color: var(--v2-text-text-muted);
+}
+
+[data-slot="basic-tool-tool-subtitle"],
+[data-slot="basic-tool-tool-arg"] {
+  font-family: var(--owl-font-mono);
+  color: var(--v2-text-text-faint);
+}
+
+/* ── composer ───────────────────────────────────────────────────────────── */
+
+[data-slot="composer-content"] {
+  border-radius: var(--owl-radius-panel);
+}
+
+[data-slot="composer-face"]:focus-within,
+[data-slot="composer-content"]:focus-within {
+  border-radius: var(--owl-radius-panel);
+  box-shadow:
+    0 0 0 1px var(--owl-violet),
+    0 0 0 3px color-mix(in oklab, var(--owl-violet) 14%, transparent);
+}
+
+[data-slot="composer-controls"] button {
+  font-family: var(--owl-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="composer-controls"] button:hover {
+  color: var(--v2-text-text-base);
+}
+
+/* ── sidebar metadata ──────────────────────────────────────────────────────
+   Prose is sans, measurement is mono. Counts, phases and addresses read as
+   instrument output so a glance at the column is a glance at data. */
+
+[data-slot="olivia-group-label"],
+[data-slot="olivia-group-count"],
+[data-slot="olivia-count"],
+[data-slot="olivia-block-note"],
+[data-slot="olivia-egress-ip"],
+[data-slot="olivia-egress-loc"],
+[data-slot="olivia-version"] {
+  font-family: var(--owl-font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+[data-slot="olivia-group-label"] {
+  color: var(--v2-text-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+[data-slot="olivia-egress-ip"] {
+  font-size: 10.5px;
+  color: var(--v2-text-text-base);
+  letter-spacing: 0.02em;
+}
+
+/* ── session header ────────────────────────────────────────────────────────
+   The breadcrumb is the routing decision: project in mono, session in display
+   weight. One hairline under the row, no fill. */
+
+[data-slot="session-location-project"] {
+  font-family: var(--owl-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  color: var(--v2-text-text-faint);
+  text-transform: lowercase;
+}
+
+[data-slot="session-title-child"] {
+  font-family: var(--owl-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--v2-text-text-strong);
+}
+
+[data-slot="session-title-separator"] {
+  color: var(--v2-text-text-weaker);
+}
+
+[data-slot="session-location-trigger"]:hover [data-slot="session-location-project"] {
+  color: var(--v2-text-text-base);
+}
+
+/* ── theme strip ───────────────────────────────────────────────────────────
+   A grid, not a smear: seven columns, two rows, so the catalogue reads as a
+   palette instead of a progress bar. */
+
+[data-slot="olivia-swatches"] {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 6px 0 2px;
+}
+
+[data-slot="olivia-swatch"] {
+  width: 100%;
+  height: 14px;
+  border-radius: 4px;
+}
+
+[data-slot="olivia-swatch"][data-active] {
+  box-shadow:
+    0 0 0 1px var(--v2-background-bg-base),
+    0 0 0 2px var(--owl-violet);
+}
+
+/* ── composer activity ─────────────────────────────────────────────────────
+   The submit seat carries the owl's eyes while a turn is in flight. Two chevrons
+   blinking out of phase, the same mark the sidebar rows use, so "working" has one
+   face everywhere in the app. */
+
+[data-action="composer-submit"] [data-slot="owl-eyes"] {
+  color: currentColor;
+  overflow: visible;
+}
+
+[data-action="composer-submit"] [data-slot="owl-eyes"] path {
+  animation: olivia-blink 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+[data-action="composer-submit"] [data-slot="owl-eyes"] path:nth-child(2) {
+  animation-delay: 0.75s;
+}
+
+@keyframes olivia-blink {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  45%,
+  55% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-action="composer-submit"] [data-slot="owl-eyes"] path {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+
+/* ── home wordmark ─────────────────────────────────────────────────────────
+   The SVG wordmark takes its fills from the shared icon palette, which is
+   neutral by design. Overriding the two icon tokens inside the box borrows the
+   owl's violet without touching the icon system, and the letterforms keep their
+   own alpha ramp, so the far letters stay quiet and the near ones catch light. */
+
+[data-slot="wordmark-box"] {
+  --icon-base: light-dark(var(--owl-violet), var(--owl-violet-soft));
+  --icon-strong-base: light-dark(var(--owl-violet-deep), #e2d6ff);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE FOUR-LANE FRAME
+
+   Rail → queue → plane → inspector. One canvas, hairline dividers, no card
+   chrome: the window reads as a work surface with four working edges rather
+   than a stack of panels. The rail never moves, the queue and inspector open
+   and close beside it, and the plane keeps every pixel the other three do not
+   need.
+
+   Lane A  rail       52px   verbs, queue toggle, exit phase
+   Lane B  queue     248px   open work as a ledger
+   Lane C  plane      1fr    the route's own surface
+   Lane D  inspector 268px   surface, egress, theme
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-slot="olivia-shell"] {
+  --olivia-rail-w: 52px;
+  --olivia-queue-w: 248px;
+  --olivia-inspector-w: 268px;
+  --olivia-hair: var(--v2-border-border-muted);
+}
+
+/* ── lane A: the rail ─────────────────────────────────────────────────── */
+
+[data-slot="olivia-rail"] {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  width: var(--olivia-rail-w);
+  height: auto;
+  min-height: 0;
+  gap: 2px;
+  padding: 6px 0 8px;
+  border-inline-end: 1px solid var(--olivia-hair);
+  background: transparent;
+}
+
+[data-slot="olivia-rail-brand"] {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--owl-violet-soft);
+  cursor: pointer;
+}
+
+[data-slot="olivia-rail-brand"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+}
+
+[data-slot="olivia-rail-rule"] {
+  width: 20px;
+  height: 1px;
+  margin: 2px 0 6px;
+  background: var(--olivia-hair);
+}
+
+[data-slot="olivia-rail-item"] {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--v2-text-text-faint);
+  cursor: pointer;
+}
+
+[data-slot="olivia-rail-item"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="olivia-rail-item"]:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--v2-border-border-focus);
+}
+
+[data-slot="olivia-rail-item"] svg {
+  width: 16px;
+  height: 16px;
+}
+
+[data-slot="olivia-rail-item"][data-active] {
+  color: var(--v2-text-text-strong);
+}
+
+/* The talon: the one piece of color the rail is allowed. Two pixels on the edge
+   of the lane, so the active verb points at the surface it opens. */
+
+[data-slot="olivia-rail-item"][data-active]::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -1px;
+  inset-block: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--owl-violet);
+}
+
+[data-slot="olivia-rail-item"][data-rail-toggle][data-active]::after {
+  inset-inline-end: -1px;
+}
+
+[data-slot="olivia-rail-spacer"] {
+  flex: 1 1 auto;
+}
+
+[data-slot="olivia-rail-phase"] {
+  width: 6px;
+  height: 6px;
+  margin: 4px 0 6px;
+  border-radius: 999px;
+  background: var(--v2-grey-600);
+}
+
+[data-slot="olivia-rail-version"] {
+  margin-top: 4px;
+  color: var(--v2-text-text-weaker);
+  font-family: var(--owl-font-mono);
+  font-size: 8.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+/* ── lane B: the queue ────────────────────────────────────────────────── */
+
+[data-slot="olivia-sidebar"] {
+  width: var(--olivia-queue-w);
+  padding: 8px 8px 8px 10px;
+  border-inline-end: 1px solid var(--olivia-hair);
+  background: transparent;
+  gap: 3px;
+}
+
+[data-slot="olivia-head"] {
+  height: 30px;
+  padding-inline: 0;
+}
+
+[data-slot="olivia-section-head"] {
+  margin-top: 8px;
+  padding-inline-start: 0;
+}
+
+[data-slot="olivia-section-grow"] {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+[data-slot="olivia-sessions"] {
+  gap: 0;
+  padding-bottom: 6px;
+}
+
+[data-slot="olivia-row"] {
+  position: relative;
+  height: 30px;
+  gap: 8px;
+  padding: 0 4px 0 3px;
+  border-radius: 5px;
+}
+
+[data-slot="olivia-row"] + [data-slot="olivia-row"] {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--olivia-hair) 55%, transparent);
+}
+
+[data-slot="olivia-row"][data-active] {
+  border-radius: 0 5px 5px 0;
+}
+
+/* The talon on a row runs the full height of the row: a session is a line item,
+   and the active one is the line the plane is showing. */
+
+[data-slot="olivia-row"][data-owl-talon]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -10px;
+  inset-block: 0;
+  width: 2px;
+  background: var(--owl-violet);
+}
+
+[data-slot="olivia-row-index"] {
+  flex: 0 0 auto;
+  width: 15px;
+  color: var(--v2-text-text-weaker);
+  font-family: var(--owl-font-mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-align: end;
+}
+
+[data-slot="olivia-row"][data-active] [data-slot="olivia-row-index"] {
+  color: var(--owl-violet-soft);
+}
+
+[data-slot="olivia-row-dot"] {
+  flex: 0 0 auto;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--v2-text-text-weaker);
+}
+
+[data-slot="olivia-row-dot"][data-active] {
+  background: var(--owl-violet);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--owl-violet) 20%, transparent);
+}
+
+[data-slot="olivia-row-title"] {
+  font-size: 12px;
+}
+
+[data-slot="olivia-queue-foot"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 4px 0;
+  border-top: 1px solid var(--olivia-hair);
+  color: var(--v2-text-text-faint);
+  font-family: var(--owl-font-mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+[data-slot="olivia-sidebar-bottom"] {
+  margin-top: auto;
+}
+
+/* ── lane D: the inspector ────────────────────────────────────────────── */
+
+[data-slot="olivia-inspector"] {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  width: var(--olivia-inspector-w);
+  min-height: 0;
+  border-inline-start: 1px solid var(--olivia-hair);
+  color: var(--v2-text-text-muted);
+  font-family: var(--v2-font-family-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: 11.5px;
+  line-height: 1.4;
+  user-select: none;
+}
+
+[data-slot="olivia-inspector-head"] {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 8px 0 14px;
+  border-bottom: 1px solid var(--olivia-hair);
+  color: var(--owl-violet-soft);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+[data-slot="olivia-inspector-scroll"] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+[data-slot="olivia-block"],
+[data-slot="olivia-inspector"] [data-slot="olivia-egress"],
+[data-slot="olivia-inspector"] [data-slot="olivia-theme"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--olivia-hair);
+  border-radius: 0;
+  background: transparent;
+}
+
+[data-slot="olivia-block-label"] {
+  color: var(--v2-text-text-faint);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+[data-slot="olivia-inspector"] [data-slot="olivia-block-head"] {
+  height: 14px;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+}
+
+[data-slot="olivia-route-title"] {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--v2-text-text-strong);
+  font-family: var(--owl-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+[data-slot="olivia-kv"] {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 2px 0 0;
+}
+
+[data-slot="olivia-kv"] > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+[data-slot="olivia-kv"] dt {
+  color: var(--v2-text-text-faint);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+[data-slot="olivia-kv"] dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--v2-text-text-base);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="olivia-kv"] dd[data-mono] {
+  font-family: var(--owl-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+[data-slot="olivia-inspector-foot"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding: 10px 14px;
+  border-top: 1px solid var(--olivia-hair);
+  color: var(--v2-text-text-weaker);
+  font-family: var(--owl-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+
+/* The inspector is a reading column: the shared blocks keep their controls but
+   drop the card fill they wore in the old sidebar. */
+
+[data-slot="olivia-inspector"] [data-slot="olivia-lanes"],
+[data-slot="olivia-inspector"] [data-slot="olivia-schemes"] {
+  background: var(--v2-background-bg-deep);
+}
+
+[data-slot="olivia-inspector"] [data-slot="olivia-swatches"] {
+  padding-top: 2px;
+}
+
+@media (max-width: 1180px) {
+  [data-slot="olivia-shell"] {
+    --olivia-inspector-w: 232px;
+  }
+}
+
+@media (max-width: 980px) {
+  [data-slot="olivia-shell"] {
+    --olivia-queue-w: 216px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="olivia-rail-brand"],
+  [data-slot="olivia-rail-item"] {
+    transition: none;
+  }
+}
+
+/* ── the console ───────────────────────────────────────────────────────────
+   The welcome surface is a prompt at the floor, not a logo in the middle.
+   The wordmark shrinks to a masthead stamp above the composer, the plane keeps
+   its empty height, and the only thing at eye level is the place you type. */
+
+[data-slot="new-session-console"] {
+  z-index: 1;
+}
+
+[data-slot="new-session-masthead"] {
+  width: min(252px, 48%);
+  margin-inline-start: 2px;
+  opacity: 1;
+}
+
+[data-slot="new-session-masthead"] [data-slot="wordmark-box"] {
+  width: 100%;
+}
+
+[data-slot="new-session-console"] [data-slot="new-session-composer"] {
+  border-top: 1px solid var(--v2-border-border-muted);
+  padding-top: 12px;
+}
+
+[data-slot="new-session-console"] [data-slot="new-session-location-path"] {
+  font-family: var(--owl-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+}
+
+

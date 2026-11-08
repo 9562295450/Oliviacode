@@ -1,0 +1,98 @@
+/* oliviacode design tokens — the shell reads these, the theme system reads --v2-*.
+   Everything here is a primitive. Components never hard-code a hex, a radius or a duration. */
+
+:root {
+  /* Type. Display is a grotesk with a wide aperture; body is the UI sans; meta is mono. */
+  --owl-font-display: "Albert Sans", "Space Grotesk", "Inter", system-ui, sans-serif;
+  --owl-font-body: "Inter", system-ui, sans-serif;
+  --owl-font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;
+
+  --owl-text-xs: 11px;
+  --owl-text-sm: 12px;
+  --owl-text-md: 13px;
+  --owl-text-lg: 15px;
+  --owl-text-xl: 19px;
+  --owl-text-display: 28px;
+
+  --owl-leading-tight: 1.25;
+  --owl-leading-body: 1.55;
+
+  /* Space: a 4px grid, named by the step count so a layout reads like measurement. */
+  --owl-s1: 4px;
+  --owl-s2: 8px;
+  --owl-s3: 12px;
+  --owl-s4: 16px;
+  --owl-s5: 20px;
+  --owl-s6: 24px;
+  --owl-s8: 32px;
+  --owl-s10: 40px;
+  --owl-s12: 48px;
+
+  /* Shape. The 14px panel and the 10px control are the two radii the whole app uses. */
+  --owl-radius-control: 10px;
+  --owl-radius-panel: 14px;
+  --owl-radius-row: 8px;
+  --owl-radius-pill: 999px;
+
+  /* The signature: a 22px chamfer cut from the panel's top-left corner. */
+  --owl-notch: 22px;
+
+  /* Motion. Two curves, one duration band. Nothing bounces. */
+  --owl-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --owl-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --owl-fast: 120ms;
+  --owl-base: 160ms;
+  --owl-slow: 240ms;
+
+  /* Brand, independent of theme so the mark is identical everywhere. */
+  --owl-violet: #7c4dff;
+  --owl-violet-deep: #5b2bd9;
+  --owl-violet-soft: #9a6bff;
+  --owl-lime: #c8ff3d;
+  --owl-ink: #0b0a10;
+  --owl-ink-2: #121019;
+  --owl-ink-3: #191623;
+  --owl-line: #262133;
+  --owl-fang: #f4f1ff;
+  --owl-mute: #8e87a8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --owl-fast: 0ms;
+    --owl-base: 0ms;
+    --owl-slow: 0ms;
+  }
+}
+
+/* The notched panel. One clip-path, used by the main surface and the command palette. */
+[data-owl-notch] {
+  clip-path: polygon(
+    var(--owl-notch) 0,
+    100% 0,
+    100% 100%,
+    0 100%,
+    0 var(--owl-notch)
+  );
+}
+
+/* The talon: a 2px violet bar on the leading edge of whatever is active. */
+[data-owl-talon]::before {
+  content: "";
+  position: absolute;
+  inset-block: 6px;
+  inset-inline-start: 0;
+  width: 2px;
+  border-radius: var(--owl-radius-pill);
+  background: var(--owl-violet);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--owl-violet) 55%, transparent);
+}
+
+/* Mono metadata: timestamps, token counts, tool names, paths. */
+[data-owl-meta] {
+  font-family: var(--owl-font-mono);
+  font-size: var(--owl-text-xs);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--v2-text-text-muted, var(--owl-mute));
+}

@@ -1,0 +1,52 @@
+.DS_Store
+node_modules
+.worktrees
+.sst
+.env
+.env.local
+.idea
+.vscode
+.codex
+*~
+playground
+tmp
+# Build outputs
+out/
+**/out/
+dist
+dist-node
+
+# The engine binary is fetched during the build and must never be committed.
+packages/desktop/resources/opencode-cli
+packages/desktop/resources/opencode-cli.exe
+packages/desktop/resources/opencode-cli-dev
+packages/desktop/resources/opencode-cli-dev.exe
+packages/desktop/resources/opencode-cli.version
+packages/desktop/resources/opencode-cli-wsl
+ts-dist
+.turbo
+.typecheck-profiles
+**/.serena
+.serena/
+**/.omo
+.omo/
+/result
+refs
+Session.vim
+/opencode.json
+a.out
+target
+.scripts
+.cache
+.direnv/
+
+# Local dev files
+opencode-dev
+RELEASE_REVIEW.md
+logs/
+*.bun-build
+tsconfig.tsbuildinfo
+/artifacts/
+
+# Legal drafts pending review are kept outside the repository; never copy them in.
+legal-drafts-private/
