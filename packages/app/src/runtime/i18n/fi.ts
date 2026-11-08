@@ -140,7 +140,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} muuta",
   "settings.about.firstPublished": "Julkaistu ensimmäisen kerran Missourissa, Yhdysvalloissa",
   "settings.about.firstIllustrated": "Kuvitettu ensimmäisen kerran Lontoossa, Englannissa",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode, avoimen lähdekoodin koodausagentti",
   "settings.about.trademark": "OpenCode on Anomaly Innovations, Inc:n rekisteröity tavaramerkki.",
   "settings.about.typeset": "Kirjasinlajit Inter ja IBM Plex Mono",

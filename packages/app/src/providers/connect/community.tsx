@@ -17,7 +17,7 @@ import { refreshProviderAddons } from "@/providers/catalog/addons"
  * only write is a provider base URL.
  */
 
-const REGISTRY_FORMAT_URL = "https://github.com/Oliviacode/Oliviacode/blob/main/PRESETS.md"
+const REGISTRY_FORMAT_URL = "https://github.com/9562295450/Oliviacode/blob/main/PRESETS.md"
 
 /**
  * Loads a registry of community add-ons and applies one entry.

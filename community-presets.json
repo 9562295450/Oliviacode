@@ -7,7 +7,7 @@
     "Every entry points a provider id, already known to the engine's own catalogue, at a base URL.",
     "An entry never contains a credential and is not an endorsement, a partnership, or a permission.",
     "Whoever connects an account is responsible for that service's terms, quotas, and usage rules.",
-    "Format documentation: https://github.com/Oliviacode/Oliviacode/blob/main/PRESETS.md"
+    "Format documentation: https://github.com/9562295450/Oliviacode/blob/main/PRESETS.md"
   ],
   "version": 1,
   "presets": [

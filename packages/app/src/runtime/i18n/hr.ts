@@ -685,7 +685,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} drugih",
   "settings.about.firstPublished": "Prvi put objavljeno u Missouriju, SAD",
   "settings.about.firstIllustrated": "Prvi put ilustrirano u Londonu, Engleska",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode, agent za kodiranje otvorenog koda",
   "settings.about.trademark": "OpenCode je registrirani zaštitni znak Anomaly Innovations, Inc.",
   "settings.about.typeset": "Označeno u Inter i IBM Plex Mono",

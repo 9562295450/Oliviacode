@@ -9,7 +9,7 @@
 param(
   [string]$Version = "2.2.5",
   [string]$Token = $env:GH_TOKEN,
-  [string]$Repo = "Oliviacode/Oliviacode",
+  [string]$Repo = "9562295450/Oliviacode",
   [switch]$SkipPush,
   [switch]$SkipRelease
 )
@@ -35,7 +35,7 @@ Write-Host "size      $([math]::Round((Get-Item $installer).Length / 1MB, 1)) MB
 if (-not $Token) {
   throw @"
 No token. Create a fine-grained PAT at https://github.com/settings/tokens?type=beta
-  Repository access : Oliviacode/Oliviacode
+  Repository access : 9562295450/Oliviacode
   Permissions       : Contents = Read and write, Administration = Read and write
 Then, in this shell:
   `$env:GH_TOKEN = "github_pat_..."
@@ -72,9 +72,10 @@ $topics = @(
 $body = @{
   description = $description
   homepage    = "https://github.com/$Repo"
-  topics      = $topics
 } | ConvertTo-Json
 Invoke-RestMethod -Method Patch -Uri "https://api.github.com/repos/$Repo" -Headers $headers -Body $body | Out-Null
+$topicBody = @{ names = $topics } | ConvertTo-Json
+Invoke-RestMethod -Method Put -Uri "https://api.github.com/repos/$Repo/topics" -Headers $headers -Body $topicBody | Out-Null
 Write-Host "about     updated"
 
 if ($SkipRelease) { return }

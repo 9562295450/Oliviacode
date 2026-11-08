@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   installer:
-    if: github.repository == 'Oliviacode/Oliviacode'
+    if: github.repository == '9562295450/Oliviacode'
     runs-on: windows-latest
     timeout-minutes: 60
     env:

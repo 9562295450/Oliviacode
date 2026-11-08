@@ -142,7 +142,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} andre",
   "settings.about.firstPublished": "Først udgivet i Missouri, USA",
   "settings.about.firstIllustrated": "Først illustreret i London, England",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode, open source-kodningsagenten",
   "settings.about.trademark": "OpenCode er et registreret varemærke tilhørende Anomaly Innovations, Inc.",
   "settings.about.typeset": "Sat med Inter og IBM Plex Mono",

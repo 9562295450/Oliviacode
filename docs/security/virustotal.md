@@ -9,8 +9,8 @@ is not a claim of zero detections.
 
 ```
 file    Oliviacode-Setup-2.2.5.exe
-sha256  efec973ef4d5349446c319ebd2399b793feb8fbd8f6732f7ce49f03da11738ff
-size    257,933,512 bytes
+sha256  360b87b1006ff0f98a2360a7a1162e93d8675b7c019a4dcab83c45049daefdc1
+size    257,941,745 bytes
 ```
 
 [![VirusTotal report](./virustotal-badge.svg)](https://www.virustotal.com/gui/home/upload)

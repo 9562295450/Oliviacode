@@ -668,7 +668,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} teised",
   "settings.about.firstPublished": "Esmakordselt avaldati USA-s Missouris",
   "settings.about.firstIllustrated": "Esmakordselt illustreeritud Londonis, Inglismaal",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode, avatud lähtekoodiga kodeerimisagent",
   "settings.about.trademark": "OpenCode on ettevõtte Anomaly Innovations, Inc. registreeritud kaubamärk.",
   "settings.about.typeset": "Sisestatud Inter ja IBM Plex Mono",

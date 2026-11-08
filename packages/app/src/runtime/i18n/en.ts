@@ -913,7 +913,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} others",
   "settings.about.firstPublished": "First published in Missouri, USA",
   "settings.about.firstIllustrated": "First illustrated in London, England",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "oliviacode, the open source coding agent",
   "settings.about.trademark": "OpenCode is a registered trademark of Anomaly Innovations, Inc.",
   "settings.about.typeset": "Typeset in Albert Sans, Inter and IBM Plex Mono",

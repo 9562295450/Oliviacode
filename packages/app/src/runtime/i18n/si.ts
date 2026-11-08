@@ -672,7 +672,7 @@ export const dict = {
   "settings.about.otherContributor.other": "තවත් {{count}}",
   "settings.about.firstPublished": "මුලින්ම ඇමරිකා එක්සත් ජනපදයේ මිසූරිහි ප්‍රකාශයට පත් කරන ලදී",
   "settings.about.firstIllustrated": "මුලින්ම එංගලන්තයේ ලන්ඩන්හි රූප සටහන් කරන ලදී",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode, විවෘත මූලාශ්‍ර කේතකරණ නියෝජිතයා",
   "settings.about.trademark": "OpenCode යනු Anomaly Innovations, Inc. හි ලියාපදිංචි වෙළඳ ලකුණකි.",
   "settings.about.typeset": "Inter සහ IBM Plex Mono අකුරුවලින් සකසා ඇත",

@@ -660,7 +660,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} ሌሎች",
   "settings.about.firstPublished": "መጀመሪያ የታተመው በሚዙሪ፣ አሜሪካ",
   "settings.about.firstIllustrated": "መጀመሪያ ምስል የተሰራለት በለንደን፣ እንግሊዝ",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode፣ ክፍት ምንጭ የኮድ ወኪል",
   "settings.about.trademark": "OpenCode የAnomaly Innovations, Inc. የተመዘገበ የንግድ ምልክት ነው።",
   "settings.about.typeset": "በInter እና IBM Plex Mono ተሰድሯል",

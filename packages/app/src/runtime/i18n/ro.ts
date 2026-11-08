@@ -679,7 +679,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} de alți colaboratori",
   "settings.about.firstPublished": "Prima dată publicată în Missouri, SUA",
   "settings.about.firstIllustrated": "Ilustrat pentru prima dată la Londra, Anglia",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode, agentul de codare open source",
   "settings.about.trademark": "OpenCode este o marcă înregistrată a Anomaly Innovations, Inc.",
   "settings.about.typeset": "Compoziție în Inter și IBM Plex Mono",

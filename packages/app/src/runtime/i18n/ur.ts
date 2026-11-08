@@ -685,7 +685,7 @@ export const dict = {
   "settings.about.otherContributor.other": "\u2068{{count}}\u2069 دیگر",
   "settings.about.firstPublished": "پہلی بار میزوری، امریکہ میں شائع ہوا",
   "settings.about.firstIllustrated": "پہلی بار لندن، انگلینڈ میں مصور کیا گیا",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode، اوپن سورس کوڈنگ ایجنٹ",
   "settings.about.trademark": "OpenCode، Anomaly Innovations, Inc. کا رجسٹرڈ ٹریڈ مارک ہے۔",
   "settings.about.typeset": "Inter اور IBM Plex Mono میں ٹائپ سیٹ",

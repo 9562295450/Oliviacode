@@ -46,4 +46,4 @@ listed in the application's About > Third-party notices dialog. Those licences c
 apply. The bundled CLI engine is published by the upstream project and is redistributed
 unmodified; its version is recorded in resources/opencode-cli.version.
 
-Full notices: https://github.com/Oliviacode/Oliviacode/blob/main/NOTICE.md
+Full notices: https://github.com/9562295450/Oliviacode/blob/main/NOTICE.md

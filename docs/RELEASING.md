@@ -1,4 +1,4 @@
-﻿# Releasing
+# Releasing
 
 Two routes, both end with the installer attached to a GitHub release. Pick one.
 
@@ -8,7 +8,7 @@ The machine needs `git`, PowerShell, and a fine-grained token once. The token is
 a one-shot HTTP header; it is never written to `.git/config`, the remote URL, or a file.
 
 1. Create a fine-grained token: <https://github.com/settings/tokens?type=beta>
-   - Repository access: **Oliviacode/Oliviacode**
+   - Repository access: **9562295450/Oliviacode**
    - Permissions: **Contents: Read and write**, **Administration: Read and write** (the second
      one is only for the About box: description, homepage, topics)
 2. Build:
@@ -79,11 +79,8 @@ creates the release when it is missing, and uploads with `--clobber` so a re-run
    the version and detection count.
 4. Paste the About text and topics from `.github/REPO.md` if the script was not used.
 
-## Note on the repository name
+## Repository location
 
-`Oliviacode/Oliviacode` is also the account's profile repository, because the account and the
-repository share a name. The repository is currently empty (default branch `main`, no commits).
-The first push fills it with the app; GitHub stops rendering a profile README from it. If the
-profile README matters, rename the repository or create the app under another name before
-pushing.
+The canonical repository is <https://github.com/9562295450/Oliviacode>. All links in the app,
+README, notices and release notes point there.
 

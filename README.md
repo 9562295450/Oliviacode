@@ -40,7 +40,7 @@ credential, or you don't, and the app sits there with nothing selected until you
 
 ## Install
 
-Grab the installer from [Releases](https://github.com/Oliviacode/Oliviacode/releases):
+Grab the installer from [Releases](https://github.com/9562295450/Oliviacode/releases):
 
 - **Windows** - `Oliviacode-Setup-<version>.exe`. Assisted installer: accept the license,
   press Install. A desktop shortcut and Start menu entry are created for the current user.
@@ -136,11 +136,11 @@ no `app-update.yml`, so the updater has nothing to check and stays quiet. To poi
 at this project's own releases, set it explicitly:
 
 ```bash
-OLIVIACODE_UPDATE_REPO=Oliviacode/Oliviacode bun run --cwd packages/desktop pack
+OLIVIACODE_UPDATE_REPO=9562295450/Oliviacode bun run --cwd packages/desktop pack
 ```
 
 That writes a feed pointing at
-`https://github.com/Oliviacode/Oliviacode/releases/latest/download`. Nothing else is read, and
+`https://github.com/9562295450/Oliviacode/releases/latest/download`. Nothing else is read, and
 no upstream release feed is ever consulted.
 
 ## Privacy

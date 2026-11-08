@@ -6,10 +6,10 @@
  */
 export const BRAND = {
   name: "Oliviacode",
-  repo: "https://github.com/Oliviacode/Oliviacode",
-  issues: "https://github.com/Oliviacode/Oliviacode/issues",
-  discussions: "https://github.com/Oliviacode/Oliviacode/discussions",
-  docs: "https://github.com/Oliviacode/Oliviacode/blob/main/README.md",
-  addons: "https://github.com/Oliviacode/Oliviacode/blob/main/PRESETS.md",
-  security: "https://github.com/Oliviacode/Oliviacode/blob/main/docs/security/virustotal.md",
+  repo: "https://github.com/9562295450/Oliviacode",
+  issues: "https://github.com/9562295450/Oliviacode/issues",
+  discussions: "https://github.com/9562295450/Oliviacode/discussions",
+  docs: "https://github.com/9562295450/Oliviacode/blob/main/README.md",
+  addons: "https://github.com/9562295450/Oliviacode/blob/main/PRESETS.md",
+  security: "https://github.com/9562295450/Oliviacode/blob/main/docs/security/virustotal.md",
 } as const

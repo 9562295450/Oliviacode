@@ -689,7 +689,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} kitų",
   "settings.about.firstPublished": "Pirmą kartą išleista Misūrio valstijoje, JAV",
   "settings.about.firstIllustrated": "Pirmą kartą iliustruotas Londone, Anglijoje",
-  "settings.about.website": "github.com/Oliviacode/Oliviacode",
+  "settings.about.website": "github.com/9562295450/Oliviacode",
   "settings.about.description": "OpenCode, atvirojo kodo kodavimo agentas",
   "settings.about.trademark": "OpenCode yra registruotasis Anomaly Innovations, Inc. prekės ženklas.",
   "settings.about.typeset": "Rinkinys „Inter“ ir „IBM Plex Mono“.",
