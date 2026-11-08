@@ -60,7 +60,9 @@ if (-not $SkipPush) {
   git tag -f $tag | Out-Host
   $basic = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$Token"))
   git -c "http.extraheader=AUTHORIZATION: basic $basic" push --no-verify origin "HEAD:refs/heads/main" | Out-Host
+  if ($LASTEXITCODE -ne 0) { throw "git push main failed ($LASTEXITCODE)" }
   git -c "http.extraheader=AUTHORIZATION: basic $basic" push --no-verify --force origin "refs/tags/$tag" | Out-Host
+  if ($LASTEXITCODE -ne 0) { throw "git push tag failed ($LASTEXITCODE)" }
 }
 
 # 2. About box: description, homepage, topics.
@@ -94,7 +96,7 @@ if (-not $release) {
     tag_name         = $tag
     target_commitish = "main"
     name             = "Oliviacode $Version"
-    body             = (Get-Content $notes -Raw)
+    body             = [System.IO.File]::ReadAllText($notes)
     draft            = $false
     prerelease       = $false
   } | ConvertTo-Json
