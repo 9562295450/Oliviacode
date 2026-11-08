@@ -2,7 +2,7 @@ import { app } from "electron"
 import type { Endpoint } from "@opencode/client/service"
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
 import { SidecarChanged } from "../../shared/ipc-rpc/events"
-import { CHANNEL } from "../constants"
+import { APP_ID, CHANNEL } from "../constants"
 import { emitIpcEvent } from "../ipc-events"
 import { getMainWindows } from "../windows"
 import { BackgroundServiceMachine } from "./background-service-machine"
@@ -15,6 +15,25 @@ import { takeSidecarProbe } from "./sidecar-probe"
 export * as BackgroundService from "./background-service"
 
 const RegisteredService = Schema.Struct({ version: Schema.optional(Schema.String) })
+
+/**
+ * This client's own managed-service port.
+ *
+ * The engine derives a channel-wide default (0x70DE on Windows), which is exactly what another
+ * OpenCode install on the same machine already holds. A separate product gets a separate port,
+ * stable for this application id and overridable for tests or unusual setups.
+ */
+function servicePort() {
+  const override = Number(process.env.OLIVIACODE_SERVICE_PORT)
+
+  if (Number.isInteger(override) && override > 0 && override < 65536) return override
+
+  let hash = 0
+
+  for (const char of APP_ID) hash = (hash * 31 + char.charCodeAt(0)) % 4096
+
+  return 0x7000 | hash
+}
 
 export interface Interface {
   readonly connection: Effect.Effect<SidecarCredentials.Data>
@@ -68,7 +87,9 @@ const ensure = Effect.fn("BackgroundService.ensure")(function* (mode: Background
         ...setup.cli.command,
         "serve",
         "--service",
-        ...(setup.isolated ? ["--hostname", "0.0.0.0", "--port", String(0x0c0c)] : []),
+        ...(setup.isolated
+          ? ["--hostname", "0.0.0.0", "--port", String(0x0c0c)]
+          : ["--port", String(servicePort())]),
       ],
       onStart: (reason, previousVersion) =>
         runFork(Effect.logInfo("v2 CLI background service starting", { reason, previousVersion })),

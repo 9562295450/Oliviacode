@@ -5,8 +5,8 @@
     "addon entries without editing anything else. Add entries here yourself, or load a",
     "community registry by URL from the provider picker.",
     "Nothing in this file is required for the app to work. Delete it and the addon block",
-    "disappears. Each entry fills one field only: provider.<id>.options.baseURL in",
-    "~/.config/opencode/opencode.json. Never put a credential in this file.",
+    "disappears. Each entry fills one field only: provider.<id>.options.baseURL in this app's",
+    "isolated engine config under its user data directory. Never put a credential in this file.",
     "See PRESETS.md."
   ],
   "version": 1,

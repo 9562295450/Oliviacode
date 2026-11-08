@@ -94,10 +94,11 @@ export type ElectronAPI = {
   infiniteSetSettings(next: InfiniteSettings): Promise<void>
   presetFetch(url: string): Promise<PresetRegistryResult>
   presetList(): Promise<ProviderAddon[]>
+  presetStarter(): Promise<ProviderAddon[]>
   presetApply(id: string): Promise<{ ok: boolean; path: string; error?: string }>
 }
 
-/** An entry from a local template file or a community registry. Never carries a credential. */
+/** An entry from a template file or a community registry. Never carries a credential. */
 export type ProviderAddon = {
   id: string
   label: string
@@ -105,7 +106,7 @@ export type ProviderAddon = {
   provider: string
   baseURL: string
   docsURL?: string
-  origin: "local" | "community"
+  origin: "local" | "starter" | "community"
 }
 
 export type PresetRegistryResult = {

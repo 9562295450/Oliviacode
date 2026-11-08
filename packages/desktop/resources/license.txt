@@ -1,4 +1,4 @@
-OLIVIACODE — LICENCE AND NOTICES
+OLIVIACODE - LICENCE AND NOTICES
 
 Oliviacode is an open-source network client. It is not affiliated with OpenCode. The default
 presets are community-provided and users are responsible for complying with the Terms of
@@ -42,7 +42,7 @@ SOFTWARE.
 THIRD-PARTY COMPONENTS
 
 This application bundles Chromium and Electron (MIT), together with the npm dependencies
-listed in the application's About → Third-party notices dialog. Those licences continue to
+listed in the application's About > Third-party notices dialog. Those licences continue to
 apply. The bundled CLI engine is published by the upstream project and is redistributed
 unmodified; its version is recorded in resources/opencode-cli.version.
 

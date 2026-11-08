@@ -34,6 +34,7 @@ import { DialogCommunityAddons } from "./community"
 import { BRAND } from "@/runtime/brand"
 import { authServerName, RemoteAuthNotice } from "./remote"
 import { providerAccounts } from "@/settings/providers/accounts"
+import { refreshProviderAddons } from "@/providers/catalog/addons"
 import { AccountNameInput } from "@/settings/providers/account-name"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Menu } from "@opencode/ui/menu"
@@ -242,6 +243,7 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
   const dialog = useDialog()
 
   const [presets, setPresets] = createSignal<PresetInfo[]>([])
+  const [starter, setStarter] = createSignal<PresetInfo[]>([])
   const [presetNotice, setPresetNotice] = createSignal<string>()
   const [applying, setApplying] = createSignal<string>()
 
@@ -252,9 +254,45 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
       .then(setPresets)
       .catch(() => undefined)
 
+  // The starter template is offered here and installed only when the user presses one.
+  const loadStarter = () =>
+    platform.presets
+      ?.starter()
+      .then(setStarter)
+      .catch(() => undefined)
+
   onMount(() => {
     void loadPresets()
+    void loadStarter()
   })
+
+  const opencodeAddon = createMemo(() => starter().find((entry) => entry.provider === "opencode"))
+
+  const addOpencode = async () => {
+    const addon = opencodeAddon()
+
+    if (!addon || !platform.presets || applying()) return
+
+    setApplying(addon.id)
+
+    try {
+      const result = await platform.presets.apply(addon.id)
+
+      if (!result.ok) {
+        setPresetNotice(language.t("dialog.provider.addons.failed", { error: result.error ?? "" }))
+        return
+      }
+
+      setPresetNotice(language.t("dialog.provider.community.added"))
+      refreshProviderAddons()
+      void loadPresets()
+      await integrations.refresh()
+    } catch (error) {
+      setPresetNotice(language.t("dialog.provider.addons.failed", { error: String(error) }))
+    } finally {
+      setApplying(undefined)
+    }
+  }
 
   const openCommunity = () => {
     props.onPrepare?.()
@@ -283,7 +321,10 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
       )
 
       // The provider block changed on disk; the catalogue has to re-read it before the row shows it.
-      if (result.ok) await integrations.refresh()
+      if (result.ok) {
+        refreshProviderAddons()
+        await integrations.refresh()
+      }
     } catch (error) {
       setPresetNotice(language.t("dialog.provider.addons.failed", { error: String(error) }))
     } finally {
@@ -299,12 +340,22 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
   })
 
   // MCP servers are connected and managed from the MCP dialog, not here.
+  //
+  // Only providers the user brought in are listed: one they added as an add-on, or one holding a
+  // credential they entered here. The engine's keyless catalogue and anything it detected from the
+  // environment stays hidden, so a fresh install lists nothing and no third-party key shows up.
+  const supplied = createMemo(() => new Set(presets().map((entry) => entry.provider)))
+
   const all = createMemo(() => {
     const query = store.filter.trim().toLowerCase()
 
     return integrations
       .list()
       .filter((row) => row.metadata?.source !== "mcp")
+      .filter(
+        (row) =>
+          supplied().has(row.id) || row.connections.some((connection) => connection.type === "credential"),
+      )
       .filter((row) => !query || `${row.id} ${row.name}`.toLowerCase().includes(query))
   })
 
@@ -389,45 +440,75 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
         />
       </div>
       <div class="shrink-0 px-2 pb-1">
-        <div class="rounded-md border border-v2-border-border-base bg-v2-background-bg-layer-02 p-2">
-          <div class="flex items-baseline justify-between gap-2 px-1.5 pb-1">
-            <span class="text-[12px] font-[440] leading-[18px] tracking-[0.05px] text-v2-text-text-faint">
-              {language.t("dialog.provider.addons")}
+        <div class="flex flex-col gap-2 rounded-md border border-v2-border-border-base bg-v2-background-bg-layer-02 p-2.5">
+          <div class="flex flex-col gap-0.5 px-0.5">
+            <span class="text-[13px] font-[530] leading-[18px] text-v2-text-text-base">
+              {language.t("dialog.provider.community")}
             </span>
-            <button
-              type="button"
-              data-action="provider-addons-open"
-              class="shrink-0 rounded-sm text-[12px] font-[440] leading-[18px] text-v2-text-text-muted underline-offset-2 hover:text-v2-text-text-base hover:underline focus-visible:text-v2-text-text-base focus-visible:outline-none"
-              onClick={openCommunity}
-            >
-              {language.t("dialog.provider.addons.open")}
-            </button>
+            <span class="text-[12px] leading-4 text-v2-text-text-muted">
+              {language.t("dialog.provider.community.description")}
+            </span>
           </div>
-          <Show when={presets().length > 0}>
-            <For each={presets()}>
-              {(preset) => (
-                <button
-                  type="button"
-                  class="flex w-full items-baseline gap-2 rounded px-1.5 py-1 text-left text-[13px] text-v2-text-text-base hover:bg-v2-background-bg-layer-03 disabled:opacity-60"
-                  disabled={applying() === preset.id}
-                  onClick={() => void applyPreset(preset)}
+          <div class="flex flex-wrap items-center gap-1.5">
+            <Show when={opencodeAddon()}>
+              {(addon) => (
+                <Button
+                  variant="contrast"
+                  data-action="provider-add-opencode"
+                  disabled={applying() === addon().id}
+                  aria-busy={applying() === addon().id}
+                  onClick={() => void addOpencode()}
                 >
-                  <span aria-hidden="true">⚡</span>
-                  <span class="font-medium">{preset.label}</span>
-                  <span class="truncate text-[12px] text-v2-text-text-muted">{preset.baseURL}</span>
-                </button>
+                  {applying() === addon().id
+                    ? language.t("dialog.provider.community.adding")
+                    : language.t("dialog.provider.community.opencode")}
+                </Button>
               )}
-            </For>
+            </Show>
+            <Button variant="neutral" data-action="provider-addons-open" onClick={openCommunity}>
+              {language.t("dialog.provider.community.browse")}
+            </Button>
+          </div>
+          <Show when={opencodeAddon()}>
+            <span class="px-0.5 text-[11px] leading-4 text-v2-text-text-faint">
+              {language.t("dialog.provider.community.opencodeHint")}
+            </span>
+          </Show>
+          <Show when={presets().length > 0}>
+            <div class="flex flex-col gap-0.5 border-t border-v2-border-border-base pt-1.5">
+              <span class="px-1.5 pb-0.5 text-[11px] font-[440] uppercase leading-4 tracking-[0.04px] text-v2-text-text-faint">
+                {language.t("dialog.provider.addons.installed")}
+              </span>
+              <For each={presets()}>
+                {(preset) => (
+                  <button
+                    type="button"
+                    class="flex w-full items-baseline gap-2 rounded px-1.5 py-1 text-left text-[13px] text-v2-text-text-base hover:bg-v2-background-bg-layer-03 disabled:opacity-60"
+                    disabled={applying() === preset.id}
+                    onClick={() => void applyPreset(preset)}
+                  >
+                    <span aria-hidden="true">⚡</span>
+                    <span class="font-medium">{preset.label}</span>
+                    <span class="truncate text-[12px] text-v2-text-text-muted">{preset.baseURL}</span>
+                  </button>
+                )}
+              </For>
+            </div>
           </Show>
           <Show when={presetNotice()}>
             {(notice) => (
-              <p class="px-1.5 pt-1 text-[12px] leading-4 text-v2-text-text-muted" role="status">
+              <p class="px-0.5 text-[12px] leading-4 text-v2-text-text-muted" role="status">
                 {notice()}
               </p>
             )}
           </Show>
         </div>
       </div>
+      <Show when={rows().length === 0}>
+        <p class="px-3 pt-2 text-[12px] leading-4 text-v2-text-text-faint">
+          {language.t("dialog.provider.community.empty")}
+        </p>
+      </Show>
       <div class="relative min-h-0 flex-1">
         <div class="flex size-full min-h-0 flex-col gap-0.5 overflow-y-auto pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <For each={groups()}>

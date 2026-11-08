@@ -125,10 +125,16 @@ const getBase = (appId: string): Configuration => {
         to: "",
         filter: ["opencode-cli", "opencode-cli.exe", "opencode-cli.version"],
       },
-      // Inert preset data the renderer offers as Quick Connect. Contains no credentials.
+      // Inert local preset data. Empty by default; entries are user-supplied.
       {
         from: "../../presets.json",
         to: "presets.json",
+      },
+      // Starter add-on template. Offered in the add-ons dialog; nothing is installed until the user
+      // presses Use, and the file contains URLs only.
+      {
+        from: "../../community-presets.json",
+        to: "community-presets.json",
       },
     ],
     afterPack: async (context) => {
@@ -212,7 +218,9 @@ const getBase = (appId: string): Configuration => {
       perMachine: false,
       allowElevation: true,
       allowToChangeInstallationDirectory: false,
-      createDesktopShortcut: true,
+      // "always" also recreates the icon after an update if the user removed the first one, so
+      // the app is never left without a way in from the desktop.
+      createDesktopShortcut: "always",
       createStartMenuShortcut: true,
       shortcutName: "Oliviacode",
       runAfterFinish: true,

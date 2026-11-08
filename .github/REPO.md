@@ -9,7 +9,7 @@ and versioned with the code instead of being typed once into a web form.
 > endpoint is bundled, and provider add-ons are community data you choose to load. Multi-lane
 > egress, session isolation, MIT licensed.
 
-That is 244 characters, inside GitHub's 350-character limit.
+That is 223 characters, inside GitHub's 350-character limit.
 
 ## About — website
 
@@ -64,8 +64,10 @@ credential. You connect an account, or you don't.
 
 ### What's in it
 - Generic client core. No provider domain is compiled into the app.
-- Provider add-ons are community data: a local `presets.json` you can edit, or a registry URL
-  you paste into **Add-ons → Load community add-ons**. Nothing is fetched until you press Load.
+- Provider add-ons are community data: a shipped starter template you install with one click,
+  your own installed entries, or a registry URL you paste into **Add-ons → Load community
+  add-ons**. Nothing is fetched until you press Load, and nothing is applied until you press
+  Use.
 - Multi-lane egress: Direct, WARP, Tor, proxy, with health checks and rotation.
 - Per-session workspace, model, and agent isolation.
 - Branded Windows installer: license page, desktop shortcut, launch after install.

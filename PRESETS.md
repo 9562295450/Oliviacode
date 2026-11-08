@@ -4,17 +4,20 @@ An add-on is inert JSON. It names a provider id that the engine's own catalogue 
 plus a base URL to point that provider at. It never carries a credential, never authenticates
 anything, and is never required for the app to work.
 
-Nothing in the client source contains a provider endpoint. There are exactly two sources of
-add-ons, and both are data the user controls:
+Nothing in the client source contains a provider endpoint. There are exactly four sources of
+add-ons, and every one is data the user controls:
 
 | Source | File / location | Ships with the app | Fetched |
 | --- | --- | --- | --- |
-| Local template | `presets.json` beside the binary | yes, empty of endpoints | no |
+| Local file | `presets.json` beside the binary | yes, empty | no |
+| Starter template | `community-presets.json` beside the binary | yes, inert until **Use** | no |
+| Installed add-ons | `community-addons.json` in the app's user data | no | no |
 | Community registry | any `http(s)` URL the user pastes | no | only on **Load** |
 
 ## What applying an add-on does
 
-Exactly one write, merged into `~/.config/opencode/opencode.json` (the engine's global config):
+Exactly one write, merged into the engine config owned by this app —
+`<userData>/engine/config/opencode/opencode.json` on Windows, Linux, and macOS alike:
 
 ```json
 {
@@ -33,18 +36,38 @@ list — the engine supplies models from its own catalogue.
 A `.jsonc` config containing comments or trailing commas is never rewritten; the app refuses
 and says so instead of destroying your comments.
 
-## Local template
+The engine runs with `XDG_DATA_HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, and `XDG_STATE_HOME`
+redirected into `<userData>/engine/`. A fresh profile therefore starts with an empty config,
+and the public client never reads or writes the config, history, or credential database of a
+separate OpenCode installation on the same machine. Credentials entered in this app stay in
+this app's engine profile.
 
-`presets.json` is a plain file next to the app:
+## Starter template
 
-- Delete it and the add-on block disappears. That is the only effect.
-- Edit it, empty it, or replace every entry with your own. The app re-reads it on next open.
-- It ships with `"presets": []` — no provider endpoints at all.
+`community-presets.json` ships beside the binary as an Electron extra resource. It is read
+only when you open **Add-ons**, and every entry is labelled `Template`:
+
+- Opening the dialog installs nothing. The engine config is untouched until you press **Use**.
+- **Use** copies the entry into `community-addons.json`, then applies it like any other add-on.
+  The copy is what survives a restart, and it is labelled `Community` from then on.
+- Delete `community-presets.json` and the Template entries disappear. That is the only effect.
+- Replace its contents with your own schema-valid entries to brand a build for a community.
+
+The shipped template contains one entry, `opencode`: a community pointer to the provider id
+`opencode` and its published gateway. It is a convenience button, not a default. A profile
+that never presses **Use** has no provider and no endpoint.
+
+## Local file
+
+`presets.json` ships beside the binary, empty, for entries you want to keep without a registry.
+Entries from it are labelled `Local`, win on an id collision, and are read on every dialog open.
+Delete the file and the Local rows disappear.
 
 ## Community registry
 
-Press **Load community add-ons** in the provider picker (or on the first-run hint), paste a
-URL, press **Load**. The client then:
+**Add-ons** always lists installed entries (`Community` origin), local entries (`Local`), and
+starter entries (`Template`) with no network access. Pasting a URL and pressing **Load
+community add-ons** adds registry entries:
 
 1. Accepts only `http:` and `https:` URLs.
 2. Aborts after 20 seconds.
@@ -52,13 +75,9 @@ URL, press **Load**. The client then:
 4. Validates the document against the schema below. Unknown keys are ignored.
 5. Caches the validated entries in `community-addons.json` under the app's user data
    directory, so the list survives a restart.
-6. Marks every entry with origin `community` in the UI. Local entries win on an id collision.
+6. Local entries win on an id collision; starter entries fill ids that are not already present.
 
-The placeholder URL compiled into the client is a gist that does not exist yet. Until it does,
-the Load button reports an HTTP error and nothing else happens. Replace
-`COMMUNITY_REGISTRY_URL` in `packages/app/src/providers/connect/community.tsx` with the hosted
-gist when it is live — or point the dialog at any registry of your own, which is the intended
-use.
+The URL field is optional and starts empty. Nothing is fetched at startup or on first launch.
 
 ### Format
 

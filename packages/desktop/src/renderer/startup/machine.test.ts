@@ -168,6 +168,51 @@ describe("desktop startup", () => {
     expect(selectStartupLocale(replay(mounted).state)).toBe("de")
   })
 
+  test("starts the hydration timer when the first-launch answer arrives after the sidecar", () => {
+    const fresh = start({ firstLaunch: undefined })
+    const result = replay(
+      [
+        { type: "theme.applied" },
+        { type: "sidecar.ready", data: sidecar },
+        { type: "locale.settled", locale: "de" },
+        { type: "plugin-servers.ready" },
+        { type: "first-launch.settled", pending: true },
+      ],
+      fresh.state,
+    )
+
+    expect(result.state.status).toBe("hydrating")
+    expect(result.effects.flat()).toContainEqual({
+      type: "start-timer",
+      timer: "hydration",
+      timeoutMs: HYDRATION_TIMEOUT_MS,
+    })
+  })
+
+  test("reveals the app when plugins never settle after the sidecar is known", () => {
+    const fresh = start({ firstLaunch: undefined })
+    const stalled = replay(
+      [
+        { type: "theme.applied" },
+        { type: "sidecar.ready", data: sidecar },
+        { type: "locale.settled", locale: "de" },
+        { type: "first-launch.settled", pending: true },
+      ],
+      fresh.state,
+    )
+
+    // Plugin inventory never settled: the window stays in booting, but the hydration timer still owns the wait.
+    expect(stalled.state.status).toBe("booting")
+    expect(stalled.effects.flat()).toContainEqual({
+      type: "start-timer",
+      timer: "hydration",
+      timeoutMs: HYDRATION_TIMEOUT_MS,
+    })
+
+    const revealed = replay([{ type: "hydration.timed-out" }], stalled.state)
+    expect(revealed.state.status).toBe("fading")
+  })
+
   test("onboards a fresh install on the new-session route", () => {
     const fresh = start({ firstLaunch: undefined })
 

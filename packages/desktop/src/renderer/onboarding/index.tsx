@@ -52,9 +52,10 @@ export function DesktopFirstLaunchOnboarding(props: {
       setState(next.state)
       // Each effect runs on its own, so one that throws cannot keep the rest from running.
       next.effects.forEach((effect) =>
-        Promise.try(() => run(effect)).catch((error) =>
-          console.error("[desktop-onboarding] effect failed", { effect: effect.type, error }),
-        ),
+        Promise.try(() => run(effect)).catch((error) => {
+          const detail = error instanceof Error ? (error.stack ?? error.message) : String(error)
+          console.error(`[desktop-onboarding] effect failed: ${effect.type}: ${detail}`)
+        }),
       )
     } finally {
       queue.shift()

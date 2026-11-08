@@ -1,4 +1,5 @@
 import http from "node:http"
+import path from "node:path"
 import { getCACertificates, setDefaultCACertificates } from "node:tls"
 import { app } from "electron"
 import { Effect, Path } from "effect"
@@ -53,6 +54,32 @@ export const preferApplicationEnvironment = Effect.gen(function* () {
       OPENCODE_CLIENT: "desktop",
     })
   })
+})
+
+/**
+ * Keeps the bundled engine's global state inside this app's own profile.
+ *
+ * The engine otherwise resolves its data, config and cache directories from the user's home and
+ * inherits whatever the official install left there — including its provider database and stored
+ * credentials. A separate client must start with nothing it did not create itself, so every XDG
+ * root is redirected to a sibling of userData. Tests and onboarding already choose their own roots
+ * and are left alone.
+ */
+export const isolateEngineEnvironment = Effect.sync(() => {
+  if (process.env.OPENCODE_TEST_ONBOARDING === "1" || process.env.OPENCODE_DESKTOP_TEST_ROOT) return
+
+  const root = path.join(app.getPath("userData"), "engine")
+
+  process.env.XDG_DATA_HOME = path.join(root, "data")
+  process.env.XDG_CONFIG_HOME = path.join(root, "config")
+  process.env.XDG_CACHE_HOME = path.join(root, "cache")
+  process.env.XDG_STATE_HOME = path.join(root, "state")
+
+  // These three override the XDG roots inside the engine. Inheriting any of them would let the shell
+  // that launched this app steer the engine at another installation's config, plugins, and credentials.
+  delete process.env.OPENCODE_CONFIG
+  delete process.env.OPENCODE_CONFIG_CONTENT
+  delete process.env.OPENCODE_CONFIG_DIR
 })
 
 export const prepareDesktop = Effect.gen(function* () {

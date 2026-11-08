@@ -5,6 +5,7 @@ import { Context, Effect, Layer } from "effect"
 import { DesktopLogging } from "../native/logging"
 import { marks } from "./marks"
 import {
+  isolateEngineEnvironment,
   loadProxyEnvironment,
   preferApplicationEnvironment,
   prepareApplicationEnvironment,
@@ -22,6 +23,7 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const logging = yield* DesktopLogging.Service
     yield* preferApplicationEnvironment
+    yield* isolateEngineEnvironment
     // System certificates, the proxy and the net log serve later network work; the first window and
     // its IPC port do not wait for them.
     yield* Effect.forkScoped(

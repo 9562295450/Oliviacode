@@ -103,5 +103,6 @@ export const api: ElectronAPI = {
   infiniteSetSettings: (next: InfiniteSettings) => invoke("InfiniteSetSettings", { settings: next }).then(() => undefined),
   presetFetch: (url: string) => invoke("PresetFetch", { url }).then(mutable),
   presetList: () => invoke("PresetList").then(mutable),
+  presetStarter: () => invoke("PresetStarter").then(mutable),
   presetApply: (id: string) => invoke("PresetApply", { id }),
 }

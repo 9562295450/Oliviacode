@@ -377,6 +377,9 @@ function themeNotified(state: StartupState) {
 }
 
 function activeTimer(state: StartupState): StartupTimer | undefined {
+  // The sidecar timer bounds the wait for a server that never reports. Once one is known, the hydration timer bounds
+  // everything else (first-launch answer, locale, plugin inventory) so a plugin that never finishes loading cannot
+  // hold the splash for the full sidecar budget.
   if (state.status === "booting") return state.sidecar ? "hydration" : "sidecar"
 
   if (state.status === "hydrating") return "hydration"

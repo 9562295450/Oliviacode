@@ -22,7 +22,7 @@ export const Preset = Schema.Struct({
 export type Preset = typeof Preset.Type
 
 /** Where an addon came from, so the UI can say it out loud. */
-export const AddonOrigin = Schema.Literals(["local", "community"])
+export const AddonOrigin = Schema.Literals(["local", "starter", "community"])
 
 export const Addon = Schema.Struct({
   id: Schema.String,
@@ -49,6 +49,14 @@ export const PresetFetch = Rpc.make("PresetFetch", {
 
 export const PresetList = Rpc.make("PresetList", { success: Schema.Array(Addon) })
 
+/**
+ * Entries from the shipped starter template.
+ *
+ * These are offered in the add-ons dialog only. They are not installed, they do not appear in the
+ * provider list, and nothing is written until the user presses one.
+ */
+export const PresetStarter = Rpc.make("PresetStarter", { success: Schema.Array(Addon) })
+
 export const PresetApply = Rpc.make("PresetApply", {
   payload: { id: Schema.String },
   success: Schema.Struct({
@@ -59,4 +67,4 @@ export const PresetApply = Rpc.make("PresetApply", {
   }),
 })
 
-export const PresetRpcs = RpcGroup.make(PresetFetch, PresetList, PresetApply)
+export const PresetRpcs = RpcGroup.make(PresetFetch, PresetList, PresetStarter, PresetApply)

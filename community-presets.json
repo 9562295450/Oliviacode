@@ -1,9 +1,9 @@
 {
   "_readme": [
-    "COMMUNITY REGISTRY TEMPLATE.",
-    "This file is data, not code. Oliviacode does not ship it, host it, or read it unless a user",
-    "pastes its URL into the add-ons dialog and presses Load. Keep the copy you host on a gist in",
-    "sync with this template.",
+    "STARTER TEMPLATE FOR COMMUNITY ADD-ONS.",
+    "This file is data, not code. The app reads it to populate the add-ons dialog and installs",
+    "nothing until the user presses Use on an entry. It is not a provider list and it is not",
+    "loaded on first run.",
     "Every entry points a provider id, already known to the engine's own catalogue, at a base URL.",
     "An entry never contains a credential and is not an endorsement, a partnership, or a permission.",
     "Whoever connects an account is responsible for that service's terms, quotas, and usage rules.",

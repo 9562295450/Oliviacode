@@ -3,20 +3,19 @@ import { Icon } from "@opencode/ui/icon"
 import { Dialog, DialogBody, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { TextInput } from "@opencode/ui/text-input"
 import { useDialog } from "@opencode/ui/context/dialog"
-import { createSignal, For, Show } from "solid-js"
+import { createSignal, For, onMount, Show } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform, type PresetInfo } from "@/runtime/platform/platform"
 import { ExternalLink } from "@/runtime/platform/external-link"
+import { refreshProviderAddons } from "@/providers/catalog/addons"
 
 /**
- * Shipped placeholder for the community registry.
+ * Add-ons dialog.
  *
- * This is deliberately not a provider endpoint: it is the location of a JSON file that a user
- * chooses to load. Swap it for the hosted gist once one exists; nothing else in the app points
- * at a provider.
+ * Entries come from three places: the shipped starter template, the installed add-on cache, and a
+ * registry URL the user chooses to load. Nothing is installed until the user presses Use, and the
+ * only write is a provider base URL.
  */
-export const COMMUNITY_REGISTRY_URL =
-  "https://gist.githubusercontent.com/Oliviacode/community-presets/raw/community-presets.json"
 
 const REGISTRY_FORMAT_URL = "https://github.com/Oliviacode/Oliviacode/blob/main/PRESETS.md"
 
@@ -31,16 +30,33 @@ export function DialogCommunityAddons(props: { onApplied?: () => void }) {
   const language = useLanguage()
   const platform = usePlatform()
 
-  const [url, setUrl] = createSignal(COMMUNITY_REGISTRY_URL)
+  const [url, setUrl] = createSignal("")
   const [loading, setLoading] = createSignal(false)
   const [addons, setAddons] = createSignal<PresetInfo[]>()
   const [notice, setNotice] = createSignal<{ kind: "error" | "ok"; text: string }>()
   const [applying, setApplying] = createSignal<string>()
 
+  // Installed entries plus the starter template, so the dialog is useful with no network at all.
+  const loadKnown = async () => {
+    if (!platform.presets) return
+
+    const [installed, starter] = await Promise.all([
+      platform.presets.list().catch(() => []),
+      platform.presets.starter().catch(() => []),
+    ])
+    const known = new Set(installed.map((entry) => entry.id))
+
+    setAddons([...installed, ...starter.filter((entry) => !known.has(entry.id))])
+  }
+
+  onMount(() => {
+    void loadKnown()
+  })
+
   const load = async (event: SubmitEvent) => {
     event.preventDefault()
 
-    if (!platform.presets || loading()) return
+    if (!platform.presets || loading() || !url().trim()) return
 
     setLoading(true)
     setNotice(undefined)
@@ -49,12 +65,12 @@ export function DialogCommunityAddons(props: { onApplied?: () => void }) {
       const result = await platform.presets.fetch(url().trim())
 
       if (!result.ok) {
-        setAddons(undefined)
         setNotice({ kind: "error", text: result.error ?? "Registry could not be read." })
         return
       }
 
-      setAddons(result.addons)
+      const known = new Set((addons() ?? []).map((entry) => entry.id))
+      setAddons([...(addons() ?? []), ...result.addons.filter((entry) => !known.has(entry.id))])
 
       if (result.addons.length === 0) setNotice({ kind: "error", text: language.t("dialog.provider.addons.empty") })
     } catch (error) {
@@ -78,6 +94,8 @@ export function DialogCommunityAddons(props: { onApplied?: () => void }) {
       }
 
       setNotice({ kind: "ok", text: language.t("dialog.provider.addons.applied", { path: result.path }) })
+      refreshProviderAddons()
+      await loadKnown()
       props.onApplied?.()
     } catch (error) {
       setNotice({ kind: "error", text: language.t("dialog.provider.addons.failed", { error: String(error) }) })
@@ -152,7 +170,9 @@ export function DialogCommunityAddons(props: { onApplied?: () => void }) {
                             <span class="shrink-0 rounded-sm border border-v2-border-border-base px-1 text-[10px] font-[530] uppercase leading-4 tracking-[0.04px] text-v2-text-text-faint">
                               {addon.origin === "community"
                                 ? language.t("dialog.provider.addons.origin.community")
-                                : language.t("dialog.provider.addons.origin.local")}
+                                : addon.origin === "starter"
+                                  ? language.t("dialog.provider.addons.origin.starter")
+                                  : language.t("dialog.provider.addons.origin.local")}
                             </span>
                           </span>
                           <span class="truncate text-[12px] leading-4 text-v2-text-text-muted">

@@ -12,6 +12,7 @@ export function createPresetPlatform(api: ElectronAPI): PresetPlatform {
   return {
     fetch: (url) => api.presetFetch(url),
     list: () => api.presetList(),
+    starter: () => api.presetStarter(),
     apply: (id) => api.presetApply(id),
   }
 }

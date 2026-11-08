@@ -153,7 +153,7 @@ export type PresetInfo = {
   provider: string
   baseURL: string
   docsURL?: string
-  origin?: "local" | "community"
+  origin?: "local" | "starter" | "community"
 }
 
 export type PresetRegistry = {
@@ -166,8 +166,10 @@ export type PresetRegistry = {
 export type PresetPlatform = {
   /** Fetch a community registry by URL. Only ever called from an explicit user action. */
   fetch(url: string): Promise<PresetRegistry>
-  /** Entries known locally, from the user-editable template beside the app. */
+  /** Installed entries: the local template plus anything the user applied from a registry. */
   list(): Promise<PresetInfo[]>
+  /** Entries in the shipped starter template. Offered, never installed on their own. */
+  starter(): Promise<PresetInfo[]>
   apply(id: string): Promise<{ ok: boolean; path: string; error?: string }>
 }
 

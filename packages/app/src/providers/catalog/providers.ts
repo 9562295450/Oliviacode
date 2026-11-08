@@ -8,6 +8,7 @@ import { createEffect, createMemo, type Accessor } from "solid-js"
 import type { ProviderListResponse } from "@/runtime/server/types"
 import { useIntegrations } from "./integrations"
 import { popularProviders } from "./order"
+import { useProviderAddons } from "./addons"
 
 export { popularProviders } from "./order"
 
@@ -42,6 +43,8 @@ export function useProviders(directory: Accessor<string | undefined>) {
   })
   const integrations = useIntegrations(directory)
 
+  const addons = useProviderAddons()
+
   const providers = createMemo(() => {
     const ref = location()
     const provider = data.location.provider.list(ref)
@@ -52,6 +55,34 @@ export function useProviders(directory: Accessor<string | undefined>) {
     return normalizeProviderList(provider, model)
   })
 
+  // A provider is visible only when the user supplied it here: either an add-on names it, or it
+  // holds a credential typed into this app. The engine's keyless catalogue, and anything it merely
+  // detected from the environment, is not a provider the user chose, so a fresh install lists
+  // nothing at all.
+  const credentialProviders = createMemo(
+    () =>
+      new Set(
+        integrations
+          .list()
+          .filter((integration) => integration.connections.some((connection) => connection.type === "credential"))
+          .map((integration) => integration.id),
+      ),
+  )
+
+  const supplied = createMemo(() => {
+    const listed = addons()
+    const credentials = credentialProviders()
+    const visible = (id: string) => listed.has(id) || credentials.has(id)
+
+    const all = new Map([...providers().all].filter(([id]) => visible(id)))
+
+    return {
+      all,
+      connected: providers().connected.filter((id) => all.has(id)),
+      default: providers().default,
+    } satisfies ProviderListResponse
+  })
+
   const ready = () => {
     const ref = location()
 
@@ -60,20 +91,21 @@ export function useProviders(directory: Accessor<string | undefined>) {
 
   return {
     ready,
-    all: () => providers().all,
-    default: () => providers().default,
+    all: () => supplied().all,
+    default: () => supplied().default,
     // V2 servers list only available providers, so the connectable catalog
     // comes from the integration list, with the provider catalog as fallback.
+    // Only providers the user supplied are offered; the catalogue alone lists nothing.
     popular: () => {
       const catalog = integrations
         .list()
-        .filter((integration) => popularProviderSet.has(integration.id))
+        .filter((integration) => popularProviderSet.has(integration.id) && supplied().all.has(integration.id))
         .map((integration) => ({ id: integration.id, name: integration.name }))
 
       const seen = new Set(catalog.map((integration) => integration.id))
 
       return pipe(
-        providers().all,
+        supplied().all,
         Iterable.map(([, p]) => p),
         Iterable.filter((p) => popularProviderSet.has(p.id) && !seen.has(p.id)),
         Iterable.map((p) => ({ id: p.id, name: p.name })),
@@ -81,25 +113,21 @@ export function useProviders(directory: Accessor<string | undefined>) {
       )
     },
     connected: () => {
-      const connected = new Set(providers().connected)
+      const connected = new Set(supplied().connected)
 
       return pipe(
-        providers().all,
+        supplied().all,
         Iterable.map(([, p]) => p),
         Iterable.filter((p) => connected.has(p.id)),
         (v) => Array.from(v),
       )
     },
-    // Any stored or detected connection, or a provider with models beyond the keyless OpenCode catalog.
-    // Undefined until both catalogs load, so callers never mistake loading for a first run.
+    // A real connection the user made here: a credential they entered in this app. An add-on only
+    // points a base URL somewhere, and environment detection is not a connection at all.
     anyConnection: () => {
       if (!integrations.ready() || !ready()) return undefined
 
-      if (integrations.list().some((integration) => integration.connections.length > 0)) return true
-
-      return providers().connected.some(
-        (id) => id !== "opencode" && Object.keys(providers().all.get(id)?.models ?? {}).length > 0,
-      )
+      return credentialProviders().size > 0
     },
     paid: () => {
       const connected = new Set(providers().connected)

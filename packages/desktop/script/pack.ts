@@ -28,7 +28,9 @@ process.chdir(dir)
 
 await rm("dist", { recursive: true, force: true })
 
-await rm(out, { recursive: true, force: true })
+// The installer pass takes an already packed app as its input, so it must not delete the
+// directory that input lives in. Only a fresh pack clears the output tree.
+if (!app) await rm(out, { recursive: true, force: true })
 
 await mkdir(out, { recursive: true })
 

@@ -1,8 +1,9 @@
 import { OwlSplash } from "@opencode/ui/logo"
-import { Wordmark } from "@opencode/ui/wordmark"
 import type { Platform } from "@opencode/app/desktop"
 import { onCleanup, onMount, Show } from "solid-js"
 import "./splash.css"
+
+const FIRST_LAUNCH_DRAW_MS = 900
 
 export function LoadingSplash(props: {
   deep: boolean
@@ -14,24 +15,19 @@ export function LoadingSplash(props: {
 }) {
   onMount(() => {
     if (!props.drawingPaused) return
+
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)")
+    props.onDrawStart()
 
-    const start = () => {
-      if (document.visibilityState !== "visible" || !document.hasFocus()) return
-      props.onDrawStart()
-
-      if (motion.matches) props.onDrawEnd()
+    if (motion.matches) {
+      props.onDrawEnd()
+      return
     }
 
-    window.addEventListener("focus", start)
-    document.addEventListener("visibilitychange", start)
-    motion.addEventListener("change", start)
-    start()
-    onCleanup(() => {
-      window.removeEventListener("focus", start)
-      document.removeEventListener("visibilitychange", start)
-      motion.removeEventListener("change", start)
-    })
+    // The reveal is a fixed-length sequence. The timer owns the end so the splash
+    // cannot strand startup on a focus or animation event that never fires.
+    const timer = window.setTimeout(() => props.onDrawEnd(), FIRST_LAUNCH_DRAW_MS)
+    onCleanup(() => window.clearTimeout(timer))
   })
 
   const titlebarHeight = () => {
@@ -74,20 +70,11 @@ export function LoadingSplash(props: {
           "padding-block-end": "8px",
           "padding-inline": "32px",
         }}
-        onAnimationEnd={(event) => {
-          if (event.animationName === "first-launch-wordmark-draw") props.onDrawEnd()
-        }}
       >
         <div class="relative size-full">
-          <div class="absolute inset-x-0 top-[25.375%]">
-            <div class="mx-auto w-full max-w-[720px]">
-              <Wordmark
-                outline
-                fade={false}
-                muted={false}
-                class="mx-auto block h-auto w-4/5 text-v2-icon-icon-faint opacity-50"
-              />
-            </div>
+          <div class="first-launch-brand">
+            <span class="first-launch-brand-word">oliviacode</span>
+            <span class="first-launch-brand-rule" />
           </div>
         </div>
       </div>

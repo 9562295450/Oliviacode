@@ -1,0 +1,84 @@
+name: publish-windows
+
+# Builds the Windows installer on a clean runner and attaches it to a GitHub release.
+# Tag a commit and push the tag:
+#   git tag v2.2.5 && git push origin v2.2.5
+# The workflow uses the repo-scoped GITHUB_TOKEN, so no personal token is stored anywhere.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, without the leading v (tag must already exist)"
+        required: true
+        type: string
+
+concurrency:
+  group: publish-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    if: github.repository == 'Oliviacode/Oliviacode'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CI: "1"
+      # The public installer is the prod channel: appId ai.oliviacode.desktop, productName
+      # Oliviacode, no ".dev" suffix in Add/Remove Programs.
+      OPENCODE_CHANNEL: "prod"
+      # electron-builder reads this for the GitHub release feed; the fork itself stays feed-less.
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        working-directory: packages/desktop
+        run: bun run build
+
+      - name: Pack unpacked app
+        working-directory: packages/desktop
+        run: bun run pack
+
+      - name: Pack NSIS installer
+        working-directory: packages/desktop
+        shell: pwsh
+        run: |
+          $app = (Resolve-Path "../../dist/desktop/app").Path
+          $env:OPENCODE_DESKTOP_APP = $app
+          bun run pack
+
+      - name: Checksums
+        shell: pwsh
+        run: |
+          $version = if ("${{ inputs.version }}") { "${{ inputs.version }}" } else { "${{ github.ref_name }}".TrimStart("v") }
+          $setup = Get-ChildItem "dist/desktop/Oliviacode-Setup-*.exe" | Select-Object -First 1
+          if (-not $setup) { throw "no installer produced" }
+          $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($setup.Name)" | Set-Content "dist/desktop/SHA256SUMS.txt" -Encoding ascii
+          "version=$version" | Out-File -Append $env:GITHUB_OUTPUT
+          "setup=$($setup.FullName)" | Out-File -Append $env:GITHUB_OUTPUT
+        id: artifact
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', inputs.version) }}
+        run: |
+          $notes = ".github/RELEASE_NOTES.md"
+          gh release view $env:TAG 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:TAG --target main --title "Oliviacode $($env:TAG.TrimStart('v'))" --notes-file $notes
+          }
+          gh release upload $env:TAG "${{ steps.artifact.outputs.setup }}" "dist/desktop/SHA256SUMS.txt" --clobber
