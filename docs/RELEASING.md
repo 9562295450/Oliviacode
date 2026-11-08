@@ -7,10 +7,13 @@ Two routes, both end with the installer attached to a GitHub release. Pick one.
 The machine needs `git`, PowerShell, and a fine-grained token once. The token is passed to git as
 a one-shot HTTP header; it is never written to `.git/config`, the remote URL, or a file.
 
-1. Create a fine-grained token: <https://github.com/settings/tokens?type=beta>
-   - Repository access: **9562295450/Oliviacode**
-   - Permissions: **Contents: Read and write**, **Administration: Read and write** (the second
-     one is only for the About box: description, homepage, topics)
+1. Create a classic token with `repo` and `workflow` scopes:
+   <https://github.com/settings/tokens/new?scopes=repo,workflow&description=Oliviacode-release>
+   - `repo` covers contents, releases, and the About box.
+   - `workflow` is required because the repository contains `.github/workflows/*`; GitHub
+     rejects any push that adds or edits those files without it.
+   - Fine-grained tokens work too: **Contents: Read and write**, **Administration: Read and
+     write**, **Workflows: Read and write**.
 2. Build:
 
    ```powershell
@@ -60,6 +63,10 @@ Or run **Actions -> publish-windows -> Run workflow** with the version, after th
 
 The workflow builds, packs the unpacked app, packs the NSIS installer, writes `SHA256SUMS.txt`,
 creates the release when it is missing, and uploads with `--clobber` so a re-run is safe.
+
+A tag pushed in the same operation as the repository's very first branch push may not trigger a
+run, because the default branch had not been indexed yet. If the Actions tab shows no run, use
+**Run workflow** once with the same version; later tags trigger automatically.
 
 ## What the installer does
 

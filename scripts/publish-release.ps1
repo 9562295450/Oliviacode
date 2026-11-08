@@ -1,6 +1,6 @@
 # Publishes the built Windows installer and repository metadata to GitHub.
 #
-#   $env:GH_TOKEN = "github_pat_..."      # fine-grained token, Contents: Read and write
+#   $env:GH_TOKEN = "github_pat_..."      # repo + workflow scope, or fine-grained equivalents
 #   pwsh -File scripts/publish-release.ps1 -Version 2.2.5
 #
 # The token is passed to git as a one-shot HTTP header. It is never written to .git/config,
