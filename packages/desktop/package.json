@@ -1,7 +1,7 @@
 {
   "name": "@opencode/desktop",
   "private": true,
-  "version": "2.2.7",
+  "version": "2.2.8",
   "description": "Oliviacode - a privacy-focused desktop AI client",
   "type": "module",
   "license": "MIT",
