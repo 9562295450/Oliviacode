@@ -21,11 +21,11 @@ see the platform notes below.
 
 ### Verify before you run
 - `SHA256SUMS.txt` carries the SHA-256 for every artifact in this release.
-- VirusTotal scanned the 2.2.7 application executable (`Oliviacode.exe`, the file the installer
-  writes) with **0/68 detections**:
-  [report](https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d),
-  SHA-256 `3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d`, scanned 9 November
-  2026. The installer itself is not uploaded; its hash is in `SHA256SUMS.txt`.
+- VirusTotal scanned the 2.2.7 installer with **0/50 detections**:
+  [report](https://www.virustotal.com/gui/file/4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a),
+  SHA-256 `4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a`, scanned 9 November
+  2026. The application binary inside it was also scanned clean, **0/68**, at SHA-256
+  `3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d`.
 - The Windows installer is unsigned. SmartScreen asks you to confirm the publisher; check the
   hash against this release before you do.
 

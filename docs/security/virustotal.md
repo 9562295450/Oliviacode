@@ -3,29 +3,30 @@
 A VirusTotal report is evidence, not a badge you paste on and hope nobody checks. This page
 exists so the evidence is easy to verify and easy to replace when a release is published.
 
-**Current status:** the 2.2.7 application executable has been scanned — **0 of 68 engines
-flagged it**. The installer itself has not been uploaded, and its hash is published below; the
-scanned binary is the exact `Oliviacode.exe` that the installer writes to disk.
+**Current status:** both the 2.2.7 installer and the application executable it writes have been
+scanned, and neither was flagged — **installer 0/50**, **application binary 0/68**.
 
 ```
-file    Oliviacode.exe  (packaged application binary)
+file    Oliviacode-Setup-2.2.7.exe  (installer)
+sha256  4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a
+size    257,940,413 bytes
+result  0/50 engines, scanned 9 November 2026
+report  https://www.virustotal.com/gui/file/4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a
+```
+
+```
+file    Oliviacode.exe  (application binary inside the installer)
 sha256  3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d
 size    246,924,288 bytes
 result  0/68 engines, scanned 9 November 2026
 report  https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d
 ```
 
-```
-file    Oliviacode-Setup-2.2.7.exe  (installer, not uploaded)
-sha256  4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a
-size    257,940,413 bytes
-```
+[![VirusTotal report](./virustotal-badge.svg)](https://www.virustotal.com/gui/file/4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a)
 
-[![VirusTotal report](./virustotal-badge.svg)](https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d)
-
-The report hash and the installer hash are different files on purpose: the installer is an NSIS
-container and the executable is one file inside it. `SHA256SUMS.txt` lists the installer and the
-other release artifacts; the hash above identifies the application binary that actually runs.
+The two hashes are different files on purpose: the installer is an NSIS container, and the
+executable is one file inside it. `SHA256SUMS.txt` lists the installer and the other release
+artifacts; the second hash identifies the application binary that actually runs.
 
 ## Verify a download yourself
 

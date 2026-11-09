@@ -50,8 +50,8 @@ Grab the installer from [Releases](https://github.com/9562295450/Oliviacode/rele
 
 The Windows build is unsigned. SmartScreen may ask you to confirm the publisher; the release
 attaches `SHA256SUMS.txt` so you can check the file you downloaded instead of trusting the
-filename. The 2.2.7 application binary inside the installer is scanned and clean (0/68); the
-report and both hashes are in [docs/security/virustotal.md](./docs/security/virustotal.md).
+filename. The 2.2.7 installer is scanned and clean (0/50), as is the application binary inside it
+(0/68); both reports and hashes are in [docs/security/virustotal.md](./docs/security/virustotal.md).
 
 ## Run from source
 
@@ -159,14 +159,14 @@ endpoint.
 
 ## Security
 
-[![VirusTotal report](./docs/security/virustotal-badge.svg)](https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d)
+[![VirusTotal report](./docs/security/virustotal-badge.svg)](https://www.virustotal.com/gui/file/4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a)
 
 - Every release publishes `SHA256SUMS.txt`; check a download with
   `Get-FileHash .\Oliviacode-Setup-*.exe -Algorithm SHA256` (PowerShell) or
   `sha256sum Oliviacode-*.AppImage`.
-- The 2.2.7 application executable was scanned on VirusTotal with 0/68 detections; the report
-  and both hashes are in [docs/security/virustotal.md](./docs/security/virustotal.md). The
-  installer is verifiable through `SHA256SUMS.txt` and is not itself uploaded.
+- The 2.2.7 installer was scanned on VirusTotal with 0/50 detections, and the application binary
+  inside it with 0/68. Both reports and hashes are in
+  [docs/security/virustotal.md](./docs/security/virustotal.md).
 - The engine binary is fetched from the npm registry at build time and its version is pinned
   with `OLIVIACODE_CLI_VERSION`.
 
