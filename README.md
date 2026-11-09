@@ -50,9 +50,8 @@ Grab the installer from [Releases](https://github.com/9562295450/Oliviacode/rele
 
 The Windows build is unsigned. SmartScreen may ask you to confirm the publisher; the release
 attaches `SHA256SUMS.txt` so you can check the file you downloaded instead of trusting the
-filename. The VirusTotal report for each artifact is linked from
-[docs/security/virustotal.md](./docs/security/virustotal.md) once that exact binary has been
-scanned.
+filename. The 2.2.7 application binary inside the installer is scanned and clean (0/68); the
+report and both hashes are in [docs/security/virustotal.md](./docs/security/virustotal.md).
 
 ## Run from source
 
