@@ -160,14 +160,14 @@ endpoint.
 
 ## Security
 
-[![VirusTotal report](./docs/security/virustotal-badge.svg)](https://www.virustotal.com/gui/home/upload)
+[![VirusTotal report](./docs/security/virustotal-badge.svg)](https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d)
 
 - Every release publishes `SHA256SUMS.txt`; check a download with
   `Get-FileHash .\Oliviacode-Setup-*.exe -Algorithm SHA256` (PowerShell) or
   `sha256sum Oliviacode-*.AppImage`.
-- VirusTotal reports are linked from the release and from
-  [docs/security/virustotal.md](./docs/security/virustotal.md). The badge above is updated
-  with the report URL and detection count when a release is scanned; until then it says so.
+- The 2.2.7 application executable was scanned on VirusTotal with 0/68 detections; the report
+  and both hashes are in [docs/security/virustotal.md](./docs/security/virustotal.md). The
+  installer is verifiable through `SHA256SUMS.txt` and is not itself uploaded.
 - The engine binary is fetched from the npm registry at build time and its version is pinned
   with `OLIVIACODE_CLI_VERSION`.
 
