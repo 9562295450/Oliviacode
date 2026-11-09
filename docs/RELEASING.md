@@ -33,7 +33,7 @@ a one-shot HTTP header; it is never written to `.git/config`, the remote URL, or
 
    ```powershell
    $env:GH_TOKEN = "github_pat_..."
-   powershell -File scripts/publish-release.ps1 -Version 2.2.5
+   powershell -File scripts/publish-release.ps1 -Version 2.2.6
    ```
 
 The script commits the tree, pushes `main`, pushes the `v<version>` tag, updates the About box,
@@ -43,7 +43,7 @@ replaces same-named assets instead of failing.
 Verify the installer before publishing, on a disposable profile:
 
 ```powershell
-powershell -File scripts/verify-installer.ps1 -Version 2.2.5
+powershell -File scripts/verify-installer.ps1 -Version 2.2.6
 ```
 
 That installs silently, asserts `Desktop\Oliviacode.lnk` and the Start Menu entry exist and point
@@ -55,8 +55,8 @@ at the installed executable, then uninstalls and asserts both are gone.
 `GITHUB_TOKEN` does the publishing; no personal token is stored in the repo.
 
 ```powershell
-git tag v2.2.5
-git push origin v2.2.5
+git tag v2.2.6
+git push origin v2.2.6
 ```
 
 Or run **Actions -> publish-windows -> Run workflow** with the version, after the tag exists.

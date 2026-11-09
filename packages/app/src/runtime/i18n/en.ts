@@ -113,6 +113,8 @@ export const dict = {
   "command.session.redo.description": "Redo the last undone message",
   "command.session.compact": "Compact session",
   "command.session.compact.description": "Summarize the session to reduce context size",
+  "command.session.continue": "Continue in new session",
+  "command.session.continue.description": "Compact this session, then copy its full history into a new one",
   "command.session.fork": "Fork from message",
   "command.session.fork.description": "Create a new session from a previous message",
   "command.session.export": "Export session",
@@ -1395,6 +1397,24 @@ export const dict = {
   "usage.signedOut.body": "Connect OpenCode Console to see your workspace's budgets and Go usage.",
   "usage.error": "Usage limits couldn't be loaded.",
   "usage.retry": "Try again",
+
+  "desktop.update.title": "Software updates",
+  "desktop.update.current": "Version {{version}}",
+  "desktop.update.check": "Check for updates",
+  "desktop.update.checking": "Checking…",
+  "desktop.update.available": "Update {{version}} available",
+  "desktop.update.downloading": "Downloading {{percent}}%",
+  "desktop.update.download": "Download",
+  "desktop.update.ready": "Update ready",
+  "desktop.update.restart": "Restart and install",
+  "desktop.update.later": "Later",
+  "desktop.update.failed": "Update check failed",
+  "desktop.update.releaseNotes": "Release notes",
+
+  "session.context.title": "{{percent}}% of the model's context window used",
+  "session.context.used": "{{used}} / {{limit}} context",
+  "session.context.compact": "Compact",
+  "session.context.continue": "New session",
 }
 
 export default dict

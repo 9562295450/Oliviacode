@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { Option, Schema } from "effect"
 
-// Pin the engine version for reproducible public builds: `OLIVIACODE_CLI_VERSION=2.2.5 bun run build`.
+// Pin the engine version for reproducible public builds: `OLIVIACODE_CLI_VERSION=2.2.6 bun run build`.
 // Unset keeps the upstream `dev` dist-tag used while developing against a local CLI.
 const CLI_VERSION = process.env.OLIVIACODE_CLI_VERSION?.trim() || "dev"
 

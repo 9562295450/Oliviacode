@@ -15,6 +15,7 @@ import { fileHandlers } from "./ipc-handlers/files"
 import { menuHandlers } from "./ipc-handlers/menu"
 import { presetHandlers } from "./ipc-handlers/presets"
 import { storageHandlers } from "./ipc-handlers/storage"
+import { updateHandlers } from "./ipc-handlers/updates"
 import { windowHandlers } from "./ipc-handlers/window"
 import { IpcPortHandoff, IpcServerProtocolLive } from "./ipc-transport"
 import { ApplicationLifecycle } from "./lifecycle"
@@ -38,6 +39,7 @@ const handlers = Layer.mergeAll(
   pluginHandlers,
   infiniteHandlers,
   presetHandlers,
+  updateHandlers,
 )
 
 export const layer = RpcServer.layer(DesktopRpcs, { disableFatalDefects: true }).pipe(

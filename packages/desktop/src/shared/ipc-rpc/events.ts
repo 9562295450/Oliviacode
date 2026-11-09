@@ -3,6 +3,7 @@ import { Schema } from "effect"
 import { Rpc, RpcGroup } from "effect/rpc"
 import { InfiniteState } from "./infinite"
 import { PluginInstalled, PluginMenubarItem, PluginPayload, PluginGuis } from "./plugins"
+import { UpdateStatus } from "./updates"
 
 export class DeepLinksOpened extends Schema.TaggedClass<DeepLinksOpened>()("DeepLinksOpened", {
   attempt: Schema.Number,
@@ -83,10 +84,17 @@ export class InfiniteChanged extends Schema.TaggedClass<InfiniteChanged>()("Infi
   state: InfiniteState,
 }) {}
 
+// The shell updater moved: a check started, a release was found, a download progressed, or an install is
+// ready. Sent whole, so a window opened mid-download draws the same pill every other window has.
+export class UpdateChanged extends Schema.TaggedClass<UpdateChanged>()("UpdateChanged", {
+  status: UpdateStatus,
+}) {}
+
 export const DesktopEvent = Schema.Union([
   DeepLinksOpened,
   SidecarChanged,
   InfiniteChanged,
+  UpdateChanged,
   MenuCommandTriggered,
   WindowFullscreenChanged,
   WindowFocusChanged,

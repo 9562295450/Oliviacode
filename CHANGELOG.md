@@ -2,6 +2,15 @@
 
 Release notes for OpenCode V2, newest first.
 
+## v2.2.6 — 2026-11-09
+
+### Highlights
+
+- **Context Meter in the Composer**: The bar above the prompt shows how much of the selected model's context window the session occupies, with `Compact` and `New session` beside it.
+- **Background Precompute on by Default**: Session summaries are prepared as the context nears the threshold, so automatic compaction swaps in a ready answer instead of pausing the turn to write one.
+- **Continue in New Session**: `/continue` compacts the session, then forks its full history into a new one, so long work carries on without the old turns' weight.
+- **In-app Updates**: The shell checks this repository's releases shortly after launch and every four hours, announces a new version, downloads it on request, and restarts into the installer. The bundled CLI engine keeps updating through OpenCode.
+
 ## v2.2.5 — 2026-10-30
 
 ### Highlights

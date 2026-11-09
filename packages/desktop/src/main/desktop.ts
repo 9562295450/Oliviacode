@@ -11,6 +11,7 @@ import { BackgroundService } from "./service/background-service"
 import { DesktopCli } from "./service/desktop-cli"
 import { marks } from "./lifecycle/marks"
 import { start as startEgress } from "./infinite/boot"
+import { startUpdater } from "./updater"
 
 // Everything above has been loaded and evaluated by now; the layers start below.
 marks.bundle = Date.now()
@@ -24,6 +25,9 @@ const runIpc = Effect.fn("Desktop.runIpc")(function* () {
   // The egress engine restores its lane and starts watching the sidecar's own log before the
   // first window asks for data, so a limit hit during startup is not missed.
   yield* Effect.forkScoped(startEgress)
+  // The shell updater starts after the IPC transport, so its first check can reach a window that is
+  // already listening. A build without a release feed reports `unsupported` and never polls.
+  yield* Effect.sync(startUpdater)
   // Main GUI plugins start with the window: servers they restore feed the first paint's server
   // list, and menu items they contribute are present at startup. Their heavy modules load lazily on
   // first use.

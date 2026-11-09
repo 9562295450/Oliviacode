@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { $ } from "bun"
-import { cp, mkdir, readdir, rm } from "node:fs/promises"
+import { createHash } from "node:crypto"
+import { cp, mkdir, readdir, rm, stat } from "node:fs/promises"
 import path from "node:path"
 import { getConfig } from "../electron-builder.config"
 import { getCurrentCli, resolveChannel } from "./utils"
@@ -42,6 +43,10 @@ if (app) {
 
   if (!setup) throw new Error("electron-builder produced no Oliviacode-Setup-*.exe")
   await cp(path.join("dist", setup), path.join(out, setup))
+  // The blockmap serves differential downloads; the feed carries the installer and latest.yml.
+  const blockmap = `${setup}.blockmap`
+  if ((await readdir("dist")).includes(blockmap)) await cp(path.join("dist", blockmap), path.join(out, blockmap))
+  await writeLatestYml(path.join(out, setup))
 }
 
 if (!app && os === "linux") {
@@ -86,5 +91,31 @@ async function writeUpdateConfig(resources: string) {
       `channel: ${publish.channel}`,
       `updaterCacheDirName: '${name.replace(/[/\\:*?"<>|]/g, "").toLowerCase()}-updater'`,
     ].join("\n") + "\n",
+  )
+}
+
+// electron-updater's generic provider fetches latest.yml before any download and verifies the installer
+// against it. electron-builder writes one only while publishing, and pack builds with --publish never,
+// so the feed entry is written here from the same bytes the release uploads.
+async function writeLatestYml(installer: string) {
+  const bytes = Buffer.from(await Bun.file(installer).arrayBuffer())
+  const sha512 = createHash("sha512").update(bytes).digest("base64")
+  const { size } = await stat(installer)
+  const version: string = (await Bun.file(path.join(dir, "package.json")).json()).version
+  const name = path.basename(installer)
+
+  await Bun.write(
+    path.join(out, "latest.yml"),
+    [
+      `version: ${version}`,
+      "files:",
+      `  - url: ${name}`,
+      `    sha512: ${sha512}`,
+      `    size: ${size}`,
+      `path: ${name}`,
+      `sha512: ${sha512}`,
+      `releaseDate: '${new Date().toISOString()}'`,
+      "",
+    ].join("\n"),
   )
 }

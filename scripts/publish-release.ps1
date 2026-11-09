@@ -1,13 +1,13 @@
 # Publishes the built Windows installer and repository metadata to GitHub.
 #
 #   $env:GH_TOKEN = "github_pat_..."      # repo + workflow scope, or fine-grained equivalents
-#   pwsh -File scripts/publish-release.ps1 -Version 2.2.5
+#   pwsh -File scripts/publish-release.ps1 -Version 2.2.6
 #
 # The token is passed to git as a one-shot HTTP header. It is never written to .git/config,
 # the remote URL, or the shell history.
 [CmdletBinding()]
 param(
-  [string]$Version = "2.2.5",
+  [string]$Version = "2.2.6",
   [string]$Token = $env:GH_TOKEN,
   [string]$Repo = "9562295450/Oliviacode",
   [switch]$SkipPush,
@@ -28,6 +28,20 @@ $assetName = Split-Path -Leaf $installer
 $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 $sums = Join-Path $root "dist/desktop/SHA256SUMS.txt"
 "$hash  $assetName" | Set-Content -Path $sums -Encoding ascii
+
+# electron-updater reads latest.yml before downloading; a release without it leaves every installed
+# copy on its current version with no error, so a missing feed is a hard stop.
+$feed = Join-Path $root "dist/desktop/latest.yml"
+if (-not (Test-Path $feed)) {
+  throw "Missing $feed. Re-run: `$env:OPENCODE_DESKTOP_APP='dist/desktop/app'; bun run pack"
+}
+$feedVersion = (Select-String -Path $feed -Pattern '^version: (.+)$').Matches[0].Groups[1].Value
+if ($feedVersion -ne $Version) { throw "latest.yml says $feedVersion, expected $Version" }
+
+$blockmap = "$installer.blockmap"
+if (-not (Test-Path $blockmap)) {
+  throw "Missing $blockmap. Re-run: `$env:OPENCODE_DESKTOP_APP='dist/desktop/app'; bun run pack"
+}
 Write-Host "artifact  $assetName"
 Write-Host "sha256    $hash"
 Write-Host "size      $([math]::Round((Get-Item $installer).Length / 1MB, 1)) MB"
@@ -121,4 +135,6 @@ function Publish-Asset([string]$Path) {
 
 Publish-Asset $installer
 Publish-Asset $sums
+Publish-Asset $feed
+Publish-Asset $blockmap
 Write-Host "done      https://github.com/$Repo/releases/tag/$tag"

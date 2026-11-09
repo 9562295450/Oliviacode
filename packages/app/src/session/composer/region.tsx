@@ -40,6 +40,7 @@ import { SessionQueuePanel } from "./queue-panel"
 import { SessionGoLimitTray } from "./go-limit-tray"
 import { SessionActivityChips, type SessionActivityItem } from "./activity-chips"
 import { SessionComposerLane, useComposerLaneAlignment } from "./composer-lane"
+import { contextTokens, SessionContextMeter } from "./context-meter"
 import { SessionTodoPill } from "./todo-pill"
 import { sessionTodos, todoFinished } from "./todos"
 import { useOpenSessionRoute } from "../session-identity-header"
@@ -527,7 +528,32 @@ export function ActiveSessionComposerRegion(props: {
       ),
   }
 
+  // The composer region owns the session commands' trigger surface; the meter's two buttons fire them.
+  const command = useCommand()
+
   const providers = useProviders(() => props.session.data.info()?.location.directory)
+
+  // A compaction in flight is queued in the inbox before its summary message exists; the meter disables
+  // both buttons while it runs so a second request cannot stack on the first.
+  const compacting = createMemo(() =>
+    data.session.pending
+      .list(props.session.identity.params.id ?? "")
+      .some((item) => item.type === "compaction"),
+  )
+
+  // The last assistant step's prompt plus what it wrote is the context the next turn will resend.
+  const contextUsage = createMemo(() => {
+    const last = props.session.history.messages().findLast((message) => message.type === "assistant")
+
+    if (!last?.tokens) return undefined
+
+    const ref = props.session.data.info()?.model ?? last.model
+    const limit = providers.all().get(ref.providerID)?.models[ref.id]?.limit.context
+
+    if (!limit) return undefined
+
+    return { used: contextTokens(last.tokens), limit }
+  })
 
   const modelLabels = createMemo(() =>
     composerModelLabels(
@@ -596,6 +622,16 @@ export function ActiveSessionComposerRegion(props: {
             </Show>
             <SessionPluginPills session={props.view()} screen={props.screen} alignment={alignment} />
           </SessionComposerLane>
+          <Show when={contextUsage()}>
+            {(usage) => (
+              <SessionContextMeter
+                usage={usage()}
+                compacting={compacting()}
+                onCompact={() => command.trigger("session.compact")}
+                onContinue={() => command.trigger("session.continue")}
+              />
+            )}
+          </Show>
           <SessionQueuePanel queue={props.model.queue} hidden={props.model.region.state.blocked()} />
           <SessionGoLimitTray
             sessionID={props.session.identity.params.id}

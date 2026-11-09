@@ -44,7 +44,7 @@ Use `packages/desktop/resources/icons/icon.png` on a dark background, with the w
 ## First release body
 
 ```markdown
-## Oliviacode 2.2.5
+## Oliviacode 2.2.6
 
 A privacy-focused desktop AI client. Nothing is preconfigured: no provider, no endpoint, no
 credential. You connect an account, or you don't.
@@ -52,9 +52,9 @@ credential. You connect an account, or you don't.
 ### Downloads
 | Platform | File |
 | --- | --- |
-| Windows 10/11 x64 | `Oliviacode-Setup-2.2.5.exe` |
-| macOS (arm64 / x64) | `Oliviacode-2.2.5.dmg` |
-| Linux x64 | `Oliviacode-2.2.5.AppImage`, `.deb`, `.rpm` |
+| Windows 10/11 x64 | `Oliviacode-Setup-2.2.6.exe` |
+| macOS (arm64 / x64) | `Oliviacode-2.2.6.dmg` |
+| Linux x64 | `Oliviacode-2.2.6.AppImage`, `.deb`, `.rpm` |
 
 ### Verify before you run
 - SHA-256 for every artifact is in `SHA256SUMS.txt` below.

@@ -21,6 +21,7 @@ import { createEffect, createMemo, createSignal, lazy, onCleanup, Show, Suspense
 import type { ElectronAPI } from "./api-types"
 import { DesktopFirstLaunchOnboarding } from "./onboarding"
 import { createDesktopPlatform } from "./platform"
+import { DesktopUpdater } from "./updater"
 import { bindDesktopMenu } from "./platform/menu"
 import { createSidecarResolver, localServerStartupError, sidecarHttp } from "./startup/initialization"
 import { preloadStoredLocale } from "./startup/locale"
@@ -146,6 +147,7 @@ export function DesktopApp(props: { api: ElectronAPI; version: string }) {
         }}
       >
         <DesktopShell />
+        <DesktopUpdater api={props.api} version={props.version} />
         <Show when={selectOverlayMounted(startup.state())}>
           <div
             data-component="startup-overlay"

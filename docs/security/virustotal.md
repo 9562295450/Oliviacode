@@ -3,12 +3,12 @@
 A VirusTotal report is evidence, not a badge you paste on and hope nobody checks. This page
 exists so the evidence is easy to verify and easy to replace when a release is published.
 
-**Current status:** the 2.2.5 installer exists and has a published SHA-256, but it has not been
+**Current status:** the 2.2.6 installer exists and has a published SHA-256, but it has not been
 uploaded to VirusTotal yet. The badge in the README says `no release scanned yet` on purpose; it
 is not a claim of zero detections.
 
 ```
-file    Oliviacode-Setup-2.2.5.exe
+file    Oliviacode-Setup-2.2.6.exe
 sha256  360b87b1006ff0f98a2360a7a1162e93d8675b7c019a4dcab83c45049daefdc1
 size    257,941,745 bytes
 ```
@@ -21,11 +21,11 @@ Do not trust a screenshot. Hash the file you actually downloaded and compare it 
 published in the release notes:
 
 ```powershell
-Get-FileHash .\Oliviacode-Setup-2.2.5.exe -Algorithm SHA256
+Get-FileHash .\Oliviacode-Setup-2.2.6.exe -Algorithm SHA256
 ```
 
 ```bash
-sha256sum Oliviacode-Setup-2.2.5.exe
+sha256sum Oliviacode-Setup-2.2.6.exe
 ```
 
 `SHA256SUMS.txt` is written next to every packaged artifact by
@@ -39,10 +39,10 @@ the download builds reputation. To run it: **More info -> Run anyway**. Before y
 hash:
 
 ```powershell
-(Get-FileHash .\Oliviacode-Setup-2.2.5.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+(Get-FileHash .\Oliviacode-Setup-2.2.6.exe -Algorithm SHA256).Hash.ToLowerInvariant()
 ```
 
-The value must match the line for `Oliviacode-Setup-2.2.5.exe` in `SHA256SUMS.txt` on the
+The value must match the line for `Oliviacode-Setup-2.2.6.exe` in `SHA256SUMS.txt` on the
 release. A signed build replaces this section with the certificate subject.
 
 ## Filling in the report (maintainer, once per release)

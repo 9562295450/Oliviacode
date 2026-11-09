@@ -1,5 +1,6 @@
 import { createEffect, createSignal, on, onCleanup, type JSX } from "solid-js"
 import { createEventListener } from "@solid-primitives/event-listener"
+import { useNavigate } from "@solidjs/router"
 import { useCommand, type CommandOption } from "@/shell/commands/command"
 import { adjacentTabKey } from "@/shell/titlebar/tab-order"
 import { useDialog } from "@opencode/ui/context/dialog"
@@ -12,6 +13,7 @@ import { useData, useServer } from "@/runtime/server/current"
 import { formatServerError } from "@/runtime/server/errors"
 import { projectSettingsKey, useSettings } from "@/settings/model"
 import { showToast } from "@/shell/notifications/toast"
+import { sessionHref } from "@/shell/routes/session"
 import { useSessionExporter } from "@/session/commands/export-session"
 import { usePlatform } from "@/runtime/platform/platform"
 import type { SessionModel } from "@/session/model"
@@ -94,6 +96,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
   const serverSDK = useServerSDK()
   const server = useServer()
   const data = useData()
+  const navigate = useNavigate()
   const settings = useSettings()
   const platform = usePlatform()
   const exporter = useSessionExporter()
@@ -442,6 +445,68 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     if (actions.session.identity.params.id) openDialog("fork")
   }
 
+  // How long /continue waits for the summary it asked for before giving up. The compaction message is
+  // written when the attempt settles, so the poll watches for one that was not in the transcript before.
+  const CONTINUE_TIMEOUT_MS = 180_000
+  const CONTINUE_POLL_MS = 400
+
+  let continueTimer: ReturnType<typeof setTimeout> | undefined
+  onCleanup(() => {
+    if (continueTimer !== undefined) clearTimeout(continueTimer)
+  })
+
+  const continueSession = () => {
+    const sessionID = actions.session.identity.params.id
+
+    if (!sessionID) return
+    if (continueTimer !== undefined) return
+
+    const baseline = new Set(data.session.message.list(sessionID).map((message) => message.id))
+    const deadline = Date.now() + CONTINUE_TIMEOUT_MS
+
+    // The command machine admits the compaction once per session and toasts a failed admission itself.
+    dispatchCommands({ type: "compact.requested", sessionID })
+
+    const settle = (cause?: unknown) => {
+      if (continueTimer !== undefined) clearTimeout(continueTimer)
+      continueTimer = undefined
+
+      if (cause !== undefined)
+        showToast({
+          title: language.t("common.requestFailed"),
+          description: formatServerError(cause, language.t, language.t("common.requestFailed")),
+        })
+    }
+
+    const forkNow = () => {
+      serverSDK.api.session.fork({ sessionID }).then(
+        (session) => {
+          data.session.remember(session)
+          navigate(sessionHref(server.key, session.id))
+          settle()
+        },
+        (cause: unknown) => settle(cause),
+      )
+    }
+
+    const poll = () => {
+      continueTimer = undefined
+
+      const result = data.session.message
+        .list(sessionID)
+        .find((message) => message.type === "compaction" && !baseline.has(message.id))
+
+      if (result?.type === "compaction" && result.status === "failed")
+        return settle(new Error("The compaction failed."))
+      if (result?.type === "compaction" && result.status === "completed") return forkNow()
+      if (Date.now() >= deadline) return settle(new Error("Compaction did not finish."))
+
+      continueTimer = setTimeout(poll, CONTINUE_POLL_MS)
+    }
+
+    continueTimer = setTimeout(poll, CONTINUE_POLL_MS)
+  }
+
   const sessionCmds = () => [
     sessionCommand({
       id: "session.new",
@@ -472,6 +537,14 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       slash: "compact",
       disabled: !actions.session.identity.params.id || actions.session.history.visibleUserMessages().length === 0,
       onSelect: compact,
+    }),
+    sessionCommand({
+      id: "session.continue",
+      title: language.t("command.session.continue"),
+      description: language.t("command.session.continue.description"),
+      slash: "continue",
+      disabled: !actions.session.identity.params.id || actions.session.history.visibleUserMessages().length === 0,
+      onSelect: continueSession,
     }),
     sessionCommand({
       id: "session.background",

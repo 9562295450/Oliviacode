@@ -3,6 +3,7 @@ import type { DesktopNativeBundle } from "@opencode/app/i18n/desktop-native"
 import type { StorageSnapshot } from "../shared/ipc-transport"
 import type { WindowBootstrap } from "../shared/window-bootstrap"
 import type { InfiniteLane, InfiniteSettings, InfiniteState } from "@opencode/app/egress"
+import type { UpdateStatus } from "../shared/ipc-rpc/updates"
 import type {
   ClipboardImage,
   DirectoryPickerOptions,
@@ -96,6 +97,11 @@ export type ElectronAPI = {
   presetList(): Promise<ProviderAddon[]>
   presetStarter(): Promise<ProviderAddon[]>
   presetApply(id: string): Promise<{ ok: boolean; path: string; error?: string }>
+  updateState(): Promise<UpdateStatus>
+  updateCheck(): Promise<UpdateStatus>
+  updateDownload(): Promise<UpdateStatus>
+  updateInstall(): Promise<void>
+  onUpdateChanged(cb: (status: UpdateStatus) => void): () => void
 }
 
 /** An entry from a template file or a community registry. Never carries a credential. */

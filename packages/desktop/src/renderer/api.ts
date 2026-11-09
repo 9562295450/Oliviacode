@@ -105,4 +105,9 @@ export const api: ElectronAPI = {
   presetList: () => invoke("PresetList").then(mutable),
   presetStarter: () => invoke("PresetStarter").then(mutable),
   presetApply: (id: string) => invoke("PresetApply", { id }),
+  updateState: () => invoke("UpdateGetState").then(mutable),
+  updateCheck: () => invoke("UpdateCheck").then(mutable),
+  updateDownload: () => invoke("UpdateDownload").then(mutable),
+  updateInstall: () => invoke("UpdateInstall"),
+  onUpdateChanged: (cb) => listen("UpdateChanged", (event) => cb(mutable(event.status))),
 }

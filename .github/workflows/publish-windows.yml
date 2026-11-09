@@ -2,7 +2,7 @@ name: publish-windows
 
 # Builds the Windows installer on a clean runner and attaches it to a GitHub release.
 # Tag a commit and push the tag:
-#   git tag v2.2.5 && git push origin v2.2.5
+#   git tag v2.2.6 && git push origin v2.2.6
 # The workflow uses the repo-scoped GITHUB_TOKEN, so no personal token is stored anywhere.
 on:
   push:
@@ -33,6 +33,9 @@ jobs:
       OPENCODE_CHANNEL: "prod"
       # Pinned engine: the CLI package published to npm as 2.2.6.
       OLIVIACODE_CLI_VERSION: "2.2.6"
+      # The shell's release feed: electron-updater reads it from resources/app-update.yml, which
+      # pack.ts writes only when this names a repository.
+      OLIVIACODE_UPDATE_REPO: "9562295450/Oliviacode"
       # electron-builder reads this for the GitHub release feed; the fork itself stays feed-less.
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -67,6 +70,8 @@ jobs:
           $version = if ("${{ inputs.version }}") { "${{ inputs.version }}" } else { "${{ github.ref_name }}".TrimStart("v") }
           $setup = Get-ChildItem "dist/desktop/Oliviacode-Setup-*.exe" | Select-Object -First 1
           if (-not $setup) { throw "no installer produced" }
+          if (-not (Test-Path "dist/desktop/latest.yml")) { throw "no latest.yml produced" }
+          if (-not (Test-Path "$($setup.FullName).blockmap")) { throw "no blockmap produced" }
           $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $($setup.Name)" | Set-Content "dist/desktop/SHA256SUMS.txt" -Encoding ascii
           "version=$version" | Out-File -Append $env:GITHUB_OUTPUT
@@ -83,4 +88,4 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             gh release create $env:TAG --target main --title "Oliviacode $($env:TAG.TrimStart('v'))" --notes-file $notes
           }
-          gh release upload $env:TAG "${{ steps.artifact.outputs.setup }}" "dist/desktop/SHA256SUMS.txt" --clobber
+          gh release upload $env:TAG "${{ steps.artifact.outputs.setup }}" "dist/desktop/SHA256SUMS.txt" "dist/desktop/latest.yml" "${{ steps.artifact.outputs.setup }}.blockmap" --clobber
