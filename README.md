@@ -147,17 +147,23 @@ rotation is never retried behind your back.
 
 ## Updates
 
-Oliviacode ships **no update feed**. `electron-updater` is present but inert: packaging writes
-no `app-update.yml`, so the updater has nothing to check and stays quiet. To point auto-update
-at this project's own releases, set it explicitly:
+Release builds from 2.2.6 on ship an update feed that points at **this repository's own
+releases** and nothing else: `https://github.com/9562295450/Oliviacode/releases/latest/download`.
+`electron-updater` reads it from `resources/app-update.yml`, checks five seconds after launch and
+every four hours after that, and shows you the version before anything is fetched.
+`autoDownload` is off, so a check never installs on its own; a version you download and defer
+installs on the next quit.
+
+Builds packaged without `OLIVIACODE_UPDATE_REPO` write no `app-update.yml` and stay silent: that
+covers every release before 2.2.6, dev checkouts, and forks. The release workflow sets the
+variable; to point a fork at its own releases:
 
 ```bash
-OLIVIACODE_UPDATE_REPO=9562295450/Oliviacode bun run --cwd packages/desktop pack
+OLIVIACODE_UPDATE_REPO=owner/repo bun run --cwd packages/desktop pack
 ```
 
-That writes a feed pointing at
-`https://github.com/9562295450/Oliviacode/releases/latest/download`. Nothing else is read, and
-no upstream release feed is ever consulted.
+No upstream release feed is ever consulted. Removing `app-update.yml` from an installed build
+makes the updater report `unsupported` and stop checking.
 
 ## Privacy
 

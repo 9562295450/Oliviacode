@@ -250,7 +250,7 @@
 
     <details>
       <summary>Does it auto-update?</summary>
-      <p>Not unless you build it with an update feed. The shipped release writes no <code>app-update.yml</code>, so <code>electron-updater</code> is inert and never phones home. Build with <code>OLIVIACODE_UPDATE_REPO</code> to point updates at this repo's releases.</p>
+      <p>Release builds from 2.2.6 on carry an <code>app-update.yml</code> that points at this repository's own releases and check every four hours; nothing downloads until you ask. Builds packaged without <code>OLIVIACODE_UPDATE_REPO</code> — everything before 2.2.6, dev checkouts and forks — write no feed, so <code>electron-updater</code> stays inert. Set the variable to point a fork at its own releases.</p>
     </details>
 
     <details>
