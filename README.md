@@ -1,17 +1,17 @@
 # Oliviacode
 
-[![Oliviacode — desktop client for OpenCode](docs/og.png)](https://9562295450.github.io/Oliviacode/)
+[![Oliviacode — a provider-agnostic desktop AI client](docs/og.png)](https://9562295450.github.io/Oliviacode/)
 
-**A desktop client for OpenCode.** Provider-agnostic, nothing preconfigured, with multi-lane
-egress and isolated sessions built into the UI instead of bolted on.
+**A provider-agnostic desktop AI client.** An open-source AI client for developers: nothing
+preconfigured, with multi-lane egress and isolated sessions built into the UI instead of bolted on.
 
-[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.7) ·
-[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-Setup-2.2.7.exe) ·
-[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-arm64.dmg) ·
-[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-x64.dmg) ·
-[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-x64.AppImage) ·
-[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-x64.deb) ·
-[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-x64.rpm)
+[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.8) ·
+[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-Setup-2.2.8.exe) ·
+[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-arm64.dmg) ·
+[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-x64.dmg) ·
+[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-x64.AppImage) ·
+[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-x64.deb) ·
+[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-x64.rpm)
 
 - **Multi-lane egress** — Direct, WARP, Tor and proxy lanes, each with health, latency and
   rotation. Rotate on demand, or arm a lane and let it rotate.
@@ -27,8 +27,8 @@ egress and isolated sessions built into the UI instead of bolted on.
 
 | | |
 |---|---|
-| Installer | [VirusTotal **0/50**](https://www.virustotal.com/gui/file/4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a) · SHA-256 `4fe3199e…` |
-| App binary | [VirusTotal **0/68**](https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d) · SHA-256 `3dda8e6a…` |
+| Installer (2.2.7 scan) | [VirusTotal **0/50**](https://www.virustotal.com/gui/file/4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a) · SHA-256 `4fe3199e…` |
+| App binary (2.2.7 scan) | [VirusTotal **0/68**](https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d) · SHA-256 `3dda8e6a…` |
 | License | MIT · [checksums and scans](https://9562295450.github.io/Oliviacode/checksums.html) |
 
 ![The Oliviacode session view, with the egress lanes and theme picker in the inspector](docs/screenshots/hero.png)
@@ -36,9 +36,9 @@ egress and isolated sessions built into the UI instead of bolted on.
 ## Is this the official OpenCode app?
 
 No. Oliviacode is an independent client, not affiliated with, endorsed by or operated by
-OpenCode or its maintainers. The shell is a full redesign of the OpenCode desktop application —
-own identity, own theme engine, own egress manager — and the engine still runs underneath as a
-sidecar. See [NOTICE.md](./NOTICE.md) for upstream attribution and the list of changes.
+OpenCode or its maintainers. The shell is an independent rewrite with its own identity, theme
+engine and egress manager, and the engine still runs underneath as a sidecar. See
+[NOTICE.md](./NOTICE.md) for upstream attribution and the list of changes.
 
 ## Requirements
 
@@ -168,7 +168,7 @@ makes the updater report `unsupported` and stop checking.
 ### Engine updates
 
 The desktop and the engine (`@opencode/cli`) are separate releases, so the app can keep the engine
-current without shipping a new desktop build. Starting with the release after 2.2.7, a production
+current without shipping a new desktop build. Starting with 2.2.8, a production
 build checks npm's `latest` dist-tag once per launch and may adopt a newer engine **only after it
 proves itself**:
 

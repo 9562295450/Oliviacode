@@ -1,20 +1,20 @@
 # Oliviacode
 
-> Oliviacode is an independent, MIT-licensed desktop client for OpenCode. It bundles no
-> model provider, no base URL and no credential: you connect a provider or you do not.
-> Windows, macOS and Linux. Current release: 2.2.7.
+> Oliviacode is an independent, MIT-licensed, provider-agnostic desktop AI client. It bundles
+> no model provider, no base URL and no credential: you connect a provider or you do not.
+> Windows, macOS and Linux. Current release: 2.2.8.
 
-Oliviacode is a shell, not a service. The agent engine is OpenCode; this project supplies
-the window, the session store and the egress layer. Nothing in it names an official or
-endorsed provider, and nothing telephones home.
+Oliviacode is a shell, not a service. The agent engine is a bundled open-source CLI; this
+project supplies the window, the session store and the egress layer. Nothing in it names an
+official or endorsed provider, and nothing telephones home.
 
 ## Canonical links
 
 - [Source repository](https://github.com/9562295450/Oliviacode)
 - [Project site](https://9562295450.github.io/Oliviacode/)
-- [Latest release](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.7)
+- [Latest release](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.8)
 - [Checksums and VirusTotal results](https://9562295450.github.io/Oliviacode/checksums.html)
-- [Installer SHA-256 list](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/SHA256SUMS.txt)
+- [Installer SHA-256 list](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/SHA256SUMS.txt)
 
 ## What it does
 
@@ -31,12 +31,20 @@ endorsed provider, and nothing telephones home.
 
 - No bundled provider endpoint, API key or default model.
 - No analytics, telemetry or account system.
-- No affiliation with, endorsement by, or support commitment from the OpenCode project.
+- No affiliation with, endorsement by, or support commitment from any upstream project or
+  provider.
 
 ## Requirements
 
 - Windows 10/11 x64, macOS 14+ (arm64 or x64), or Linux x64 (AppImage, deb, rpm).
 - A provider endpoint, if you want model replies. The app opens without one.
+
+## Attribution
+
+The bundled engine is derived from the OpenCode CLI (MIT). OpenCode is a community-supported
+engine configuration, not an official integration, and Oliviacode is not affiliated with,
+endorsed by or supported by the OpenCode project. See NOTICE.md in the repository for the full
+upstream attribution and the list of changes.
 
 ## Licence
 

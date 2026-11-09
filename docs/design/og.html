@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Oliviacode social card</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1280px;height:640px;overflow:hidden}
+  body{
+    background:
+      radial-gradient(900px 420px at 96% -10%, rgba(34,197,160,.22), transparent 62%),
+      radial-gradient(700px 380px at 84% 8%, rgba(139,124,246,.14), transparent 60%),
+      #08080a;
+    color:#ececf1;
+    font-family:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;
+    position:relative;
+  }
+  .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:64px 64px}
+  .left{position:absolute;left:64px;top:52px;width:560px;z-index:2}
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand img{width:58px;height:58px}
+  .brand span{font-size:27px;font-weight:700;letter-spacing:-.02em}
+  h1{margin-top:48px;font-size:54px;line-height:1.06;letter-spacing:-.035em;font-weight:750}
+  h1 .grad{background:linear-gradient(96deg,#6ee7c8,#8b7cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{margin-top:26px;color:#a6a6b3;font-size:21px;line-height:1.5;letter-spacing:-.005em}
+  .sub b{color:#dcdce6;font-weight:600}
+  .pills{display:flex;gap:10px;margin-top:30px}
+  .pill{border:1px solid #2a2a34;background:#111117;color:#b9b9c6;border-radius:99px;padding:9px 16px;font-size:16px;font-weight:550}
+  .pill.ok{color:#9ef0d9;border-color:rgba(110,231,200,.36);background:rgba(110,231,200,.07)}
+
+  .shot{position:absolute;right:-176px;top:132px;width:800px;border:1px solid #2a2a34;border-radius:16px;overflow:hidden;background:#0d0d12;box-shadow:0 50px 130px -40px rgba(0,0,0,.95),0 0 0 1px rgba(110,231,200,.05);transform:rotate(-1.2deg)}
+  .bar{display:flex;align-items:center;gap:8px;height:40px;padding:0 15px;border-bottom:1px solid #24242c;background:#0b0b0f}
+  .dot{width:11px;height:11px;border-radius:50%;background:#2c2c37}
+  .bar span{margin-left:8px;font-family:ui-monospace,Consolas,monospace;font-size:13px;color:#6f6f7d}
+  .shot img{display:block;width:100%;height:auto}
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+
+  <div class="left">
+    <div class="brand">
+      <img src="../assets/owl-mark.svg" alt="">
+      <span>Oliviacode</span>
+    </div>
+    <h1>A provider-agnostic<br><span class="grad">desktop AI client.</span></h1>
+    <p class="sub"><b>Open-source · no endpoint bundled</b><br>Direct / WARP / Tor / proxy · isolated sessions</p>
+    <div class="pills">
+      <span class="pill">MIT</span>
+      <span class="pill">Windows</span>
+      <span class="pill">macOS</span>
+      <span class="pill">Linux</span>
+      <span class="pill ok">VT 0/50</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span>Oliviacode 2.2.8</span></div>
+    <img src="../screenshots/hero.png" alt="">
+  </div>
+</body>
+</html>
