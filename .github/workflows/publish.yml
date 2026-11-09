@@ -216,6 +216,8 @@ jobs:
       - name: Rewrite SHA256SUMS.txt over every published asset
         env:
           TAG: ${{ needs.prepare.outputs.tag }}
+          # gh resolves the repository from git unless GH_REPO is set, and this job has no checkout.
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" \
