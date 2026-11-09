@@ -1,0 +1,44 @@
+# Oliviacode
+
+> Oliviacode is an independent, MIT-licensed desktop client for OpenCode. It bundles no
+> model provider, no base URL and no credential: you connect a provider or you do not.
+> Windows, macOS and Linux. Current release: 2.2.7.
+
+Oliviacode is a shell, not a service. The agent engine is OpenCode; this project supplies
+the window, the session store and the egress layer. Nothing in it names an official or
+endorsed provider, and nothing telephones home.
+
+## Canonical links
+
+- [Source repository](https://github.com/9562295450/Oliviacode)
+- [Project site](https://9562295450.github.io/Oliviacode/)
+- [Latest release](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.7)
+- [Checksums and VirusTotal results](https://9562295450.github.io/Oliviacode/checksums.html)
+- [Installer SHA-256 list](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/SHA256SUMS.txt)
+
+## What it does
+
+- Sessions and projects stored locally in SQLite under the user profile; fork, move and
+  compact from the UI.
+- Egress lanes: Direct, Cloudflare WARP, Tor and HTTP proxy. A rotation is recorded only
+  after the provider endpoint reports the new address, so a silent fallback is recorded
+  as a failure rather than as success. Lanes fail independently; auto-recover is off by
+  default.
+- MCP servers connect at launch and their tools are callable from the composer.
+- Provider-agnostic: any OpenAI- or Anthropic-compatible endpoint, configured by the user.
+
+## What it does not do
+
+- No bundled provider endpoint, API key or default model.
+- No analytics, telemetry or account system.
+- No affiliation with, endorsement by, or support commitment from the OpenCode project.
+
+## Requirements
+
+- Windows 10/11 x64, macOS 14+ (arm64 or x64), or Linux x64 (AppImage, deb, rpm).
+- A provider endpoint, if you want model replies. The app opens without one.
+
+## Licence
+
+MIT. Source and releases are public; the app is built from that source by its own
+release workflow.
