@@ -5,9 +5,8 @@ import { Rpc, RpcGroup } from "effect/rpc"
  * A provider addon.
  *
  * An addon is inert data: it names a provider id the engine already knows from its own
- * catalogue, and the base URL to point it at. It never carries a credential, and nothing here
- * is bundled with the app — the default list is empty and every entry comes from a community
- * registry the user chooses to load.
+ * catalogue, and the base URL to point it at. It never carries a credential. The shipped starter
+ * file is a convenience the user applies explicitly; nothing is applied on first run.
  */
 export const Preset = Schema.Struct({
   id: Schema.String,
@@ -17,6 +16,8 @@ export const Preset = Schema.Struct({
   provider: Schema.String,
   baseURL: Schema.String,
   docsURL: Schema.optionalKey(Schema.String),
+  /** Optional line shown next to the entry, for whatever credential the endpoint expects. */
+  keyHint: Schema.optionalKey(Schema.String),
 })
 
 export type Preset = typeof Preset.Type
@@ -31,6 +32,7 @@ export const Addon = Schema.Struct({
   provider: Schema.String,
   baseURL: Schema.String,
   docsURL: Schema.optionalKey(Schema.String),
+  keyHint: Schema.optionalKey(Schema.String),
   origin: AddonOrigin,
 })
 

@@ -1,11 +1,17 @@
 import { existsSync } from "node:fs"
 import path from "node:path"
 import { app } from "electron"
-import { autoUpdater, type ProgressInfo, type UpdateInfo } from "electron-updater"
+// electron-updater is CommonJS and defines `autoUpdater` through a getter on `exports`, which Node's
+// named-export detection cannot see. A named ESM import of it throws at module load and takes the
+// whole main bundle with it, so read the property off the module object instead.
+import updater from "electron-updater"
+import type { ProgressInfo, UpdateInfo } from "electron-updater"
 import type { UpdateStatus } from "../shared/ipc-rpc/updates"
 import { UpdateChanged } from "../shared/ipc-rpc/events"
 import { emitIpcEvent } from "./ipc-events"
 import { getMainWindows } from "./windows"
+
+const { autoUpdater } = updater
 
 // The shell updates from this repository's own GitHub releases. The bundled CLI keeps updating through
 // OpenCode on its own schedule: this feed carries packages/desktop only, never the engine.
@@ -56,7 +62,17 @@ function releaseNotes(info: UpdateInfo) {
 }
 
 function available(info: UpdateInfo): UpdateStatus {
-  return { state: "available", version: info.version, notes: releaseNotes(info) }
+  const notes = releaseNotes(info)
+  // `optionalKey` rejects an explicit undefined, so the key is omitted instead of set to undefined.
+  return notes ? { state: "available", version: info.version, notes } : { state: "available", version: info.version }
+}
+
+function downloading(version: string | undefined, percent: number): UpdateStatus {
+  return version === undefined ? { state: "downloading", percent } : { state: "downloading", version, percent }
+}
+
+function failed(error: string): UpdateStatus {
+  return status.version === undefined ? { state: "error", error } : { state: "error", version: status.version, error }
 }
 
 export function startUpdater() {
@@ -81,21 +97,11 @@ export function startUpdater() {
   autoUpdater.on("download-progress", (progress: ProgressInfo) => {
     const version = status.version
 
-    publish({
-      state: "downloading",
-      version,
-      percent: Math.max(0, Math.min(100, progress.percent)),
-    })
+    publish(downloading(version, Math.max(0, Math.min(100, progress.percent))))
   })
-  autoUpdater.on("update-downloaded", (info) =>
-    publish({ state: "ready", version: info.version, notes: releaseNotes(info) }),
-  )
+  autoUpdater.on("update-downloaded", (info) => publish({ ...available(info), state: "ready" }))
   autoUpdater.on("error", (cause) =>
-    publish({
-      state: "error",
-      version: status.version,
-      error: cause instanceof Error ? cause.message : String(cause),
-    }),
+    publish(failed(cause instanceof Error ? cause.message : String(cause))),
   )
 
   publish({ state: "idle" })
@@ -118,11 +124,7 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
   try {
     await autoUpdater.checkForUpdates()
   } catch (cause) {
-    publish({
-      state: "error",
-      version: status.version,
-      error: cause instanceof Error ? cause.message : String(cause),
-    })
+    publish(failed(cause instanceof Error ? cause.message : String(cause)))
   }
 
   return status
@@ -141,16 +143,12 @@ export async function downloadUpdate(): Promise<UpdateStatus> {
 
   if (status.state !== "available") return status
 
-  publish({ state: "downloading", version: status.version, percent: 0 })
+  publish(downloading(status.version, 0))
 
   try {
     await autoUpdater.downloadUpdate()
   } catch (cause) {
-    publish({
-      state: "error",
-      version: status.version,
-      error: cause instanceof Error ? cause.message : String(cause),
-    })
+    publish(failed(cause instanceof Error ? cause.message : String(cause)))
   }
 
   return status

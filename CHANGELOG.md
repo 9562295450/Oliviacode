@@ -2,6 +2,19 @@
 
 Release notes for OpenCode V2, newest first.
 
+## v2.2.7 — 2026-11-09
+
+### Fixes
+
+- **Startup failure in 2.2.6**: the main process imported `electron-updater` as a named ESM export. The module is CommonJS and defines `autoUpdater` through a getter, so the import threw `SyntaxError: Named export 'autoUpdater' not found` before the IPC transport started and the window reported `Desktop IPC port handshake timed out`. The updater is now imported by its default export and the property read from it.
+- **Updater faults are isolated**: `startUpdater` runs through `Effect.catchCause`, so a failure is logged and the app keeps starting instead of taking the IPC layer down with it.
+
+### Builds
+
+- **Linux**: the release workflow builds AppImage, deb and rpm on `ubuntu-latest`. `pack.ts` writes `latest-linux.yml` for the AppImage.
+- **macOS**: the workflow builds dmg and zip on `macos-latest` (arm64) and `macos-15-intel` (x64). Builds are unsigned; automatic updates stay off until signing and notarization.
+- **Release workflow**: `publish.yml` builds only the platforms whose artifacts are missing from the release, so a locally verified Windows installer is kept when the tag is pushed.
+
 ## v2.2.6 — 2026-11-09
 
 ### Highlights

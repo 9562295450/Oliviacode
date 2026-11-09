@@ -153,6 +153,7 @@ export type PresetInfo = {
   provider: string
   baseURL: string
   docsURL?: string
+  keyHint?: string
   origin?: "local" | "starter" | "community"
 }
 

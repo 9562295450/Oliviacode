@@ -254,7 +254,7 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
       .then(setPresets)
       .catch(() => undefined)
 
-  // The starter template is offered here and installed only when the user presses one.
+  // The starter template is offered here and installed only when the user applies one entry.
   const loadStarter = () =>
     platform.presets
       ?.starter()
@@ -265,34 +265,6 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
     void loadPresets()
     void loadStarter()
   })
-
-  const opencodeAddon = createMemo(() => starter().find((entry) => entry.provider === "opencode"))
-
-  const addOpencode = async () => {
-    const addon = opencodeAddon()
-
-    if (!addon || !platform.presets || applying()) return
-
-    setApplying(addon.id)
-
-    try {
-      const result = await platform.presets.apply(addon.id)
-
-      if (!result.ok) {
-        setPresetNotice(language.t("dialog.provider.addons.failed", { error: result.error ?? "" }))
-        return
-      }
-
-      setPresetNotice(language.t("dialog.provider.community.added"))
-      refreshProviderAddons()
-      void loadPresets()
-      await integrations.refresh()
-    } catch (error) {
-      setPresetNotice(language.t("dialog.provider.addons.failed", { error: String(error) }))
-    } finally {
-      setApplying(undefined)
-    }
-  }
 
   const openCommunity = () => {
     props.onPrepare?.()
@@ -332,6 +304,35 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
     }
   }
 
+  // A starter template is community data: applying it writes the base URL into this app's engine
+  // config and caches the entry. The provider's own connect flow then opens so the user supplies
+  // the credential; the app never invents one.
+  const useTemplate = async (entry: PresetInfo) => {
+    if (!platform.presets || applying()) return
+
+    setApplying(entry.id)
+
+    try {
+      const result = await platform.presets.apply(entry.id)
+
+      if (!result.ok) {
+        setPresetNotice(language.t("dialog.provider.addons.failed", { error: result.error ?? "" }))
+        return
+      }
+
+      refreshProviderAddons()
+      void loadPresets()
+      void loadStarter()
+      await integrations.refresh()
+      props.onPrepare?.()
+      props.onSelect(entry.provider)
+    } catch (error) {
+      setPresetNotice(language.t("dialog.provider.addons.failed", { error: String(error) }))
+    } finally {
+      setApplying(undefined)
+    }
+  }
+
   const [store, setStore] = createStore<{
     filter: string
     active?: string
@@ -341,20 +342,21 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
 
   // MCP servers are connected and managed from the MCP dialog, not here.
   //
-  // Only providers the user brought in are listed: one they added as an add-on, or one holding a
-  // credential they entered here. The engine's keyless catalogue and anything it detected from the
-  // environment stays hidden, so a fresh install lists nothing and no third-party key shows up.
+  // Only providers the user brought in are listed: one they added from a template or add-on, or
+  // one holding a credential they entered here. The engine's keyless catalogue and anything it
+  // detected from the environment stays hidden, so no third-party key shows up. No provider id is
+  // hardcoded; the starter template is data and only becomes visible once the user applies it.
   const supplied = createMemo(() => new Set(presets().map((entry) => entry.provider)))
 
   const all = createMemo(() => {
     const query = store.filter.trim().toLowerCase()
+    const visible = supplied()
 
     return integrations
       .list()
       .filter((row) => row.metadata?.source !== "mcp")
       .filter(
-        (row) =>
-          supplied().has(row.id) || row.connections.some((connection) => connection.type === "credential"),
+        (row) => visible.has(row.id) || row.connections.some((connection) => connection.type === "credential"),
       )
       .filter((row) => !query || `${row.id} ${row.name}`.toLowerCase().includes(query))
   })
@@ -439,76 +441,6 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
           }}
         />
       </div>
-      <div class="shrink-0 px-2 pb-1">
-        <div class="flex flex-col gap-2 rounded-md border border-v2-border-border-base bg-v2-background-bg-layer-02 p-2.5">
-          <div class="flex flex-col gap-0.5 px-0.5">
-            <span class="text-[13px] font-[530] leading-[18px] text-v2-text-text-base">
-              {language.t("dialog.provider.community")}
-            </span>
-            <span class="text-[12px] leading-4 text-v2-text-text-muted">
-              {language.t("dialog.provider.community.description")}
-            </span>
-          </div>
-          <div class="flex flex-wrap items-center gap-1.5">
-            <Show when={opencodeAddon()}>
-              {(addon) => (
-                <Button
-                  variant="contrast"
-                  data-action="provider-add-opencode"
-                  disabled={applying() === addon().id}
-                  aria-busy={applying() === addon().id}
-                  onClick={() => void addOpencode()}
-                >
-                  {applying() === addon().id
-                    ? language.t("dialog.provider.community.adding")
-                    : language.t("dialog.provider.community.opencode")}
-                </Button>
-              )}
-            </Show>
-            <Button variant="neutral" data-action="provider-addons-open" onClick={openCommunity}>
-              {language.t("dialog.provider.community.browse")}
-            </Button>
-          </div>
-          <Show when={opencodeAddon()}>
-            <span class="px-0.5 text-[11px] leading-4 text-v2-text-text-faint">
-              {language.t("dialog.provider.community.opencodeHint")}
-            </span>
-          </Show>
-          <Show when={presets().length > 0}>
-            <div class="flex flex-col gap-0.5 border-t border-v2-border-border-base pt-1.5">
-              <span class="px-1.5 pb-0.5 text-[11px] font-[440] uppercase leading-4 tracking-[0.04px] text-v2-text-text-faint">
-                {language.t("dialog.provider.addons.installed")}
-              </span>
-              <For each={presets()}>
-                {(preset) => (
-                  <button
-                    type="button"
-                    class="flex w-full items-baseline gap-2 rounded px-1.5 py-1 text-left text-[13px] text-v2-text-text-base hover:bg-v2-background-bg-layer-03 disabled:opacity-60"
-                    disabled={applying() === preset.id}
-                    onClick={() => void applyPreset(preset)}
-                  >
-                    <span aria-hidden="true">⚡</span>
-                    <span class="font-medium">{preset.label}</span>
-                    <span class="truncate text-[12px] text-v2-text-text-muted">{preset.baseURL}</span>
-                  </button>
-                )}
-              </For>
-            </div>
-          </Show>
-          <Show when={presetNotice()}>
-            {(notice) => (
-              <p class="px-0.5 text-[12px] leading-4 text-v2-text-text-muted" role="status">
-                {notice()}
-              </p>
-            )}
-          </Show>
-        </div>
-      </div>
-      <Show when={rows().length === 0}>
-        <p class="px-3 pt-2 text-[12px] leading-4 text-v2-text-text-faint">
-          {language.t("dialog.provider.community.empty")}
-        </p>
-      </Show>
       <div class="relative min-h-0 flex-1">
         <div class="flex size-full min-h-0 flex-col gap-0.5 overflow-y-auto pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <For each={groups()}>
@@ -592,6 +524,88 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
           class="pointer-events-none absolute inset-x-0 bottom-0 h-10"
           style={{ background: "linear-gradient(to bottom, transparent, var(--v2-background-bg-base))" }}
         />
+      </div>
+      <div class="shrink-0 px-2 pb-1 pt-1">
+        <div class="flex flex-col gap-1 rounded-md border border-v2-border-border-base bg-v2-background-bg-layer-02 p-2">
+          <div class="flex flex-col gap-0.5 px-0.5">
+            <span class="text-[12px] font-[530] leading-4 text-v2-text-text-base">
+              {language.t("dialog.provider.templates.title")}
+            </span>
+            <span class="text-[11px] leading-4 text-v2-text-text-faint">
+              {language.t("dialog.provider.templates.disclaimer")}
+            </span>
+          </div>
+          <Show when={starter().length > 0}>
+            <div class="flex flex-col gap-0.5" data-slot="provider-templates">
+              <For each={starter()}>
+                {(entry) => (
+                  <button
+                    type="button"
+                    data-action="provider-template-apply"
+                    data-template-id={entry.id}
+                    class="flex w-full items-start gap-2 rounded px-1.5 py-1.5 text-left text-[13px] text-v2-text-text-base hover:bg-v2-background-bg-layer-03 disabled:opacity-60"
+                    disabled={applying() === entry.id}
+                    onClick={() => void useTemplate(entry)}
+                  >
+                    <span class="min-w-0 flex-1">
+                      <span class="flex items-baseline gap-2">
+                        <span class="font-medium">{entry.label}</span>
+                        <span class="truncate text-[11px] text-v2-text-text-muted">{entry.baseURL}</span>
+                      </span>
+                      <span class="block text-[11px] leading-4 text-v2-text-text-faint">{entry.description}</span>
+                      <Show when={entry.keyHint}>
+                        {(hint) => (
+                          <span class="mt-0.5 block text-[11px] leading-4 text-v2-text-text-faint">{hint()}</span>
+                        )}
+                      </Show>
+                    </span>
+                    <span class="shrink-0 pe-1 pt-0.5 text-[11px] font-[440] text-v2-text-text-muted">
+                      {applying() === entry.id
+                        ? language.t("dialog.provider.community.adding")
+                        : language.t("dialog.provider.community.use")}
+                    </span>
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
+          <div class="flex flex-wrap items-center gap-1.5 border-t border-v2-border-border-base pt-1.5">
+            <Button variant="neutral" data-action="provider-addons-open" onClick={openCommunity}>
+              {language.t("dialog.provider.community.browse")}
+            </Button>
+            <span class="min-w-0 flex-1 px-0.5 text-[11px] leading-4 text-v2-text-text-faint">
+              {language.t("dialog.provider.community.description")}
+            </span>
+          </div>
+          <Show when={presets().length > 0}>
+            <div class="flex flex-col gap-0.5 border-t border-v2-border-border-base pt-1.5">
+              <span class="px-1.5 pb-0.5 text-[11px] font-[440] uppercase leading-4 tracking-[0.04px] text-v2-text-text-faint">
+                {language.t("dialog.provider.addons.installed")}
+              </span>
+              <For each={presets()}>
+                {(preset) => (
+                  <button
+                    type="button"
+                    class="flex w-full items-baseline gap-2 rounded px-1.5 py-1 text-left text-[13px] text-v2-text-text-base hover:bg-v2-background-bg-layer-03 disabled:opacity-60"
+                    disabled={applying() === preset.id}
+                    onClick={() => void applyPreset(preset)}
+                  >
+                    <span aria-hidden="true">⚡</span>
+                    <span class="font-medium">{preset.label}</span>
+                    <span class="truncate text-[12px] text-v2-text-text-muted">{preset.baseURL}</span>
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
+          <Show when={presetNotice()}>
+            {(notice) => (
+              <p class="px-0.5 text-[12px] leading-4 text-v2-text-text-muted" role="status">
+                {notice()}
+              </p>
+            )}
+          </Show>
+        </div>
       </div>
     </div>
   )

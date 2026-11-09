@@ -8,11 +8,11 @@
 >
 > Oliviacode is not affiliated with, endorsed by, sponsored by, or operated by OpenCode, its
 > maintainers, or any provider named in a preset or community registry. It ships no credentials,
-> no account, no endpoint and no default provider. Everything the app talks to is something a
-> user configured. Provider entries are community data files (`presets.json` locally,
-> `community-presets.json` when hosted), not a built-in feature and not a bypass of any
-> service's terms; see [PRESETS.md](./PRESETS.md). Responsibility for what an account is used
-> for, and whether a given client is permitted, rests with that account's owner.
+> no account, and no endpoint in its source. Everything the app talks to is something a user
+> configured. Provider entries are community data files (`presets.json` locally,
+> `community-presets.json` when hosted), not a built-in feature and not a bypass of any service's
+> terms; see [PRESETS.md](./PRESETS.md). Responsibility for what an account is used for, and
+> whether a given client is permitted, rests with that account's owner.
 
 A desktop AI client for developers, with multi-lane egress and session isolation built into
 the UI rather than bolted on.
@@ -22,10 +22,10 @@ own theme engine, own egress manager. It is provider-agnostic: you bring a provi
 credential, or you don't, and the app sits there with nothing selected until you do.
 
 - **Nothing is preconfigured.** A fresh install has no provider connected and no model
-  selected. There is no default account, no default endpoint, and no bundled key.
-- **Community add-ons, not built-ins.** Provider endpoints are data. The app lists a shipped
-  starter template, your own installed entries, and any registry URL you paste in, and stores
-  no provider endpoint in its own source. Nothing is applied until you press Use.
+  selected. There is no default account, no default endpoint in the source, and no bundled key.
+- **Community templates, not built-ins.** Provider endpoints are data. The picker lists a shipped
+  starter template, your own installed entries, and any registry URL you paste in, and stores no
+  provider endpoint in its own source. Nothing is applied until you press Use.
 - **Multi-lane egress.** Direct, WARP, Tor and proxy lanes, each with health checks,
   latency tracking, and rotation. Rotate on demand, or arm a lane and let it rotate.
 - **Session isolation.** Each session keeps its own workspace, model selection, and agent.
@@ -44,8 +44,9 @@ Grab the installer from [Releases](https://github.com/9562295450/Oliviacode/rele
 
 - **Windows** - `Oliviacode-Setup-<version>.exe`. Assisted installer: accept the license,
   press Install. A desktop shortcut and Start menu entry are created for the current user.
-- **macOS / Linux** - build from source with the commands below. Prebuilt artifacts are added
-  when those runners are enabled in the release workflow.
+- **macOS / Linux** — `Oliviacode-<version>-arm64.dmg` and `-x64.dmg` for Apple Silicon and
+  Intel, and `.AppImage`, `.deb` and `.rpm` for x64 Linux, attached to the same release. You can
+  still build from source with the commands below.
 
 The Windows build is unsigned. SmartScreen may ask you to confirm the publisher; the release
 attaches `SHA256SUMS.txt` so you can check the file you downloaded instead of trusting the
@@ -80,16 +81,21 @@ recreates the desktop shortcut on update if it was removed.
 
 Packaging fails if the engine binary is missing or empty, if its recorded version file is empty,
 or if a native module does not match the target architecture - all three are checked after
-packing, not assumed. `.github/workflows/publish-windows.yml` runs the same two stages on a
-clean `windows-latest` runner and attaches the installer to the tag's release. The full
-checklist, including the one-time token route, is in [docs/RELEASING.md](./docs/RELEASING.md).
+packing, not assumed. `.github/workflows/publish.yml` runs the same stages on clean Windows, Linux
+and macOS runners and attaches each platform's package to the tag's release. The full checklist,
+including the one-time token route, is in [docs/RELEASING.md](./docs/RELEASING.md).
 
 ## Connect a provider
 
-Oliviacode is a generic client: it has no provider of its own and no endpoint it prefers.
-Open the provider picker from the model chip in the composer and either pick a provider from
-the engine's catalogue and supply your own credential, or load an add-on that fills in a base
-URL for you.
+Oliviacode is a generic client: nothing is connected on first run and no provider endpoint is
+compiled into the app. Open the provider picker from the model chip in the composer. You can pick
+a provider from the engine's catalogue and supply your own credential, or apply a community
+template, which fills in a base URL for you.
+
+The shipped starter template includes one entry, **OpenCode Zen**, as a convenience for the
+community. It is data, not a built-in feature and not an endorsement: the app never signs in for
+you and never sends a credential you did not type. Apply the entry, then paste the key that
+endpoint accepts — `public` for its free tier.
 
 ### Add-ons are community data, not a built-in feature
 
@@ -98,8 +104,9 @@ There are four places entries can come from, and none is compiled into the app:
 1. **`presets.json`** — an optional local file beside the binary. It ships empty. Entries you
    add here are labelled Local, are read on every dialog open, and win on an id collision.
 2. **`community-presets.json`** — a starter template that ships beside the binary. It is listed
-   only inside **Add-ons** and installs nothing until you press **Use**. Use copies the entry
-   into your own cache, then applies it. Delete the file and the Template rows disappear.
+   only inside the picker's **Community Templates** section and installs nothing until you press
+   **Use**. Use copies the entry into your own cache, then applies it. Delete the file and the
+   Template rows disappear.
 3. **Your installed list** — `community-addons.json` in your user data directory. Entries you
    applied from the template or from a registry live here, labelled Community, and survive
    restarts.

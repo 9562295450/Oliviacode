@@ -2,10 +2,10 @@
 # installed executable, then uninstalls and proves the shortcut is gone. Run on a disposable
 # Windows profile or a VM; it writes to the current user's Desktop and Start Menu.
 #
-#   pwsh -File scripts/verify-installer.ps1 -Version 2.2.6
+#   pwsh -File scripts/verify-installer.ps1 -Version 2.2.7
 [CmdletBinding()]
 param(
-  [string]$Version = "2.2.6",
+  [string]$Version = "2.2.7",
   [string]$Installer = "",
   [switch]$KeepInstalled
 )

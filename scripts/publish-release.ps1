@@ -1,13 +1,13 @@
 # Publishes the built Windows installer and repository metadata to GitHub.
 #
 #   $env:GH_TOKEN = "github_pat_..."      # repo + workflow scope, or fine-grained equivalents
-#   pwsh -File scripts/publish-release.ps1 -Version 2.2.6
+#   pwsh -File scripts/publish-release.ps1 -Version 2.2.7
 #
 # The token is passed to git as a one-shot HTTP header. It is never written to .git/config,
 # the remote URL, or the shell history.
 [CmdletBinding()]
 param(
-  [string]$Version = "2.2.6",
+  [string]$Version = "2.2.7",
   [string]$Token = $env:GH_TOKEN,
   [string]$Repo = "9562295450/Oliviacode",
   [switch]$SkipPush,
@@ -64,7 +64,9 @@ $headers = @{
   "User-Agent"           = "oliviacode-release"
 }
 
-# 1. Commit and push the tree.
+# 1. Commit and push the tree. The tag is created by the release API below: pushing it here would
+# start the publish workflow before the Windows installer is attached, and the workflow would then
+# rebuild and replace the binary that was just verified on this machine.
 if (-not $SkipPush) {
   git add -A
   $pending = git status --porcelain
@@ -75,8 +77,6 @@ if (-not $SkipPush) {
   $basic = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$Token"))
   git -c "http.extraheader=AUTHORIZATION: basic $basic" push --no-verify origin "HEAD:refs/heads/main" | Out-Host
   if ($LASTEXITCODE -ne 0) { throw "git push main failed ($LASTEXITCODE)" }
-  git -c "http.extraheader=AUTHORIZATION: basic $basic" push --no-verify --force origin "refs/tags/$tag" | Out-Host
-  if ($LASTEXITCODE -ne 0) { throw "git push tag failed ($LASTEXITCODE)" }
 }
 
 # 2. About box: description, homepage, topics.
@@ -137,4 +137,26 @@ Publish-Asset $installer
 Publish-Asset $sums
 Publish-Asset $feed
 Publish-Asset $blockmap
+
+# 5. Build the other platforms. The release API created the tag pointing at the commit just pushed;
+# a git tag push would be a no-op and would raise no workflow event, so dispatch the workflow
+# explicitly. Its Windows job sees the installer above and skips; Linux and macOS build and attach.
+if (-not $SkipPush) {
+  $dispatch = @{ ref = $tag; inputs = @{ version = $Version } } | ConvertTo-Json
+  $queued = $false
+  foreach ($attempt in 1..5) {
+    try {
+      Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/$Repo/actions/workflows/publish.yml/dispatches" -Headers $headers -Body $dispatch | Out-Null
+      $queued = $true
+      break
+    } catch {
+      # GitHub indexes a workflow file a few seconds after the push that added it.
+      if ($attempt -eq 5) { Write-Warning "Could not dispatch publish.yml: $($_.Exception.Message)" }
+      else { Start-Sleep -Seconds 5 }
+    }
+  }
+  if ($queued) { Write-Host "workflow  queued publish.yml @ $tag" }
+  else { Write-Warning "Run it manually: Actions -> publish -> Run workflow, version $Version" }
+}
+
 Write-Host "done      https://github.com/$Repo/releases/tag/$tag"

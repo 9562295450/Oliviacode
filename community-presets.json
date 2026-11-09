@@ -1,9 +1,9 @@
 {
   "_readme": [
     "STARTER TEMPLATE FOR COMMUNITY ADD-ONS.",
-    "This file is data, not code. The app reads it to populate the add-ons dialog and installs",
-    "nothing until the user presses Use on an entry. It is not a provider list and it is not",
-    "loaded on first run.",
+    "This file is data, not code. The app reads it to populate the Community Templates section and",
+    "installs nothing until the user presses Use on an entry. It is not a provider list and it is",
+    "not loaded on first run.",
     "Every entry points a provider id, already known to the engine's own catalogue, at a base URL.",
     "An entry never contains a credential and is not an endorsement, a partnership, or a permission.",
     "Whoever connects an account is responsible for that service's terms, quotas, and usage rules.",
@@ -14,10 +14,11 @@
     {
       "id": "opencode",
       "label": "OpenCode Zen",
-      "description": "Community entry. Points the opencode provider id at its published gateway. Bring your own token; that service's terms are yours to keep.",
+      "description": "Community template. Points the opencode provider id at its published gateway. Supply the credential that service accepts; its terms are yours to keep.",
       "provider": "opencode",
       "baseURL": "https://opencode.ai/zen/v1",
-      "docsURL": "https://opencode.ai/auth"
+      "docsURL": "https://opencode.ai/auth",
+      "keyHint": "Free tier: paste public as the API key. Paid keys work too."
     }
   ]
 }

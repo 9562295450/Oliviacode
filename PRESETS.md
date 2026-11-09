@@ -10,9 +10,16 @@ add-ons, and every one is data the user controls:
 | Source | File / location | Ships with the app | Fetched |
 | --- | --- | --- | --- |
 | Local file | `presets.json` beside the binary | yes, empty | no |
-| Starter template | `community-presets.json` beside the binary | yes, inert until **Use** | no |
+| Community template | `community-presets.json` beside the binary | yes, one convenience entry, inert until **Use** | no |
 | Installed add-ons | `community-addons.json` in the app's user data | no | no |
 | Community registry | any `http(s)` URL the user pastes | no | only on **Load** |
+
+The shipped template entry names the `opencode` provider id — one the engine's own catalogue
+already defines — and points it at that service's published gateway. It is community data bundled
+as a convenience, not a built-in provider: the picker shows it under **Community Templates** with
+the note *Community-provided. Use at your own risk.*, and the app never signs in or supplies a
+credential. Applying it writes the base URL, then the user types the key the endpoint accepts —
+`public` for the free tier.
 
 ## What applying an add-on does
 
@@ -42,10 +49,10 @@ and the public client never reads or writes the config, history, or credential d
 separate OpenCode installation on the same machine. Credentials entered in this app stay in
 this app's engine profile.
 
-## Starter template
+## Community template
 
 `community-presets.json` ships beside the binary as an Electron extra resource. It is read
-only when you open **Add-ons**, and every entry is labelled `Template`:
+only when the picker opens, and every entry is shown under **Community Templates**:
 
 - Opening the dialog installs nothing. The engine config is untouched until you press **Use**.
 - **Use** copies the entry into `community-addons.json`, then applies it like any other add-on.
@@ -54,8 +61,10 @@ only when you open **Add-ons**, and every entry is labelled `Template`:
 - Replace its contents with your own schema-valid entries to brand a build for a community.
 
 The shipped template contains one entry, `opencode`: a community pointer to the provider id
-`opencode` and its published gateway. It is a convenience button, not a default. A profile
-that never presses **Use** has no provider and no endpoint.
+`opencode` and its published gateway. It is a convenience, not a default. A profile that never
+presses **Use** has no provider and no endpoint. The entry's `description` says it is
+community-provided; the picker shows that text next to the row, along with the standing note
+*Community-provided. Use at your own risk.*
 
 ## Local file
 
@@ -94,15 +103,16 @@ The document is either a bare array or an object with a `presets` array:
       "description": "One line about what this points at",
       "provider": "provider id already known to the engine",
       "baseURL": "https://example.invalid/v1",
-      "docsURL": "https://example.invalid/"
+      "docsURL": "https://example.invalid/",
+      "keyHint": "Optional line shown under the entry, e.g. which credential the endpoint expects"
     }
   ]
 }
 ```
 
-Required: `id`, `label`, `description`, `provider`, `baseURL`. Optional: `docsURL`. Everything
-else is ignored, which is why [`community-presets.json`](./community-presets.json) can carry a
-`_readme` array for humans reading it on a gist.
+Required: `id`, `label`, `description`, `provider`, `baseURL`. Optional: `docsURL`, `keyHint`.
+Everything else is ignored, which is why [`community-presets.json`](./community-presets.json) can
+carry a `_readme` array for humans reading it on a gist.
 
 ### Hosting one
 

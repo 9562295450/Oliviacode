@@ -43,6 +43,7 @@ const Preset = Schema.Struct({
   provider: Schema.String,
   baseURL: Schema.String,
   docsURL: Schema.optionalKey(Schema.String),
+  keyHint: Schema.optionalKey(Schema.String),
 })
 
 /** Accepts the bare array form and the `{ presets: [...] }` form a gist usually has. */
@@ -211,6 +212,7 @@ function strip(entry: Stored): PresetEntry {
     provider: entry.provider,
     baseURL: entry.baseURL,
     ...(entry.docsURL ? { docsURL: entry.docsURL } : {}),
+    ...(entry.keyHint ? { keyHint: entry.keyHint } : {}),
   }
 }
 

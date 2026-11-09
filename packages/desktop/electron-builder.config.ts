@@ -188,6 +188,8 @@ const getBase = (appId: string): Configuration => {
     mac: {
       category: "public.app-category.developer-tools",
       icon: `resources/icons/icon.icns`,
+      // Both architectures are released side by side, so the arch has to be in the file name.
+      artifactName: "Oliviacode-${version}-${arch}.${ext}",
       extendInfo: {
         NSMicrophoneUsageDescription: DESKTOP_NATIVE_ENGLISH["desktop.microphoneUsage"],
         // The CLI server and its terminals run as children of the app, so macOS asks for their access to
@@ -236,6 +238,7 @@ const getBase = (appId: string): Configuration => {
     linux: {
       icon: `resources/icons`,
       category: "Development",
+      artifactName: "Oliviacode-${version}-${arch}.${ext}",
       executableName: linuxExecutableName(appId),
       // Derive the installed `.desktop` filename from `desktopName`
       // (`ai.opencode.desktop.desktop` for prod) instead of `executableName`,

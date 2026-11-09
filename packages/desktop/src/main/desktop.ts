@@ -26,8 +26,12 @@ const runIpc = Effect.fn("Desktop.runIpc")(function* () {
   // first window asks for data, so a limit hit during startup is not missed.
   yield* Effect.forkScoped(startEgress)
   // The shell updater starts after the IPC transport, so its first check can reach a window that is
-  // already listening. A build without a release feed reports `unsupported` and never polls.
-  yield* Effect.sync(startUpdater)
+  // already listening. A build without a release feed reports `unsupported` and never polls. The
+  // updater is optional: a fault in it must never take down the IPC layer the rest of the app needs,
+  // so its failure is logged and startup continues.
+  yield* Effect.sync(startUpdater).pipe(
+    Effect.catchCause((cause) => Effect.logError("updater failed to start", cause)),
+  )
   // Main GUI plugins start with the window: servers they restore feed the first paint's server
   // list, and menu items they contribute are present at startup. Their heavy modules load lazily on
   // first use.

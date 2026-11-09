@@ -58,7 +58,8 @@ export function useProviders(directory: Accessor<string | undefined>) {
   // A provider is visible only when the user supplied it here: either an add-on names it, or it
   // holds a credential typed into this app. The engine's keyless catalogue, and anything it merely
   // detected from the environment, is not a provider the user chose, so a fresh install lists
-  // nothing at all.
+  // nothing at all. No provider id is hardcoded here; the starter template is where the app points
+  // at a community endpoint, and it is data.
   const credentialProviders = createMemo(
     () =>
       new Set(

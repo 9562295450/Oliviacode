@@ -6,10 +6,10 @@ and versioned with the code instead of being typed once into a web form.
 ## About — short description
 
 > A privacy-focused desktop AI client. Bring your own provider: nothing is preconfigured, no
-> endpoint is bundled, and provider add-ons are community data you choose to load. Multi-lane
+> endpoint is compiled in, and provider add-ons are community data you choose to load. Multi-lane
 > egress, session isolation, MIT licensed.
 
-That is 223 characters, inside GitHub's 350-character limit.
+That is 227 characters, inside GitHub's 350-character limit.
 
 ## About — website
 
@@ -44,17 +44,18 @@ Use `packages/desktop/resources/icons/icon.png` on a dark background, with the w
 ## First release body
 
 ```markdown
-## Oliviacode 2.2.6
+## Oliviacode 2.2.7
 
-A privacy-focused desktop AI client. Nothing is preconfigured: no provider, no endpoint, no
-credential. You connect an account, or you don't.
+A privacy-focused desktop AI client. Nothing is preconfigured: no provider, no endpoint in the
+code, no credential. A community template gives you one-click setup if you want it.
 
 ### Downloads
 | Platform | File |
 | --- | --- |
-| Windows 10/11 x64 | `Oliviacode-Setup-2.2.6.exe` |
-| macOS (arm64 / x64) | `Oliviacode-2.2.6.dmg` |
-| Linux x64 | `Oliviacode-2.2.6.AppImage`, `.deb`, `.rpm` |
+| Windows 10/11 x64 | `Oliviacode-Setup-2.2.7.exe` |
+| macOS Apple Silicon (arm64) | `Oliviacode-2.2.7-arm64.dmg` |
+| macOS Intel (x64) | `Oliviacode-2.2.7-x64.dmg` |
+| Linux x64 | `Oliviacode-2.2.7-x64.AppImage`, `.deb`, `.rpm` |
 
 ### Verify before you run
 - SHA-256 for every artifact is in `SHA256SUMS.txt` below.
@@ -81,7 +82,9 @@ credential. You connect an account, or you don't.
 ## Pinned issue / first-run note
 
 > **Where do the providers come from?**
-> Oliviacode ships none. Open the model chip in the composer → **Add-ons** → **Load community
-> add-ons**, paste a registry URL, and pick an entry; or add your own provider id, base URL and
-> token by hand. Applying an entry writes one field into `~/.config/opencode/opencode.json` and
-> stores no credential.
+> Oliviacode ships none. Open the model chip in the composer → **Community Templates** → press
+> the OpenCode Zen entry to apply its base URL, then paste the key that endpoint accepts
+> (`public` for its free tier). For anything else, **Browse community add-ons**, paste a registry
+> URL, and pick an entry; or add your own provider id, base URL and token by hand. Applying an
+> entry writes one field into `<userData>/engine/config/opencode/opencode.json` and stores no
+> credential.

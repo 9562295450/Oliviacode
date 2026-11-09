@@ -10,10 +10,10 @@ a one-shot HTTP header; it is never written to `.git/config`, the remote URL, or
 1. Create a classic token with `repo` and `workflow` scopes:
    <https://github.com/settings/tokens/new?scopes=repo,workflow&description=Oliviacode-release>
    - `repo` covers contents, releases, and the About box.
-   - `workflow` is required because the repository contains `.github/workflows/*`; GitHub
-     rejects any push that adds or edits those files without it.
+   - `workflow` is required to push changes under `.github/workflows/*` and to dispatch the
+     release workflow.
    - Fine-grained tokens work too: **Contents: Read and write**, **Administration: Read and
-     write**, **Workflows: Read and write**.
+     write**, **Actions: Read and write**.
 2. Build:
 
    ```powershell
@@ -27,27 +27,31 @@ a one-shot HTTP header; it is never written to `.git/config`, the remote URL, or
    ```
 
    `OPENCODE_CHANNEL=prod` is what makes the installer say **Oliviacode** instead of
-   **oliviacode Dev**, and installs under appId `ai.oliviacode.desktop`.
+   **oliviacode Dev**, and installs under appId `ai.oliviacode.desktop`. The engine pin is
+   independent of the shell version: only raise it when the bundled CLI is meant to change.
 
 3. Publish:
 
    ```powershell
    $env:GH_TOKEN = "github_pat_..."
-   powershell -File scripts/publish-release.ps1 -Version 2.2.6
+   powershell -File scripts/publish-release.ps1 -Version 2.2.7
    ```
 
-The script commits the tree, pushes `main`, pushes the `v<version>` tag, updates the About box,
-creates (or reuses) the release, and uploads the installer, `SHA256SUMS.txt`, `latest.yml` and the
-blockmap. Re-running it replaces same-named assets instead of failing.
+The script commits the tree, pushes `main`, creates (or reuses) the release, uploads the installer,
+`SHA256SUMS.txt`, `latest.yml` and the blockmap, then dispatches the publish workflow for the other
+platforms. Re-running it replaces same-named assets instead of failing.
 
-A tag pushed by Route A also queues Route B, which rebuilds the installer on the runner and
-uploads with `--clobber`. Cancel that run to keep the binary verified here, or let Route B own the
-release instead and verify its artifact afterwards.
+The release API creates the `v<version>` tag on the commit it just pushed. The script does not push
+the tag itself: a tag push would start the workflow before the Windows asset exists, and its Windows
+job would rebuild and replace the binary verified here. Because the tag already points at that
+commit, a later `git push origin v<version>` would be a no-op and would raise no event, so the
+script dispatches `publish.yml` with the version instead. The workflow's Windows job sees the
+uploaded installer and skips; the Linux and macOS jobs build and attach their packages.
 
 Verify the installer before publishing, on a disposable profile:
 
 ```powershell
-powershell -File scripts/verify-installer.ps1 -Version 2.2.6
+powershell -File scripts/verify-installer.ps1 -Version 2.2.7
 ```
 
 That installs silently, asserts `Desktop\Oliviacode.lnk` and the Start Menu entry exist and point
@@ -55,19 +59,33 @@ at the installed executable, then uninstalls and asserts both are gone.
 
 ## Route B - the workflow
 
-`.github/workflows/publish-windows.yml` runs on a clean `windows-latest` runner. The repo-scoped
-`GITHUB_TOKEN` does the publishing; no personal token is stored in the repo.
+`.github/workflows/publish.yml` runs on clean runners. The repo-scoped `GITHUB_TOKEN` does the
+publishing; no personal token is stored in the repo.
 
 ```powershell
-git tag v2.2.6
-git push origin v2.2.6
+git tag v2.2.7
+git push origin v2.2.7
 ```
 
-Or run **Actions -> publish-windows -> Run workflow** with the version, after the tag exists.
+Or run **Actions -> publish -> Run workflow** with the version, after the tag exists.
 
-The workflow builds, packs the unpacked app, packs the NSIS installer, writes `SHA256SUMS.txt`,
-creates the release when it is missing, and uploads the installer, checksums, `latest.yml` and the
-blockmap with `--clobber` so a re-run is safe.
+The workflow builds:
+
+| Job | Runner | Artifacts |
+| --- | --- | --- |
+| `windows` | `windows-latest` | `Oliviacode-Setup-<version>.exe`, `latest.yml`, blockmap |
+| `linux` | `ubuntu-latest` | `Oliviacode-<version>-x64.AppImage`, `.deb`, `.rpm`, `latest-linux.yml` |
+| `macos` | `macos-latest` (arm64), `macos-15-intel` (x64) | `Oliviacode-<version>-<arch>.dmg`, `.zip` |
+| `checksums` | `ubuntu-latest` | `SHA256SUMS.txt` over every published asset |
+
+Each build job skips when its artifact is already on the release, so a locally verified Windows
+installer survives the tag push. The `checksums` job rewrites one SHA-256 list covering everything
+actually attached.
+
+macOS builds are unsigned and not notarized. Squirrel.Mac refuses unsigned updates, so no
+`latest-mac.yml` is published and macOS installs update by download until signing is set up.
+Linux AppImage installs use `latest-linux.yml`; deb and rpm installs update through the package
+manager.
 
 A tag pushed in the same operation as the repository's very first branch push may not trigger a
 run, because the default branch had not been indexed yet. If the Actions tab shows no run, use
@@ -77,7 +95,7 @@ run, because the default branch had not been indexed yet. If the Actions tab sho
 
 - Assisted flow: licence page with the disclaimer, progress page, Finish with **Run Oliviacode**
   ticked.
-- Per-user install under `%LOCALAPPDATA%\Programs\ai.oliviacode.public`, so it co-exists with a
+- Per-user install under `%LOCALAPPDATA%\Programs\ai.oliviacode.desktop`, so it co-exists with a
   separate OpenCode install.
 - Desktop shortcut `Oliviacode.lnk` and Start Menu entry, created for the current user.
   `createDesktopShortcut: "always"` recreates the desktop icon on update if it was removed.

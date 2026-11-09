@@ -7,7 +7,7 @@ import { getConfig } from "../electron-builder.config"
 import { getCurrentCli, resolveChannel } from "./utils"
 
 // Packages the built app (out/) for OPENCODE_TARGET into dist/desktop at the repository root, unsigned:
-// macOS: the .app as a tarball. Windows: the unpacked app in app/, or with OPENCODE_DESKTOP_APP, the NSIS
+// macOS: dmg and zip. Windows: the unpacked app in app/, or with OPENCODE_DESKTOP_APP, the NSIS
 // installer around that (signed) app. Linux: AppImage, deb and rpm. The release workflow signs afterwards.
 const dir = path.resolve(import.meta.dir, "..")
 
@@ -46,23 +46,28 @@ if (app) {
   // The blockmap serves differential downloads; the feed carries the installer and latest.yml.
   const blockmap = `${setup}.blockmap`
   if ((await readdir("dist")).includes(blockmap)) await cp(path.join("dist", blockmap), path.join(out, blockmap))
-  await writeLatestYml(path.join(out, setup))
+  await writeFeed(path.join(out, setup), "latest.yml")
 }
 
 if (!app && os === "linux") {
   await $`bunx electron-builder ${flags}`
   const files = (await readdir("dist")).filter((file) => /\.(AppImage|deb|rpm)$/.test(file))
   await Promise.all(files.map((file) => cp(path.join("dist", file), path.join(out, file))))
+  // electron-updater's AppImage updater reads latest-linux.yml from the same generic feed. deb and rpm
+  // installs update through the package manager, so the feed names the AppImage only.
+  const appimage = files.find((file) => file.endsWith(".AppImage"))
+
+  if (!appimage) throw new Error("electron-builder produced no .AppImage")
+  await writeFeed(path.join(out, appimage), "latest-linux.yml")
 }
 
 if (!app && os === "mac") {
-  await $`bunx electron-builder ${flags} --dir -c.mac.identity=null`
-  const parent = path.join("dist", cli.cpu === "arm64" ? "mac-arm64" : "mac")
-  const bundles = (await readdir(parent)).filter((file) => file.endsWith(".app"))
-
-  if (bundles.length !== 1) throw new Error(`Expected one .app bundle in ${parent}, found ${bundles.join(", ")}`)
-  await writeUpdateConfig(path.join(parent, bundles[0], "Contents", "Resources"))
-  await $`tar -cf ${path.join(out, `opencode-desktop-mac-${cli.cpu}.app.tar`)} -C ${parent} ${bundles[0]}`
+  await $`bunx electron-builder ${flags} -c.mac.identity=null`
+  const files = (await readdir("dist")).filter((file) => /\.(dmg|zip)$/.test(file))
+  await Promise.all(files.map((file) => cp(path.join("dist", file), path.join(out, file))))
+  // No latest-mac.yml: Squirrel.Mac refuses unsigned updates, so macOS installs update by download
+  // until the build is signed and notarized. The zip is still shipped for anyone scripting a copy.
+  if (!files.some((file) => file.endsWith(".dmg"))) throw new Error("electron-builder produced no .dmg")
 }
 
 if (!app && os === "win") {
@@ -94,25 +99,25 @@ async function writeUpdateConfig(resources: string) {
   )
 }
 
-// electron-updater's generic provider fetches latest.yml before any download and verifies the installer
+// electron-updater's generic provider fetches a feed file before any download and verifies the artifact
 // against it. electron-builder writes one only while publishing, and pack builds with --publish never,
 // so the feed entry is written here from the same bytes the release uploads.
-async function writeLatestYml(installer: string) {
-  const bytes = Buffer.from(await Bun.file(installer).arrayBuffer())
+async function writeFeed(artifact: string, name: string) {
+  const bytes = Buffer.from(await Bun.file(artifact).arrayBuffer())
   const sha512 = createHash("sha512").update(bytes).digest("base64")
-  const { size } = await stat(installer)
+  const { size } = await stat(artifact)
   const version: string = (await Bun.file(path.join(dir, "package.json")).json()).version
-  const name = path.basename(installer)
+  const file = path.basename(artifact)
 
   await Bun.write(
-    path.join(out, "latest.yml"),
+    path.join(out, name),
     [
       `version: ${version}`,
       "files:",
-      `  - url: ${name}`,
+      `  - url: ${file}`,
       `    sha512: ${sha512}`,
       `    size: ${size}`,
-      `path: ${name}`,
+      `path: ${file}`,
       `sha512: ${sha512}`,
       `releaseDate: '${new Date().toISOString()}'`,
       "",
