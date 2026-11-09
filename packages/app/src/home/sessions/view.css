@@ -25,6 +25,14 @@
   }
 }
 
+/* Touch has no hover to reveal the row's rename pencil, so `hover-reveal` already draws it at full
+   opacity there — which means it also has to accept the tap it now invites. */
+@media (hover: none) {
+  [data-component="home-session-rename-actions"] {
+    pointer-events: auto;
+  }
+}
+
 /* The highlight sweeps in reading direction. */
 [data-component="home-session-skeleton"] {
   opacity: 0;

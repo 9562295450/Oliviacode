@@ -123,7 +123,7 @@ const getBase = (appId: string): Configuration => {
       {
         from: "resources/",
         to: "",
-        filter: ["opencode-cli", "opencode-cli.exe", "opencode-cli.version"],
+        filter: ["opencode-cli", "opencode-cli.exe", "opencode-cli.version", "web-tools.mjs"],
       },
       // Inert local preset data. Empty by default; entries are user-supplied.
       {

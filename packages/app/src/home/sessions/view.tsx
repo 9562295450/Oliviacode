@@ -686,7 +686,7 @@ function HomeSessionRow(
         fallback={
           <div
             data-slot="home-session-editor"
-            class="flex h-10 min-w-0 w-full flex-1 items-center py-3 ps-1.5 pe-3 md:ps-3"
+            class="flex h-10 min-w-0 w-full flex-1 items-center py-3 ps-1.5 pe-10 md:ps-3"
             classList={{ "gap-1.5": props.desktop, "gap-2": !props.desktop, "md:pe-10": SHOW_HOME_SESSION_ARCHIVE }}
           >
             <HomeSessionIndicators server={props.server} isOpenTab={props.isOpenTab} record={props.record} />
@@ -750,7 +750,7 @@ function HomeSessionRow(
           aria-expanded={!!menu()}
           class={`
             flex h-10 min-w-0 w-full flex-1 shrink-0 cursor-default items-center rounded-[6px] border-0
-            bg-transparent py-3 ps-1.5 pe-3 md:ps-3 text-start text-v2-text-text-muted [font-weight:530]
+            bg-transparent py-3 ps-1.5 pe-10 md:ps-3 text-start text-v2-text-text-muted [font-weight:530]
             transition-[background-color,color,box-shadow] duration-[120ms] ease-in-out
             hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
           `}
@@ -829,6 +829,34 @@ function HomeSessionRow(
             />
           </div>
         </button>
+      </Show>
+      {/* Rename used to live only in the row's context menu, so an untitled session looked broken
+          rather than editable. The pencil puts it one hover away, and `rename.start` is the same
+          event the menu item sends, so the editor, the save and the focus handling are unchanged. */}
+      <Show when={!editor()}>
+        <div
+          data-component="home-session-rename-actions"
+          class={`
+            hover-reveal pointer-events-none absolute end-1.5 top-1/2 flex -translate-y-1/2 items-center
+            group-hover/session:pointer-events-auto group-hover/session:opacity-100
+            focus-within:pointer-events-auto focus-within:opacity-100
+          `}
+        >
+          <Tooltip class="flex shrink-0 items-center" placement="bottom" value={props.language.t("common.rename")}>
+            <IconButton
+              data-action="home-session-rename"
+              variant="ghost-muted"
+              size="small"
+              icon={<Icon name="edit" />}
+              aria-label={props.language.t("common.rename")}
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                props.onRowEvent({ type: "rename.start", sessionID: sessionID(), title: title() })
+              }}
+            />
+          </Tooltip>
+        </div>
       </Show>
       <Menu
         modal={false}

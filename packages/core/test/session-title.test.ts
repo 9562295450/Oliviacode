@@ -507,7 +507,7 @@ it.effect("generates a title for an explicitly requested child session", () =>
   }),
 )
 
-it.effect("does not generate when the title agent is removed", () =>
+it.effect("names the session from the first message when the title agent is removed", () =>
   Effect.gen(function* () {
     const sessionID = Session.ID.make("ses_title_no_agent")
     yield* insertSession(sessionID)
@@ -518,8 +518,17 @@ it.effect("does not generate when the title agent is removed", () =>
     yield* title.generate(sessionID)
 
     expect(requests).toHaveLength(0)
-    const untouched = yield* store.get(sessionID)
-    expect(untouched?.title).toBeUndefined()
+    const named = yield* store.get(sessionID)
+    expect(named?.title).toBe("Help me debug the failing build")
+  }),
+)
+
+it.effect("clips the provisional title to one line", () =>
+  Effect.sync(() => {
+    expect(SessionTitle.provisionalTitle("  fix   the\nbuild  ")).toBe("fix the build")
+    expect(SessionTitle.provisionalTitle("   ")).toBeUndefined()
+    expect(SessionTitle.provisionalTitle("x".repeat(200))?.length).toBe(60)
+    expect(SessionTitle.provisionalTitle("x".repeat(200))?.endsWith("...")).toBe(true)
   }),
 )
 
@@ -626,7 +635,7 @@ it.effect("retries after a failed title request", () =>
   }),
 )
 
-it.effect("does not rename after a failed title stream", () =>
+it.effect("keeps the provisional title after a failed title stream", () =>
   Effect.gen(function* () {
     yield* enableTitleAgent
     const sessionID = Session.ID.make("ses_title_stream_failure")
@@ -644,7 +653,7 @@ it.effect("does not rename after a failed title stream", () =>
 
     const store = yield* SessionStore.Service
     expect(requests).toHaveLength(1)
-    expect((yield* store.get(sessionID))?.title).toBeUndefined()
+    expect((yield* store.get(sessionID))?.title).toBe("Fail this title stream")
   }),
 )
 

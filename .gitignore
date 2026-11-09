@@ -45,6 +45,7 @@ opencode-dev
 RELEASE_REVIEW.md
 logs/
 *.bun-build
+.bun-cache/
 tsconfig.tsbuildinfo
 /artifacts/
 

@@ -3,6 +3,7 @@ import path from "node:path"
 import { getCACertificates, setDefaultCACertificates } from "node:tls"
 import { app } from "electron"
 import { Effect, Path } from "effect"
+import { registerWebTools } from "../mcp/web-tools"
 import { DesktopPaths } from "../paths"
 import { getUserShell, loadShellEnv } from "../service/shell-env"
 import { registerRendererProtocol, setDockIcon, setProtocolReporter } from "../windows"
@@ -80,7 +81,17 @@ export const isolateEngineEnvironment = Effect.sync(() => {
   delete process.env.OPENCODE_CONFIG
   delete process.env.OPENCODE_CONFIG_CONTENT
   delete process.env.OPENCODE_CONFIG_DIR
-})
+
+  return process.env.XDG_CONFIG_HOME
+}).pipe(
+  // Registering after the redirect is the whole point: the entry lands in this profile's config and
+  // nowhere else. A failure here costs web research, not the launch, so it is logged and dropped.
+  Effect.tap(() =>
+    Effect.try(() => registerWebTools()).pipe(
+      Effect.catch((error) => Effect.logWarning("failed to register the web tools server", { error })),
+    ),
+  ),
+)
 
 export const prepareDesktop = Effect.gen(function* () {
   const path = yield* Path.Path

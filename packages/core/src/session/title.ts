@@ -18,9 +18,24 @@ import { SessionUsage } from "./usage.js"
 import { SessionStore } from "./store.js"
 
 const MAX_LENGTH = 100
+const MAX_PROVISIONAL_LENGTH = 60
 const MAX_CONTEXT_LENGTH = 8_000
 const MAX_FIRST_MESSAGE_LENGTH = 2_000
 const titleChanged = Symbol("Session title changed")
+
+/**
+ * A session should have a name as soon as it has a message, not when a model gets around to
+ * naming it. This is the first line of the prompt, collapsed and clipped, and it is replaced by
+ * the generated title when that lands.
+ */
+export function provisionalTitle(text: string) {
+  const line = text.replace(/\s+/g, " ").trim()
+  if (!line) return undefined
+
+  return line.length <= MAX_PROVISIONAL_LENGTH
+    ? line
+    : `${line.slice(0, MAX_PROVISIONAL_LENGTH - 3).trimEnd()}...`
+}
 
 export interface Interface {
   /** Generates an initial title or regenerates one from bounded conversation history. */
@@ -106,6 +121,14 @@ export const layer = Layer.effect(
       if (!session) return
       const firstUser = yield* SessionHistory.firstUserMessage(db, session.id)
       if (!firstUser) return
+
+      // Name the session before the model call, so a missing title agent, an unreachable provider
+      // or a slow model still leaves a list of sessions a person can tell apart.
+      const provisional = isUntitled(session) ? provisionalTitle(firstUser.text) : undefined
+      if (provisional) {
+        yield* bus.publish(SessionEvent.Renamed, { sessionID: session.id, title: provisional })
+      }
+
       const text = !isUntitled(session)
         ? yield* store.context(session.id).pipe(
             Effect.map((messages) => {
@@ -139,7 +162,8 @@ export const layer = Layer.effect(
       if (!title) return
       const expectedSequence = (yield* Bus.latestSequence(db, sessionID)) + 1
       const current = yield* store.get(sessionID)
-      if (!current || current.title !== session.title || current.title === truncate(title)) return
+      const base = provisional ?? session.title
+      if (!current || current.title !== base || current.title === truncate(title)) return
       yield* bus
         .publish(
           SessionEvent.Renamed,

@@ -13,15 +13,19 @@ import { CLI_BINARIES, nodePtyPackage } from "./script/utils"
 const { FileMatcher } = createRequire(import.meta.resolve("electron-builder"))("app-builder-lib/out/fileMatcher")
 
 const channels = [
-  { channel: "dev", appId: "ai.opencode.desktop.dev", feed: "dev" },
-  { channel: "beta", appId: "ai.opencode.desktop.beta", feed: "beta" },
-  { channel: "prod", appId: "ai.opencode.desktop", feed: "latest" },
+  { channel: "dev", appId: "ai.oliviacode.desktop.dev" },
+  { channel: "beta", appId: "ai.oliviacode.desktop.beta" },
+  { channel: "prod", appId: "ai.oliviacode.desktop" },
 ] as const
+
+const updateRepo = "9562295450/Oliviacode"
 
 function load(channel: string, target?: string): Configuration {
   const previous = process.env.OPENCODE_CHANNEL
   const previousTarget = process.env.OPENCODE_TARGET
+  const previousRepo = process.env.OLIVIACODE_UPDATE_REPO
   process.env.OPENCODE_CHANNEL = channel
+  process.env.OLIVIACODE_UPDATE_REPO = updateRepo
 
   if (target !== undefined) process.env.OPENCODE_TARGET = target
   else delete process.env.OPENCODE_TARGET
@@ -33,8 +37,9 @@ function load(channel: string, target?: string): Configuration {
     delete process.env.OPENCODE_TARGET
 
     if (previous !== undefined) process.env.OPENCODE_CHANNEL = previous
-
     if (previousTarget !== undefined) process.env.OPENCODE_TARGET = previousTarget
+    if (previousRepo === undefined) delete process.env.OLIVIACODE_UPDATE_REPO
+    else process.env.OLIVIACODE_UPDATE_REPO = previousRepo
   }
 }
 
@@ -47,13 +52,13 @@ function trimFilter(dir: string, config: Configuration) {
   ]).createFilter()
 }
 
-test.each(channels)("channel identity for $channel", ({ channel, appId, feed }) => {
+test.each(channels)("channel identity for $channel", ({ channel, appId }) => {
   const config = load(channel)
   expect(config.appId).toBe(appId)
-  // Every published channel updates from its own feed on the update service.
+  // Updates come from this repository's own releases, never a shared service.
   expect(config.publish).toEqual({
     provider: "generic",
-    url: `https://opencode.ai/update/api/${feed}/desktop/opencode/`,
+    url: `https://github.com/${updateRepo}/releases/latest/download`,
     channel: "latest",
   })
   expect(config.extraMetadata?.desktopName).toBe(`${appId}.desktop`)
@@ -70,7 +75,7 @@ test.each(channels)("channel identity for $channel", ({ channel, appId, feed }) 
   for (const fpm of [config.deb?.fpm, config.rpm?.fpm]) {
     expect(fpm).toContainEqual(expect.stringContaining(`/usr/share/metainfo/${appId}.metainfo.xml`))
     expect(
-      fpm?.some((entry) => entry.endsWith("opencode-desktop.desktop=/usr/share/applications/opencode-desktop.desktop")),
+      fpm?.some((entry) => entry.endsWith("oliviacode-desktop.desktop=/usr/share/applications/oliviacode-desktop.desktop")),
     ).toBe(channel === "prod")
   }
 
@@ -81,16 +86,18 @@ test.each(channels)("channel identity for $channel", ({ channel, appId, feed }) 
 })
 
 test("legacy Linux launcher stays hidden", async () => {
-  const desktop = await Bun.file(path.join(import.meta.dirname, "resources/linux/opencode-desktop.desktop")).text()
-  expect(desktop).toContain("Exec=/opt/OpenCode/ai.opencode %U")
-  expect(desktop).toContain("Icon=ai.opencode")
-  expect(desktop).toContain("StartupWMClass=ai.opencode.desktop")
+  const desktop = await Bun.file(path.join(import.meta.dirname, "resources/linux/oliviacode-desktop.desktop")).text()
+  expect(desktop).toContain("Exec=/opt/oliviacode/ai.oliviacode.desktop %U")
+  expect(desktop).toContain("Icon=ai.oliviacode.desktop")
+  expect(desktop).toContain("StartupWMClass=ai.oliviacode.desktop")
   expect(desktop).toContain("NoDisplay=true")
 })
 
 test.each(channels)("macOS bundle for $channel", ({ channel }) => {
   const config = load(channel)
-  expect(config.mac?.icon).toBe(channel === "prod" ? "resources/icons/icon.icon" : "resources/icons/icon.icns")
+  // The Icon Composer package compiles with actool 26, which only the arm64 runner has.
+  const prodIcon = process.arch === "arm64" ? "resources/icons/icon.icon" : "resources/icons/icon.icns"
+  expect(config.mac?.icon).toBe(channel === "prod" ? prodIcon : "resources/icons/icon.icns")
   expect(config.dmg?.icon).toBe(channel === "prod" ? "resources/icons/icon.icns" : undefined)
   // The prod override must keep the rest of the shared macOS settings.
   expect(config.mac?.target).toEqual(["dmg", "zip"])
@@ -126,8 +133,26 @@ test("shared packaging defaults", async () => {
   expect(await Bun.file(include).exists()).toBe(true)
   expect(config.files).toContain("!resources/opencode-cli*")
   expect(config.extraResources).toEqual([
-    { from: "resources/", to: "", filter: ["opencode-cli", "opencode-cli.exe", "opencode-cli.version"] },
+    { from: "resources/", to: "", filter: ["opencode-cli", "opencode-cli.exe", "opencode-cli.version", "web-tools.mjs"] },
+    { from: "../../presets.json", to: "presets.json" },
+    { from: "../../community-presets.json", to: "community-presets.json" },
   ])
+})
+
+test("writes no update feed without a configured repository", () => {
+  const previous = process.env.OLIVIACODE_UPDATE_REPO
+
+  try {
+    for (const value of [undefined, "9562295450", "https://github.com/9562295450/Oliviacode"]) {
+      if (value === undefined) delete process.env.OLIVIACODE_UPDATE_REPO
+      else process.env.OLIVIACODE_UPDATE_REPO = value
+      // A fresh clone, or a fork that has not set the variable, must never call an update server.
+      expect(getConfig().publish).toBeNull()
+    }
+  } finally {
+    if (previous === undefined) delete process.env.OLIVIACODE_UPDATE_REPO
+    else process.env.OLIVIACODE_UPDATE_REPO = previous
+  }
 })
 
 test("trims external dependencies without excluding runtime files", () => {

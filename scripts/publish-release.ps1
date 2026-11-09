@@ -27,7 +27,6 @@ $tag = "v$Version"
 $assetName = Split-Path -Leaf $installer
 $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 $sums = Join-Path $root "dist/desktop/SHA256SUMS.txt"
-"$hash  $assetName" | Set-Content -Path $sums -Encoding ascii
 
 # electron-updater reads latest.yml before downloading; a release without it leaves every installed
 # copy on its current version with no error, so a missing feed is a hard stop.
@@ -42,6 +41,13 @@ $blockmap = "$installer.blockmap"
 if (-not (Test-Path $blockmap)) {
   throw "Missing $blockmap. Re-run: `$env:OPENCODE_DESKTOP_APP='dist/desktop/app'; bun run pack"
 }
+
+# The checksums page quotes all three files, so the release asset carries all three.
+@(
+  "$hash  $assetName"
+  "$((Get-FileHash $blockmap -Algorithm SHA256).Hash.ToLowerInvariant())  $assetName.blockmap"
+  "$((Get-FileHash $feed -Algorithm SHA256).Hash.ToLowerInvariant())  latest.yml"
+) | Set-Content -Path $sums -Encoding ascii
 Write-Host "artifact  $assetName"
 Write-Host "sha256    $hash"
 Write-Host "size      $([math]::Round((Get-Item $installer).Length / 1MB, 1)) MB"
