@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oliviacode 2.2.7 — checksums and scans</title>
-<meta name="description" content="SHA-256 checksums for every Oliviacode 2.2.7 artifact, plus the VirusTotal reports for the installer and the application binary.">
+<title>Oliviacode 2.2.8 — checksums and scans</title>
+<meta name="description" content="SHA-256 checksums for every Oliviacode 2.2.8 artifact, plus the VirusTotal reports for the 2.2.7 installer and application binary.">
 <link rel="icon" type="image/svg+xml" href="assets/owl-mark.svg">
 <style>
   :root{--bg:#08080a;--panel:#101014;--line:#24242c;--text:#ececf1;--muted:#9b9ba6;--accent:#6ee7c8;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",Inter,sans-serif}
@@ -25,6 +25,7 @@
   .pill{font-size:13px;color:var(--muted);border:1px solid var(--line);background:#15151b;padding:6px 11px;border-radius:99px}
   .pill b{color:var(--text)}
   .ok{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:7px}
+  .wait{display:inline-block;width:7px;height:7px;border-radius:50%;background:#d9b35c;margin-right:7px}
   table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
   th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line)}
   td{padding:9px 10px;border-bottom:1px solid #1b1b22;font-family:var(--mono);font-size:12.4px;word-break:break-all;vertical-align:top}
@@ -37,55 +38,57 @@
 <body>
 <header><div class="wrap"><img src="assets/owl-mark.svg" alt="Oliviacode owl mark"><span class="name">Oliviacode</span><a class="back" href="./">← back to overview</a></div></header>
 <div class="wrap">
-  <h1>Checksums and scans — 2.2.7</h1>
-  <p class="lead">Every artifact below is attached to the <a href="https://github.com/9562295450/Oliviacode/releases/tag/v2.2.7">v2.2.7 release</a>. Hashes are the published <a href="https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/SHA256SUMS.txt">SHA256SUMS.txt</a>, unedited.</p>
+  <h1>Checksums and scans — 2.2.8</h1>
+  <p class="lead">Every artifact below is attached to the <a href="https://github.com/9562295450/Oliviacode/releases/tag/v2.2.8">v2.2.8 release</a>. Hashes are the published <a href="https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/SHA256SUMS.txt">SHA256SUMS.txt</a>, unedited.</p>
 
   <div class="row">
-    <span class="pill"><span class="ok"></span><b>Installer 0/50</b> · VirusTotal</span>
-    <span class="pill"><span class="ok"></span><b>App binary 0/68</b> · VirusTotal</span>
+    <span class="pill"><span class="ok"></span><b>2.2.7 installer 0/50</b> · VirusTotal</span>
+    <span class="pill"><span class="ok"></span><b>2.2.7 binary 0/68</b> · VirusTotal</span>
+    <span class="pill"><span class="wait"></span><b>2.2.8</b> scan pending</span>
     <span class="pill"><b>MIT</b> licensed</span>
   </div>
 
   <h2>VirusTotal</h2>
   <div class="card">
-    <p style="margin:0 0 12px"><b>Installer</b> — <code>Oliviacode-Setup-2.2.7.exe</code>, 257,940,413 bytes<br>
+    <p style="margin:0 0 12px"><b>Installer, 2.2.7</b> — <code>Oliviacode-Setup-2.2.7.exe</code>, 257,940,413 bytes<br>
       <span style="color:var(--muted)">0/50 engines, scanned 9 November 2026 —</span>
       <a href="https://www.virustotal.com/gui/file/4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a">report</a></p>
-    <p style="margin:0"><b>Application binary</b> — <code>Oliviacode.exe</code>, 246,924,288 bytes, the file the installer writes<br>
+    <p style="margin:0"><b>Application binary, 2.2.7</b> — <code>Oliviacode.exe</code>, 246,924,288 bytes<br>
       <span style="color:var(--muted)">0/68 engines, scanned 9 November 2026 —</span>
       <a href="https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d">report</a></p>
+    <p style="margin:12px 0 0;color:var(--muted)">The 2.2.8 installer is a different binary and has not been scanned yet. Its SHA-256 is below; check it before running.</p>
   </div>
 
   <h2>Verify a download</h2>
   <pre># Windows
-Get-FileHash .\Oliviacode-Setup-2.2.7.exe -Algorithm SHA256
+Get-FileHash .\Oliviacode-Setup-2.2.8.exe -Algorithm SHA256
 
 # macOS
-shasum -a 256 Oliviacode-2.2.7-arm64.dmg
+shasum -a 256 Oliviacode-2.2.8-arm64.dmg
 
 # Linux
-sha256sum Oliviacode-2.2.7-x64.AppImage</pre>
+sha256sum Oliviacode-2.2.8-x64.AppImage</pre>
 
   <h2>All artifacts</h2>
   <table>
     <thead><tr><th>File</th><th>SHA-256</th></tr></thead>
     <tbody>
-      <tr><td class="name">Oliviacode-Setup-2.2.7.exe</td><td>4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a</td></tr>
-      <tr><td class="name">Oliviacode-Setup-2.2.7.exe.blockmap</td><td>f30f622b353fe4015ca6a660554df1231c211e4543d930e423a19f03d6678e8c</td></tr>
-      <tr><td class="name">Oliviacode-2.2.7-arm64.dmg</td><td>f581e615a962c3a9df096babb62d42f0cd964111ab1017262ac0c4de39801eff</td></tr>
-      <tr><td class="name">Oliviacode-2.2.7-arm64.zip</td><td>44c828826ef55e915698e15286747888c8ac57f21716c090566c337b3162ce48</td></tr>
-      <tr><td class="name">Oliviacode-2.2.7-x64.dmg</td><td>94ebc923bb56fefbee8705e3af44d2054eebed9090a6873a21e315e96aff1d53</td></tr>
-      <tr><td class="name">Oliviacode-2.2.7-x64.zip</td><td>5ee425979c1168c5009e77f1dc434106da0e1d869f7ca4d7d8de0276b4da73b8</td></tr>
-      <tr><td class="name">Oliviacode-2.2.7-x64.AppImage</td><td>6676b6d4dfa3538def173c81477b3c15a5e7d4b992c14cc2bcae1c6ec674834e</td></tr>
-      <tr><td class="name">Oliviacode-2.2.7-x64.deb</td><td>c3f407d8297dc0d2fffe1d155bfe1302e2e23bd54ca18e3759e0888a04a0b57d</td></tr>
-      <tr><td class="name">Oliviacode-2.2.7-x64.rpm</td><td>deb65769c7473ff8c5d1311f65c6194fe0808c1aa1e7c928f47bda68a18e134a</td></tr>
-      <tr><td class="name">latest.yml</td><td>372f01c0ab1dcd29058074328275ae5ad3b2960d9e7d7012d23c7247178c0131</td></tr>
-      <tr><td class="name">latest-linux.yml</td><td>390b6beac5a859f73eb225dbfb803d29d9d54331e8aaeaf0dea362a070fc4800</td></tr>
+      <tr><td class="name">Oliviacode-2.2.8-arm64.dmg</td><td>02e7072d159164627f9edf9609f911b1df0038ddd0c185c1f47bd58569cd84e4</td></tr>
+      <tr><td class="name">Oliviacode-2.2.8-arm64.zip</td><td>a183979992c3d0f3c3a156b9a2ed5c0d9404ef3c46a31bc5700f1360d348f397</td></tr>
+      <tr><td class="name">Oliviacode-2.2.8-x64.AppImage</td><td>d629b06086d0fd93ada24c74fd25955f23492ee4a56f43e35227ce7aeadd07a5</td></tr>
+      <tr><td class="name">Oliviacode-2.2.8-x64.deb</td><td>f57b2b1368c11aa92fd76f59ce53549b03cc0035b1cda7ce79b75ac6873fc00f</td></tr>
+      <tr><td class="name">Oliviacode-2.2.8-x64.dmg</td><td>22a16621eb82f9666aa1df8c505557609c6e0cb70135ae8841283db573ae14eb</td></tr>
+      <tr><td class="name">Oliviacode-2.2.8-x64.rpm</td><td>c183549ed9b260ead02737479a3a32b43447451bbebab7336c573f710133c6b6</td></tr>
+      <tr><td class="name">Oliviacode-2.2.8-x64.zip</td><td>13674c947aaed2fdf0b06f8cbf01265aa1af1ee3bae20e56300f3f903db64c6b</td></tr>
+      <tr><td class="name">Oliviacode-Setup-2.2.8.exe</td><td>f554941e2437a0d8643488d543ec082322091e3c9dd054748a806d00f1f41934</td></tr>
+      <tr><td class="name">Oliviacode-Setup-2.2.8.exe.blockmap</td><td>dd19110b1a5a57a9308dffb137e365dd7ade9a63a3d6150255ce7dc047c066eb</td></tr>
+      <tr><td class="name">latest-linux.yml</td><td>8985d2dbb3764f3ccfd3f7b16ee18b01437d253e2644536413093c11202f0b90</td></tr>
+      <tr><td class="name">latest.yml</td><td>2033ca14f5a051eab8e141700078d2f585387771d33532d9c5e6126e6dd912f7</td></tr>
     </tbody>
   </table>
 
   <footer>
-    The installer is not code-signed. The application binary's hash is different from the installer's on purpose: the installer is an NSIS container and the executable is one file inside it. Oliviacode is not affiliated with OpenCode.
+    The installer is not code-signed. The application binary's hash is different from the installer's on purpose: the installer is an NSIS container and the executable is one file inside it. Oliviacode is not affiliated with OpenCode or any provider named in a preset or community registry.
   </footer>
 </div>
 </body>
