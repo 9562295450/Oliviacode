@@ -31,6 +31,24 @@ if (built) await copyBuiltCliToResources(cli)
 
 if (!built) await downloadCliToResources(channel === "beta" ? "beta" : undefined)
 
+// The pinned engine must still serve what the window calls. A release that bundles an engine with a
+// dropped route would break every install before adoption ever runs, so it stops here instead.
+if (process.env.OLIVIACODE_ENGINE_GATE !== "off") {
+  const { bundledVersion, verifyBundledEngine } = await import("./engine-contract")
+  const resources = path.join(dir, "resources")
+  const result = await verifyBundledEngine({
+    binary: path.join(resources, process.platform === "win32" ? "opencode-cli.exe" : "opencode-cli"),
+    expectedVersion: bundledVersion(resources),
+  })
+
+  if (!result.ok) {
+    const missing = result.missing.map((operation) => `  ${operation.method} ${operation.path}`).join("\n")
+    throw new Error(`bundled engine failed the desktop contract: ${result.reason}\n${missing}`)
+  }
+
+  console.log(`Bundled engine passed the desktop contract (${result.evidence.operations} operations)`)
+}
+
 await $`bunx electron-vite build`
 
 await verifyBundles(path.join(dir, "out"))

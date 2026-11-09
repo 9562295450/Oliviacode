@@ -30,11 +30,11 @@ export function shouldRetryEnsure(version: string | undefined, message: string) 
   )
 }
 
-export function stageName(version: string, arch = process.arch) {
+export function stageName(version: string, arch: string = process.arch) {
   return `${version}-${arch}`.replace(/[^a-zA-Z0-9._-]/g, "-")
 }
 
-export function keptStages(bundledVersion: string, runningVersion?: string, arch = process.arch) {
+export function keptStages(bundledVersion: string, runningVersion?: string, arch: string = process.arch) {
   const stages = [stageName(bundledVersion, arch)]
 
   if (runningVersion && runningVersion !== bundledVersion) stages.push(stageName(runningVersion, arch))

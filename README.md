@@ -165,6 +165,31 @@ OLIVIACODE_UPDATE_REPO=owner/repo bun run --cwd packages/desktop pack
 No upstream release feed is ever consulted. Removing `app-update.yml` from an installed build
 makes the updater report `unsupported` and stop checking.
 
+### Engine updates
+
+The desktop and the engine (`@opencode/cli`) are separate releases, so the app can keep the engine
+current without shipping a new desktop build. Starting with the release after 2.2.7, a production
+build checks npm's `latest` dist-tag once per launch and may adopt a newer engine **only after it
+proves itself**:
+
+1. The platform tarball must match the `dist.integrity` sha512 the registry published for it.
+2. The candidate boots against a throwaway data directory — never your sessions — and must report
+   the exact version being adopted.
+3. It must serve every operation the window calls: 25 of them, including `/api/session`,
+   `/api/session/{id}/prompt`, `/message`, `/compact`, `/fork`, `/move`, `/context` and `/revert`.
+   Additions are fine; a renamed or dropped route is a refusal.
+4. It must complete a real create-then-delete session round trip on its own store.
+
+A candidate that clears all four is staged for the next launch. That launch is the last test: the
+adoption becomes permanent only once its sidecar connects. If it does not, the following launch
+reverts to the bundled engine and remembers the rejection, so a broken engine is never retried.
+
+Only a forward move inside the same major is considered; prereleases and major jumps are ignored,
+and a `0.x` engine is limited to patch moves. `OLIVIACODE_ENGINE_UPDATE=off` disables the check
+entirely. The same contract is verified at build time against the pinned engine
+(`bun run script/engine-contract.ts`, wired into `bun run build`), so a release cannot ship a
+bundled engine that already lost a route the window needs.
+
 ## Privacy
 
 Oliviacode runs locally. It contacts the provider endpoints you configure, and the registry URL

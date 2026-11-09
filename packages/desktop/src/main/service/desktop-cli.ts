@@ -11,6 +11,7 @@ import { BUNDLED_CLI_VERSION_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
 import { parseCliVersion, stageName } from "./cli-version"
 import { DesktopCliState } from "./desktop-cli-state"
+import * as EngineUpdate from "./engine-update"
 
 const execFileAsync = promisify(execFile)
 
@@ -89,6 +90,25 @@ const resolveBundledCli = Effect.fn("DesktopCli.resolveBundled")(function* (isol
 
   yield* Effect.logInfo("v2 CLI executable resolved", { bundled, packaged: app.isPackaged })
   const version = yield* bundledVersion(bundled)
+
+  // An engine adopted by a previous launch runs from its own stage, ahead of the bundled one. The
+  // stage is keyed by version, so the sidecar identity, the cleanup keep-list and the reconnect
+  // handshake all see a normal version change rather than a special case.
+  const adopted =
+    app.isPackaged && !isolated
+      ? EngineUpdate.preferred({ userData: app.getPath("userData"), bundledVersion: version })
+      : {}
+
+  if (adopted.version && adopted.binary) {
+    yield* Effect.logInfo("v2 CLI adopted engine resolved", {
+      version: adopted.version,
+      binary: adopted.binary,
+      bundled: version,
+    })
+
+    return { version: adopted.version, binary: adopted.binary, command: [adopted.binary] }
+  }
+
   const binary = app.isPackaged || isolated ? yield* installCli(bundled, version) : bundled
 
   return { version, binary, command: [binary] }

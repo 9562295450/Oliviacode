@@ -9,6 +9,7 @@ import { BackgroundServiceMachine } from "./background-service-machine"
 import { cleanStages } from "./cli-stages"
 import { keptStages, serviceVersion, shouldRetryEnsure } from "./cli-version"
 import { DesktopCli } from "./desktop-cli"
+import * as EngineUpdate from "./engine-update"
 import { SidecarCredentials } from "./sidecar-credentials"
 import { takeSidecarProbe } from "./sidecar-probe"
 
@@ -105,6 +106,11 @@ const ensure = Effect.fn("BackgroundService.ensure")(function* (mode: Background
 
   const ready = yield* adopt(setup, service, false)
 
+  // A downloaded engine becomes permanent only after the sidecar it started actually answered. A
+  // launch that never reaches here leaves the record at `attempting`, and the next launch reverts.
+  if (app.isPackaged && EngineUpdate.confirmBoot(app.getPath("userData"), setup.cli.version))
+    yield* Effect.logInfo("v2 CLI adopted engine confirmed", { version: setup.cli.version })
+
   // Only packaged and isolated builds run a staged copy; any other binary sits in the source tree.
   // Keep both the bundled stage and the running server's stage so its executable stays on disk. This runs only
   // once `Service.ensure` settled which server runs, never for a probed one it may still replace.
@@ -112,6 +118,23 @@ const ensure = Effect.fn("BackgroundService.ensure")(function* (mode: Background
     runFork(
       cleanStages(setup.cli.binary, { keep: keptStages(setup.cli.version, ready.runningVersion) }).pipe(
         Effect.catch((error) => Effect.logError("failed to clean staged v2 CLIs", { error })),
+      ),
+    )
+
+  // Free maintenance: look for a newer engine once the window is served, and stage it for the next
+  // launch. It never throws, never touches the running sidecar, and never blocks the first paint.
+  if (mode === "initial" && app.isPackaged)
+    runFork(
+      Effect.tryPromise(() =>
+        EngineUpdate.refresh({
+          userData: app.getPath("userData"),
+          current: ready.runningVersion ?? setup.cli.version,
+          channel: EngineUpdate.channelFor(CHANNEL),
+          pin: process.env.OLIVIACODE_ENGINE_PIN?.trim() || undefined,
+        }),
+      ).pipe(
+        Effect.tap((outcome) => Effect.logInfo("engine update check finished", outcome)),
+        Effect.catch((error) => Effect.logError("engine update check failed", { error })),
       ),
     )
 

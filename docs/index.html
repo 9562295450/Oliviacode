@@ -253,7 +253,7 @@
 
     <details>
       <summary>Does it auto-update?</summary>
-      <p>Release builds from 2.2.6 on carry an <code>app-update.yml</code> that points at this repository's own releases and check every four hours; nothing downloads until you ask. Builds packaged without <code>OLIVIACODE_UPDATE_REPO</code> — everything before 2.2.6, dev checkouts and forks — write no feed, so <code>electron-updater</code> stays inert. Set the variable to point a fork at its own releases.</p>
+      <p>Release builds from 2.2.6 on carry an <code>app-update.yml</code> that points at this repository's own releases and check every four hours; nothing downloads until you ask. From the release after 2.2.7 the engine underneath can advance on its own too, but only after the candidate verifies its published integrity, boots in a throwaway data directory, serves all 25 routes the window calls, and survives a real session round trip — and a launch that never reaches its sidecar reverts to the bundled engine. Builds packaged without <code>OLIVIACODE_UPDATE_REPO</code> — everything before 2.2.6, dev checkouts and forks — write no feed, so <code>electron-updater</code> stays inert. Set the variable to point a fork at its own releases.</p>
     </details>
 
     <details>
