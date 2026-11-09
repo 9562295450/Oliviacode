@@ -37,8 +37,12 @@ a one-shot HTTP header; it is never written to `.git/config`, the remote URL, or
    ```
 
 The script commits the tree, pushes `main`, pushes the `v<version>` tag, updates the About box,
-creates (or reuses) the release, and uploads the installer plus `SHA256SUMS.txt`. Re-running it
-replaces same-named assets instead of failing.
+creates (or reuses) the release, and uploads the installer, `SHA256SUMS.txt`, `latest.yml` and the
+blockmap. Re-running it replaces same-named assets instead of failing.
+
+A tag pushed by Route A also queues Route B, which rebuilds the installer on the runner and
+uploads with `--clobber`. Cancel that run to keep the binary verified here, or let Route B own the
+release instead and verify its artifact afterwards.
 
 Verify the installer before publishing, on a disposable profile:
 
@@ -62,7 +66,8 @@ git push origin v2.2.6
 Or run **Actions -> publish-windows -> Run workflow** with the version, after the tag exists.
 
 The workflow builds, packs the unpacked app, packs the NSIS installer, writes `SHA256SUMS.txt`,
-creates the release when it is missing, and uploads with `--clobber` so a re-run is safe.
+creates the release when it is missing, and uploads the installer, checksums, `latest.yml` and the
+blockmap with `--clobber` so a re-run is safe.
 
 A tag pushed in the same operation as the repository's very first branch push may not trigger a
 run, because the default branch had not been indexed yet. If the Actions tab shows no run, use
