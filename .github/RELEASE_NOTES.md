@@ -37,6 +37,10 @@ see the platform notes below.
   app's user data directory; until then it reports that search is unconfigured rather than failing
   silently.
 
+The automatic title ships inside the engine, and this Windows installer carries the rebuilt 2.2.9
+engine. The macOS and Linux packages bundled below use the pinned 2.2.6 engine, so they get the
+rename pencil now and the automatic title when that pin advances.
+
 ### Verify before you run
 - `Oliviacode-Setup-2.2.9.exe` — 257,963,963 bytes —
   `98cdb31c3a7c523af4a16f5a422b350f4adc2c6260c5d2787f5deb838ddb1597`.
