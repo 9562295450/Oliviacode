@@ -67,6 +67,19 @@ jobs:
           assets="$(gh release view "$tag" --json assets --jq '.assets[].name')"
           has() { grep -qxF "$1" <<< "$assets"; }
 
+          # A release created by scripts/publish-release.ps1 uploads the Windows installer seconds
+          # after the tag exists. A tag-triggered run that reads the release in that gap would see an
+          # empty asset list, decide windows=true, and rebuild the installer with the pinned engine,
+          # clobbering the one verified on the release machine. An empty release therefore waits for
+          # that upload before deciding.
+          if [ -z "$assets" ]; then
+            for _ in $(seq 1 36); do
+              sleep 10
+              assets="$(gh release view "$tag" --json assets --jq '.assets[].name')"
+              if grep -qxF "Oliviacode-Setup-$version.exe" <<< "$assets"; then break; fi
+            done
+          fi
+
           if has "Oliviacode-Setup-$version.exe"; then echo "windows=false" >> "$GITHUB_OUTPUT"; else echo "windows=true" >> "$GITHUB_OUTPUT"; fi
           if has "Oliviacode-$version-x64.AppImage"; then echo "linux=false" >> "$GITHUB_OUTPUT"; else echo "linux=true" >> "$GITHUB_OUTPUT"; fi
           if has "Oliviacode-$version-arm64.dmg" && has "Oliviacode-$version-x64.dmg"; then echo "macos=false" >> "$GITHUB_OUTPUT"; else echo "macos=true" >> "$GITHUB_OUTPUT"; fi
