@@ -88,9 +88,13 @@ export async function startBridge(options: BridgeOptions): Promise<Bridge> {
     })
   })
 
+  // `port: 0` asks the OS for a free port; report the one it bound, not the request.
+  const bound = server.address()
+  const port = typeof bound === "object" && bound !== null ? bound.port : options.port
+
   return {
-    port: options.port,
-    url: `http://127.0.0.1:${options.port}`,
+    port,
+    url: `http://127.0.0.1:${port}`,
     async stop() {
       for (const socket of sockets) socket.destroy()
       sockets.clear()

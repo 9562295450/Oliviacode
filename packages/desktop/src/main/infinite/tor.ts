@@ -7,11 +7,15 @@
  *
  * The bundled CLI cannot speak SOCKS, so the daemon's SOCKS port is fronted by the
  * local bridge in `socks-bridge.ts`.
+ *
+ * Ports are allocated per start and the daemon is shut down through its control port, so
+ * a second instance of the app, a crashed run, or a local Tor Browser cannot wedge the
+ * lane on a fixed port or a stale data-directory lock.
  */
 import { spawn } from "node:child_process"
-import { chmodSync, existsSync, mkdirSync, rmSync, statSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs"
+import { createServer, connect } from "node:net"
 import { join } from "node:path"
-import { connect } from "node:net"
 import { app } from "electron"
 import { run } from "./exec"
 import { startBridge, type Bridge } from "./socks-bridge"
@@ -25,10 +29,20 @@ const BUNDLE_URL =
   "https://archive.torproject.org/tor-package-archive/torbrowser/14.5.7/tor-expert-bundle-windows-x86_64-14.5.7.tar.gz"
 const MIN_BUNDLE_BYTES = 5_000_000
 
-const SOCKS_PORT = 9050
-const CONTROL_PORT = 9051
-const BRIDGE_PORT = 8118
 const BOOTSTRAP_TIMEOUT_MS = 180_000
+const SHUTDOWN_TIMEOUT_MS = 5_000
+
+type Ports = {
+  readonly socks: number
+  readonly control: number
+  readonly bridge: number
+}
+
+type Attempt = {
+  readonly error: string
+  /** A failure another data directory or a fresh port pair can plausibly clear. */
+  readonly retryable: boolean
+}
 
 export type TorStatus = {
   readonly installed: boolean
@@ -42,6 +56,9 @@ export class Tor {
   #bridge: Bridge | null = null
   #bootstrapped = false
   #log: string[] = []
+  #ports: Ports | null = null
+  #starting: Promise<string> | null = null
+  #spawnError = ""
 
   get endpoint() {
     return this.#bridge?.url ?? ""
@@ -49,6 +66,11 @@ export class Tor {
 
   get running() {
     return this.#child !== null && this.#child.exitCode === null
+  }
+
+  /** The loopback ports this start resolved, for the diagnostics panel. */
+  get ports(): Ports | null {
+    return this.#ports
   }
 
   #root() {
@@ -65,7 +87,7 @@ export class Tor {
       installed,
       running: this.running,
       bootstrapped: this.#bootstrapped,
-      detail: this.#log.at(-1) ?? (installed ? "installed" : "not installed"),
+      detail: describeLog(this.#log, 1)[0] ?? (installed ? "installed" : "not installed"),
     }
   }
 
@@ -112,23 +134,68 @@ export class Tor {
 
   /** Start the daemon and its HTTP bridge, waiting for a usable circuit. */
   async start(onProgress?: (line: string) => void): Promise<string> {
-    if (this.running && this.#bridge) return ""
+    if (this.running && this.#bridge && this.#bootstrapped) return ""
+    // Two lanes can ask for Tor at once; one daemon means one bootstrap, one answer.
+    if (this.#starting) return this.#starting
+    this.#starting = this.#launch(onProgress).finally(() => {
+      this.#starting = null
+    })
+    return this.#starting
+  }
 
+  async #launch(onProgress?: (line: string) => void): Promise<string> {
     const installed = await this.ensureInstalled(onProgress)
     if (installed) return installed
 
     onProgress?.("starting tor")
 
-    const dataDir = join(this.#root(), "data")
-    mkdirSync(dataDir, { recursive: true })
+    // A run that was killed without a clean shutdown leaves its daemon holding the lock
+    // on the shared data directory. Retry once on a pristine one instead of failing.
+    const primary = await this.#attempt(join(this.#root(), "data"), onProgress)
+    if (!primary.error) {
+      this.#prune(join(this.#root(), "data"))
+      return ""
+    }
+
+    if (!primary.retryable) return primary.error
+
+    onProgress?.("retrying tor on a fresh data directory")
+    const fresh = join(this.#root(), `data-${Date.now()}`)
+    const retry = await this.#attempt(fresh, onProgress)
+    if (retry.error) return `${primary.error} | retry: ${retry.error}`
+
+    this.#prune(fresh)
+    return ""
+  }
+
+  /** One spawn + bootstrap + bridge on `dataDir`. Ports are allocated fresh each time. */
+  async #attempt(dataDir: string, onProgress?: (line: string) => void): Promise<Attempt> {
+    try {
+      mkdirSync(dataDir, { recursive: true })
+    } catch (error) {
+      return { error: `cannot create the tor data directory: ${message(error)}`, retryable: false }
+    }
+
+    let socks: number
+    let control: number
+    try {
+      socks = await freePort()
+      control = await freePort(socks)
+    } catch (error) {
+      return { error: `no free loopback port for tor: ${message(error)}`, retryable: false }
+    }
+
+    this.#spawnError = ""
+    this.#log = []
+    this.#bootstrapped = false
 
     const child = spawn(
       this.#path(),
       [
         "--SocksPort",
-        `${SOCKS_PORT}`,
+        `${socks}`,
         "--ControlPort",
-        `${CONTROL_PORT}`,
+        `${control}`,
         // Loopback control with no password: the listener is bound to 127.0.0.1 and the
         // only client is this process. Anything else would need a secret to distribute.
         "--CookieAuthentication",
@@ -142,21 +209,23 @@ export class Tor {
     )
 
     this.#child = child
-    this.#bootstrapped = false
-    this.#log = []
 
     const record = (chunk: Buffer) => {
       const text = chunk.toString("utf8")
       for (const line of text.split(/\r?\n/)) {
-        if (!line.trim()) continue
-        this.#log.push(line)
+        const clean = stripStamp(line)
+        if (!clean) continue
+        this.#log.push(clean)
         if (this.#log.length > 200) this.#log.shift()
-        if (/Bootstrapped 100%/.test(line)) this.#bootstrapped = true
+        if (/Bootstrapped 100%/.test(clean)) this.#bootstrapped = true
       }
     }
 
     child.stdout?.on("data", record)
     child.stderr?.on("data", record)
+    child.on("error", (error) => {
+      this.#spawnError = message(error)
+    })
     child.on("exit", () => {
       this.#bootstrapped = false
     })
@@ -164,17 +233,39 @@ export class Tor {
     const deadline = Date.now() + BOOTSTRAP_TIMEOUT_MS
     while (Date.now() < deadline) {
       if (this.#bootstrapped) break
-      if (child.exitCode !== null) return `tor exited during bootstrap: ${this.#log.at(-1) ?? "no output"}`
+      if (this.#spawnError) return this.#fail(`tor could not be spawned: ${this.#spawnError}`)
+      if (child.exitCode !== null) return this.#fail(exitReason(this.#log, child.exitCode))
       await sleep(400)
     }
 
     if (!this.#bootstrapped) {
-      return `tor did not bootstrap within ${Math.round(BOOTSTRAP_TIMEOUT_MS / 1000)}s`
+      await this.#kill(child)
+      return this.#fail(`tor did not bootstrap within ${Math.round(BOOTSTRAP_TIMEOUT_MS / 1000)}s`)
     }
 
     onProgress?.("bridging socks to http")
-    this.#bridge = await startBridge({ socksHost: "127.0.0.1", socksPort: SOCKS_PORT, port: BRIDGE_PORT })
-    return ""
+
+    // Port 0 lets the OS pick a bridge port, so a stale listener on the old fixed 8118
+    // (or a second copy of the app) cannot collide with this one.
+    let bridge: Bridge
+    try {
+      bridge = await startBridge({ socksHost: "127.0.0.1", socksPort: socks, port: 0 })
+    } catch (error) {
+      await this.stop()
+      return this.#fail(`the local bridge could not listen: ${message(error)}`)
+    }
+
+    this.#bridge = bridge
+    this.#ports = { socks, control, bridge: bridge.port }
+    return { error: "", retryable: false }
+  }
+
+  #fail(error: string): Attempt {
+    const lower = error.toLowerCase()
+    const retryable =
+      /could not lock|lock file|already running|another tor/.test(lower) ||
+      /address already in use|couldn't bind|could not bind|error binding|failed to bind/.test(lower)
+    return { error, retryable }
   }
 
   /**
@@ -183,12 +274,14 @@ export class Tor {
    * compares the trace address afterwards, exactly like every other lane.
    */
   async rotate(): Promise<{ ok: boolean; error: string }> {
-    if (!this.running) {
+    if (!this.running || !this.#ports) {
       const started = await this.start()
       if (started) return { ok: false, error: started }
     }
 
-    const signal = await sendControl(`SIGNAL NEWNYM`)
+    if (!this.#ports) return { ok: false, error: "tor control port is not resolved" }
+
+    const signal = await sendControl(this.#ports.control, "SIGNAL NEWNYM")
     if (signal) return { ok: false, error: signal }
 
     // NEWNYM closes the current circuits; Tor needs a moment to build the next one.
@@ -197,25 +290,135 @@ export class Tor {
   }
 
   async stop(): Promise<void> {
-    if (this.#bridge) {
-      await this.#bridge.stop().catch(() => undefined)
-      this.#bridge = null
-    }
-    if (this.#child && this.#child.exitCode === null) {
-      this.#child.kill()
-      this.#child = null
-    }
+    const bridge = this.#bridge
+    this.#bridge = null
+    if (bridge) await bridge.stop().catch(() => undefined)
+
+    const child = this.#child
+    const ports = this.#ports
+    this.#child = null
+    this.#ports = null
     this.#bootstrapped = false
+
+    if (!child || child.exitCode !== null) return
+
+    // A clean shutdown releases the data-directory lock and the port bindings, so the
+    // next launch starts from a warm directory instead of a wedged one.
+    if (ports) await sendControl(ports.control, "SIGNAL SHUTDOWN").catch(() => "control unavailable")
+    if (await waitForExit(child, SHUTDOWN_TIMEOUT_MS)) return
+    await this.#kill(child)
   }
+
+  async #kill(child: ReturnType<typeof spawn>): Promise<void> {
+    if (child.exitCode !== null) return
+    try {
+      child.kill()
+    } catch {
+      // Already gone between the check and the signal.
+    }
+    await waitForExit(child, SHUTDOWN_TIMEOUT_MS)
+  }
+
+  /** Drop data directories left behind by retries, keeping the one just used. */
+  #prune(keep: string) {
+    let entries: string[] = []
+    try {
+      entries = readdirSync(this.#root())
+    } catch {
+      return
+    }
+    for (const name of entries) {
+      if (!name.startsWith("data-")) continue
+      const path = join(this.#root(), name)
+      if (path === keep) continue
+      try {
+        rmSync(path, { recursive: true, force: true })
+      } catch {
+        // A directory a leaked daemon still holds is left for the next run.
+      }
+    }
+  }
+}
+
+/** True when the daemon binary is present and old enough to be a real unpack. */
+export function torInstalled(path: string) {
+  try {
+    return statSync(path).size > 1_000_000
+  } catch {
+    return false
+  }
+}
+
+/** A loopback port the OS says is free right now, avoiding `taken`. */
+function freePort(taken?: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer()
+    server.unref()
+    server.once("error", reject)
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address()
+      const port = typeof address === "object" && address !== null ? address.port : 0
+      server.close(() => {
+        if (port > 0 && port !== taken) resolve(port)
+        else freePort(taken).then(resolve, reject)
+      })
+    })
+  })
+}
+
+/** `Nov 10 03:19:32.238 [notice] ...` becomes `[notice] ...`. */
+function stripStamp(line: string) {
+  return line.replace(/^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?\s+/, "").trim()
+}
+
+function describeLog(lines: readonly string[], limit: number) {
+  return lines
+    .map(stripStamp)
+    .filter((line) => line && !line.includes("Tor can't help you if you use it wrong"))
+    .slice(-limit)
+}
+
+/** Map the last few daemon lines to a cause the egress panel can show as-is. */
+function exitReason(lines: readonly string[], code: number | null): string {
+  const all = lines.join("\n")
+  const tail = describeLog(lines, 3).join(" | ") || "no output"
+
+  if (/could not lock|lock file|is already running|another tor/i.test(all))
+    return `tor could not lock its data directory: ${tail} (another instance is still running)`
+  if (/address already in use|couldn't bind|could not bind|error binding|failed to bind/i.test(all))
+    return `tor could not bind a loopback port: ${tail}`
+  if (/permission denied|access is denied|operation not permitted|0xc0000022/i.test(all))
+    return `the system blocked tor from running: ${tail}`
+  return `tor exited${code === null ? "" : ` (code ${code})`} during bootstrap: ${tail}`
+}
+
+function waitForExit(child: ReturnType<typeof spawn>, timeoutMs: number): Promise<boolean> {
+  if (child.exitCode !== null) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      child.off("exit", onExit)
+      resolve(false)
+    }, timeoutMs)
+    function onExit() {
+      clearTimeout(timer)
+      resolve(true)
+    }
+    child.once("exit", onExit)
+  })
+}
+
+function message(error: unknown) {
+  if (error instanceof Error) return error.message
+  return String(error)
 }
 
 /**
  * One control-port command: connect, authenticate with the no-password handshake the
  * daemon was started with, send the signal, read the reply. Returns "" on success.
  */
-function sendControl(command: string): Promise<string> {
+function sendControl(port: number, command: string): Promise<string> {
   return new Promise((resolve) => {
-    const socket = connect({ host: "127.0.0.1", port: CONTROL_PORT })
+    const socket = connect({ host: "127.0.0.1", port })
     let buffer = ""
     let replied = false
 
@@ -252,13 +455,4 @@ function sendControl(command: string): Promise<string> {
       resolve(`tor control unavailable: ${error.message}`)
     })
   })
-}
-
-/** True when the daemon binary is present and old enough to be a real unpack. */
-export function torInstalled(path: string) {
-  try {
-    return statSync(path).size > 1_000_000
-  } catch {
-    return false
-  }
 }

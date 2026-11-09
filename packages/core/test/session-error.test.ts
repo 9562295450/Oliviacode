@@ -85,7 +85,7 @@ describe("toSessionError", () => {
     expect(SessionRunnerRetry.isRetryable(free)).toBe(false)
     expect(toSessionError(free)).toEqual({
       type: "provider.free-limit",
-      message: "Free usage limit reached. Connect a provider or subscribe to OpenCode Go to keep going, or switch models.",
+      message: "Free usage limit reached. Connect a provider or switch models to keep going.",
       status: 429,
       response: { body: JSON.stringify(freeBody) },
       retryAfterMs: 3_600_000,
@@ -109,7 +109,7 @@ describe("toSessionError", () => {
     expect(toSessionError(go)).toEqual({
       type: "provider.go-limit",
       message:
-        "OpenCode Go 5 hour usage limit reached. Switch to a free model, or turn on Extra Usage on the Go page in OpenCode Console to keep going.",
+        "Usage limit reached (5 hour). Switch to another model, or raise the usage allowance, to keep going.",
       status: 429,
       response: { body: JSON.stringify(goBody) },
       retryAfterMs: 120_000,

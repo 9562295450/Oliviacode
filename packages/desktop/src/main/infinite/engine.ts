@@ -748,7 +748,7 @@ export class InfiniteEngine extends EventEmitter {
     if (warp.found) targets.push({ lane: "warp", endpoint: this.warp.endpoint })
 
     const tor = await this.tor.status()
-    if (tor.installed) targets.push({ lane: "tor", endpoint: this.tor.endpoint || `socks5://127.0.0.1:9050` })
+    if (tor.installed) targets.push({ lane: "tor", endpoint: this.tor.endpoint })
 
     await this.proxies.refresh()
     const proxy = this.proxies.pick()
