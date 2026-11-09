@@ -45,9 +45,14 @@ export default function Layout(props: ParentProps) {
 
   const bottomTitlebar = () => mobile() && preferences.general.mobileTitlebarPosition() === "bottom"
 
-  const toggleSidebar = () => setQueueOpen((value) => !value)
+  // The command contract takes no return value; the signal setter returns the new value.
+  const toggleSidebar = () => {
+    setQueueOpen((value) => !value)
+  }
 
-  const toggleInspector = () => setInspectorOpen((value) => !value)
+  const toggleInspector = () => {
+    setInspectorOpen((value) => !value)
+  }
 
   command.register("sidebar", () => [
     {
