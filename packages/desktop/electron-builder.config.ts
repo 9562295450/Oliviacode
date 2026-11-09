@@ -238,7 +238,9 @@ const getBase = (appId: string): Configuration => {
     linux: {
       icon: `resources/icons`,
       category: "Development",
-      artifactName: "Oliviacode-${version}-${arch}.${ext}",
+      // The workflow publishes x64 Linux only. electron-builder expands ${arch} to x86_64/amd64 for
+      // AppImage and deb, while the release notes and workflow use x64, so pin the label.
+      artifactName: "Oliviacode-${version}-x64.${ext}",
       executableName: linuxExecutableName(appId),
       // Derive the installed `.desktop` filename from `desktopName`
       // (`ai.opencode.desktop.desktop` for prod) instead of `executableName`,
@@ -297,7 +299,11 @@ export function getConfig() {
         protocols: { name: "oliviacode", schemes: ["opencode"] },
         // An Icon Composer package compiles to Assets.car, which macOS 26 and later draw the app icon from
         // (Dock, Finder, system dialogs and the system icon styles). Older macOS keeps using the ICNS.
-        mac: { ...base.mac, icon: "resources/icons/icon.icon" },
+        // The compiler is actool 26, which the Intel runner does not have, so only the arm64 build uses it.
+        mac: {
+          ...base.mac,
+          icon: process.arch === "arm64" ? "resources/icons/icon.icon" : "resources/icons/icon.icns",
+        },
         // The DMG volume icon would otherwise use the same actool-generated ICNS.
         dmg: { icon: "resources/icons/icon.icns" },
         deb: { fpm: [metainfoFpm(appId), legacyDesktopEntryFpm] },
