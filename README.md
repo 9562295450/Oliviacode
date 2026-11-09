@@ -1,36 +1,44 @@
 # Oliviacode
 
-> **Disclaimer**
->
-> Oliviacode is an open-source network client. It is not affiliated with OpenCode. The default
-> presets are community-provided and users are responsible for complying with the Terms of
-> Service of any API they connect to.
->
-> Oliviacode is not affiliated with, endorsed by, sponsored by, or operated by OpenCode, its
-> maintainers, or any provider named in a preset or community registry. It ships no credentials,
-> no account, and no endpoint in its source. Everything the app talks to is something a user
-> configured. Provider entries are community data files (`presets.json` locally,
-> `community-presets.json` when hosted), not a built-in feature and not a bypass of any service's
-> terms; see [PRESETS.md](./PRESETS.md). Responsibility for what an account is used for, and
-> whether a given client is permitted, rests with that account's owner.
+[![Oliviacode — desktop client for OpenCode](docs/og.png)](https://9562295450.github.io/Oliviacode/)
 
-A desktop AI client for developers, with multi-lane egress and session isolation built into
-the UI rather than bolted on.
+**A desktop client for OpenCode.** Provider-agnostic, nothing preconfigured, with multi-lane
+egress and isolated sessions built into the UI instead of bolted on.
 
-Oliviacode is a full redesign of the OpenCode desktop application — own identity, own shell,
-own theme engine, own egress manager. It is provider-agnostic: you bring a provider and a
-credential, or you don't, and the app sits there with nothing selected until you do.
+[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.7) ·
+[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-Setup-2.2.7.exe) ·
+[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-arm64.dmg) ·
+[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-x64.dmg) ·
+[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-x64.AppImage) ·
+[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-x64.deb) ·
+[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.7/Oliviacode-2.2.7-x64.rpm)
 
-- **Nothing is preconfigured.** A fresh install has no provider connected and no model
-  selected. There is no default account, no default endpoint in the source, and no bundled key.
-- **Community templates, not built-ins.** Provider endpoints are data. The picker lists a shipped
-  starter template, your own installed entries, and any registry URL you paste in, and stores no
-  provider endpoint in its own source. Nothing is applied until you press Use.
-- **Multi-lane egress.** Direct, WARP, Tor and proxy lanes, each with health checks,
-  latency tracking, and rotation. Rotate on demand, or arm a lane and let it rotate.
-- **Session isolation.** Each session keeps its own workspace, model selection, and agent.
-- **One engine.** The app drives the upstream CLI engine as a sidecar process, so tool
+- **Multi-lane egress** — Direct, WARP, Tor and proxy lanes, each with health, latency and
+  rotation. Rotate on demand, or arm a lane and let it rotate.
+- **Session isolation** — every session keeps its own workspace, model selection and agent.
+- **Provider-agnostic** — no endpoint in the source, no bundled key, no account. Apply a
+  community template, add your own preset, or paste a registry URL.
+- **One engine** — the shell drives the upstream CLI engine as a sidecar process, so tool
   execution, permissions and MCP servers behave the same as the CLI.
+- **Three platforms, real packages** — NSIS installer, `.dmg` for Apple Silicon and Intel,
+  `.AppImage` / `.deb` / `.rpm` for x64 Linux, built on native runners.
+- **No telemetry endpoint** — the app contacts the endpoints you configured, the registry URL
+  you loaded, and nothing else.
+
+| | |
+|---|---|
+| Installer | [VirusTotal **0/50**](https://www.virustotal.com/gui/file/4fe3199ec3090b91454d2d3822b0b907bcb90f4ba106b4b983c6aa3631db0d6a) · SHA-256 `4fe3199e…` |
+| App binary | [VirusTotal **0/68**](https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d) · SHA-256 `3dda8e6a…` |
+| License | MIT · [checksums and scans](https://9562295450.github.io/Oliviacode/checksums.html) |
+
+![The Oliviacode session view, with the egress lanes and theme picker in the inspector](docs/screenshots/hero.png)
+
+## Is this the official OpenCode app?
+
+No. Oliviacode is an independent client, not affiliated with, endorsed by or operated by
+OpenCode or its maintainers. The shell is a full redesign of the OpenCode desktop application —
+own identity, own theme engine, own egress manager — and the engine still runs underneath as a
+sidecar. See [NOTICE.md](./NOTICE.md) for upstream attribution and the list of changes.
 
 ## Requirements
 
@@ -90,6 +98,8 @@ Oliviacode is a generic client: nothing is connected on first run and no provide
 compiled into the app. Open the provider picker from the model chip in the composer. You can pick
 a provider from the engine's catalogue and supply your own credential, or apply a community
 template, which fills in a base URL for you.
+
+![The model picker on a fresh profile: no provider, no results, nothing preselected](docs/screenshots/02-model-picker.png)
 
 The shipped starter template includes one entry, **OpenCode Zen**, as a convenience for the
 community. It is data, not a built-in feature and not an endorsement: the app never signs in for
@@ -169,6 +179,20 @@ endpoint.
   [docs/security/virustotal.md](./docs/security/virustotal.md).
 - The engine binary is fetched from the npm registry at build time and its version is pinned
   with `OLIVIACODE_CLI_VERSION`.
+
+## Disclaimer
+
+Oliviacode is an open-source network client. It is not affiliated with OpenCode. The default
+presets are community-provided and users are responsible for complying with the Terms of Service
+of any API they connect to.
+
+Oliviacode is not affiliated with, endorsed by, sponsored by, or operated by OpenCode, its
+maintainers, or any provider named in a preset or community registry. It ships no credentials,
+no account, and no endpoint in its source. Everything the app talks to is something a user
+configured. Provider entries are community data files (`presets.json` locally,
+`community-presets.json` when hosted), not a built-in feature and not a bypass of any service's
+terms; see [PRESETS.md](./PRESETS.md). Responsibility for what an account is used for, and
+whether a given client is permitted, rests with that account's owner.
 
 ## License
 
