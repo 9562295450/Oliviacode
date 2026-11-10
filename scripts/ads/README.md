@@ -15,6 +15,9 @@ node scripts/ads/run.mjs devto [--post]
 node scripts/ads/run.mjs telegraph
 node scripts/ads/run.mjs writeas
 node scripts/ads/run.mjs accounts                  # what exists, without secrets
+node scripts/ads/run.mjs reddit --list             # candidate communities, current rules, skip reasons
+node scripts/ads/run.mjs reddit --sub LocalLLaMA --dry
+node scripts/ads/run.mjs reddit --sub LocalLLaMA --cookie <reddit_session>
 node scripts/ads/confirm-resend.mjs <instance> <email> [port]  # re-send a signup confirmation
 node scripts/ads/render-og.mjs                     # re-render docs/og.png from docs/design/og.html
 ```
@@ -57,6 +60,7 @@ and each profile gets its own debugging port:
 | DEV Community          | 9336 | `devto`                |
 | Mastodon (mstdn.party) | 9337 | `mastodon-mstdn-party` |
 | Mastodon (mastodon.au) | 9338 | `mastodon-au`          |
+| Reddit                 | 9339 | `reddit`               |
 
 ## Channel status
 
@@ -74,3 +78,27 @@ node scripts/ads/run.mjs mastodon --instance mastodon.au --login --port 9338
 ```
 
 Telegraph needs no account at all and is the working long-form channel.
+
+## Reddit
+
+Reddit answers 403 to this host's plain HTTP clients, so everything runs inside the browser
+profile, and the metadata comes off the rendered community sidebar rather than `about.json`.
+
+`copy-reddit.mjs` holds one entry per community, shaped by that community's own rule titles:
+r/AI_Agents puts links in the first comment (rule 3), r/selfhosted only accepts new projects in
+its megathread (rule 6), r/foss wants the licence up front (rule 1), r/LocalLLaMA limits
+self-promotion (rule 4). `skipped` records the communities that were checked and rejected, with
+the reason, so a later run does not retry them blind.
+
+The account is the gate, not the tooling. Reddit's own spam filters remove link posts from young,
+low-karma accounts before a moderator ever sees them, and a removed post teaches the domain that
+it is spam. One account, real comment history, one post per community, days apart:
+
+```
+node scripts/ads/run.mjs reddit --list
+node scripts/ads/run.mjs reddit --sub coolgithubprojects --cookie $REDDIT_SESSION
+node scripts/ads/run.mjs reddit --sub LocalLLaMA --dry      # fill, screenshot-free, no submit
+```
+
+`--cookie` takes the `reddit_session` value from a browser that is already signed in, which is
+the only path that does not need the password or trip a two-factor prompt.

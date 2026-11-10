@@ -258,7 +258,7 @@ async function main() {
     return undefined
   }
 
-  if (["hn", "bsky", "mastodon", "devto", "telegraph", "writeas"].includes(command)) {
+  if (["hn", "bsky", "mastodon", "devto", "telegraph", "writeas", "reddit"].includes(command)) {
     const handler = await channel(command)
     return handler(context)
   }
