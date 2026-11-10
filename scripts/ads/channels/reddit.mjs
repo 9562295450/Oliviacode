@@ -159,7 +159,7 @@ export default async function reddit(ctx) {
   if (!entry) throw new Error(`reddit: no copy for r/${sub}; add it to copy-reddit.mjs first`)
 
   const port = Number(ctx.args.port ?? defaultPort)
-  const profile = ctx.args.profile ?? "reddit"
+  const profile = ctx.args.profile ?? "reddit-edge"
   const stateFile = `reddit-${sub}.json`
   const saved = await ctx.readState(stateFile)
   if (saved?.postUrl && !ctx.args.force) {
@@ -167,7 +167,7 @@ export default async function reddit(ctx) {
     return saved
   }
 
-  const session = await ctx.openPage({ port, name: profile })
+  const session = await ctx.openPage({ port, name: profile, browser: ctx.args.browser ?? "edge" })
   try {
     await session.goto("https://www.reddit.com/")
     await session.waitFor("document.readyState === 'complete'", 35_000).catch(() => undefined)

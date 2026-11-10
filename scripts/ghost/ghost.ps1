@@ -38,6 +38,13 @@
 .PARAMETER Browser
     auto | chrome | edge | brave | ghost (the installed Chrome for Testing)
 
+    auto prefers an installed browser - Chrome, then Edge, then Brave - and only falls back to
+    Chrome for Testing when none of them is present. That matters beyond the "only for automated
+    testing" infobar: Chrome for Testing advertises a Chrome user agent while
+    navigator.userAgentData.brands lists Chromium and nothing else, so the two disagree and any
+    risk engine can read the contradiction in one line. A profile is pinned to the family that
+    created it, because switching family loses the cookie store.
+
 .PARAMETER Headless
     Control mode: launch the same browser with --headless=new for A/B fingerprint comparison.
 
@@ -97,7 +104,7 @@ function Get-BrowserPath {
         )
     }
 
-    $order = if ($Choice -eq 'auto') { @('ghost', 'chrome', 'edge', 'brave') } else { @($Choice) }
+    $order = if ($Choice -eq 'auto') { @('chrome', 'edge', 'brave', 'ghost') } else { @($Choice) }
 
     foreach ($key in $order) {
         foreach ($path in $candidates[$key]) {
@@ -265,11 +272,20 @@ switch ($Command) {
     }
 
     'launch' {
-        $resolved = Get-BrowserPath -Choice $Browser
-        if (-not $resolved) { throw "No browser found for '$Browser'. Run: ghost.ps1 -Command install" }
-
         $profile = Join-Path $Profiles $Name
         New-Item -ItemType Directory -Force -Path $profile | Out-Null
+
+        # One profile keeps one browser family. Switching family under a live profile loses its
+        # cookies, because Edge and Chrome encrypt the cookie store with their own keys.
+        $marker = Join-Path $profile '.ghost-browser'
+        $resolved = $null
+        if (-not $PSBoundParameters.ContainsKey('Browser') -and (Test-Path -LiteralPath $marker)) {
+            $resolved = Get-BrowserPath -Choice (Get-Content -LiteralPath $marker -Raw).Trim()
+        }
+        if (-not $resolved) { $resolved = Get-BrowserPath -Choice $Browser }
+        if (-not $resolved) { throw "No browser found for '$Browser'. Run: ghost.ps1 -Command install" }
+
+        Set-Content -LiteralPath $marker -Value $resolved.Family -NoNewline
 
         $arguments = @(
             "--user-data-dir=`"$profile`"",

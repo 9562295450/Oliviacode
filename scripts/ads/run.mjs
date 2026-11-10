@@ -58,7 +58,7 @@ async function ghostAlive(port) {
 }
 
 /** Start ghost on `port` if nothing is listening there, then wait for its endpoint. */
-async function ensureGhost({ port = 9333, name = "bench", timeoutMs = 150_000 } = {}) {
+async function ensureGhost({ port = 9333, name = "bench", browser, timeoutMs = 150_000 } = {}) {
   const running = await ghostAlive(port)
   if (running) return running
 
@@ -67,23 +67,22 @@ async function ensureGhost({ port = 9333, name = "bench", timeoutMs = 150_000 } 
   const out = openSync(logPath, "a")
 
   log(`ghost: starting profile "${name}" on port ${port} (log: ${logPath})`)
-  const child = spawn(
-    "powershell",
-    [
-      "-NoProfile",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-File",
-      ghostScript,
-      "-Command",
-      "launch",
-      "-Name",
-      name,
-      "-Port",
-      String(port),
-    ],
-    { stdio: ["ignore", out, out], windowsHide: true },
-  )
+  const args = [
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    ghostScript,
+    "-Command",
+    "launch",
+    "-Name",
+    name,
+    "-Port",
+    String(port),
+  ]
+  if (browser) args.push("-Browser", browser)
+
+  const child = spawn("powershell", args, { stdio: ["ignore", out, out], windowsHide: true })
   const exited = new Promise((resolve) => child.once("exit", resolve))
 
   const deadline = Date.now() + timeoutMs
@@ -103,8 +102,8 @@ async function ensureGhost({ port = 9333, name = "bench", timeoutMs = 150_000 } 
   )
 }
 
-async function openPage({ port = 9333, name = "bench" }) {
-  await ensureGhost({ port, name })
+async function openPage({ port = 9333, name = "bench", browser }) {
+  await ensureGhost({ port, name, browser })
   return openTab(port)
 }
 
@@ -217,9 +216,56 @@ async function inspect(args) {
   }
 }
 
+/**
+ * What the browser says about itself, and whether the two halves agree.
+ *
+ * A user agent that claims Chrome while navigator.userAgentData.brands lists Chromium and nothing
+ * else is a contradiction any risk engine reads in one line. Chrome Stable always advertises a
+ * "Google Chrome" brand; Chrome for Testing does not, and the infobar saying "only for automated
+ * testing" is the visible half of the same fact.
+ */
+async function identity(args) {
+  const port = Number(args.port ?? 9333)
+  await ensureGhost({ port, name: args.name ?? "bench", browser: args.browser })
+  const session = await openTab(port)
+  try {
+    const version = await session.send("Browser.getVersion", {})
+    await session.goto("https://example.com/")
+    await sleep(1500)
+    const raw = await session.eval(`(async () => {
+      const ua = navigator.userAgentData
+      const high = ua ? await ua.getHighEntropyValues(["fullVersionList"]) : null
+      return JSON.stringify({
+        ua: navigator.userAgent,
+        brands: ua ? ua.brands : null,
+        fullVersionList: high ? high.fullVersionList : null,
+        webdriver: navigator.webdriver,
+      })
+    })()`)
+    const info = JSON.parse(raw)
+    log(`product: ${version.product}`)
+    log(`ua: ${info.ua}`)
+    log(`brands: ${JSON.stringify(info.brands)}`)
+    log(`full: ${JSON.stringify(info.fullVersionList)}`)
+
+    const brands = info.brands ?? []
+    const claimsEdge = /Edg\//.test(info.ua)
+    const claimsChrome = !claimsEdge && /Chrome\//.test(info.ua)
+    const saysEdge = brands.some((entry) => /Microsoft Edge/i.test(entry.brand))
+    const saysChrome = brands.some((entry) => /Google Chrome/i.test(entry.brand))
+
+    if (claimsEdge && !saysEdge) log("identity: FAIL - UA claims Edge, brands do not")
+    else if (claimsChrome && !saysChrome)
+      log("identity: FAIL - UA claims Chrome, brands say Chromium only (automation build)")
+    else if (info.webdriver) log("identity: FAIL - navigator.webdriver is true")
+    else log("identity: consistent")
+  } finally {
+    await session.close()
+  }
+}
+
 // ---------------------------------------------------------------------------------------------
 // channels
-
 async function channel(name) {
   const module = await import(`./channels/${name}.mjs`)
   return module.default
@@ -247,6 +293,7 @@ async function main() {
   if (command === "smoke") return smoke(argv)
   if (command === "mail") return mail(argv)
   if (command === "inspect") return inspect(argv)
+  if (command === "identity") return identity(argv)
   if (command === "accounts") {
     const accounts = (await readState("accounts.json")) ?? []
     if (!accounts.length) return log("no accounts recorded yet")
@@ -264,7 +311,7 @@ async function main() {
   }
 
   log(`unknown command: ${command}`)
-  log("commands: smoke | mail | inspect | hn | bsky | mastodon | devto | accounts")
+  log("commands: smoke | identity | mail | inspect | hn | bsky | mastodon | devto | telegraph | reddit | accounts")
   process.exitCode = 2
 }
 

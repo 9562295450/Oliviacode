@@ -6,6 +6,7 @@ own HTTP API where one exists.
 
 ```
 node scripts/ads/run.mjs smoke                     # CDP socket + inbox clients
+node scripts/ads/run.mjs identity --port N         # what the browser claims, and whether it agrees
 node scripts/ads/run.mjs mail                      # mint a disposable inbox
 node scripts/ads/run.mjs inspect <url> --port N    # map a page's forms and fields, screenshot it
 node scripts/ads/run.mjs hn [--submit --plain --text]
@@ -28,6 +29,19 @@ Every field is entered one character at a time (`Session.typeHuman`) with 55–1
 keys and an occasional 260–680 ms beat, a pause before each field, and 400–1100 ms before a
 click. A form that lands in a single frame is the one tell that does not need a fingerprint
 library to notice, so nothing here submits at machine speed.
+
+## Browser identity
+
+Two browsers are on this machine and they are not interchangeable:
+
+| family  | build                 | tells                                                                                                            |
+| ------- | --------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `ghost` | Chrome for Testing    | UA says Chrome, `userAgentData.brands` says Chromium only, plus a permanent "only for automated testing" infobar |
+| `edge`  | installed Edge Stable | UA says `Edg/`, brands say Microsoft Edge — consistent, auto-updating, what a fifth of Windows already runs      |
+
+`identity` prints both halves and says whether they agree. Anything account-shaped uses `edge`;
+Chrome for Testing is for scraping pages that do not care who is asking. A profile is pinned to
+the family that created it, because switching loses the cookie store.
 
 ## Layout
 
@@ -60,7 +74,7 @@ and each profile gets its own debugging port:
 | DEV Community          | 9336 | `devto`                |
 | Mastodon (mstdn.party) | 9337 | `mastodon-mstdn-party` |
 | Mastodon (mastodon.au) | 9338 | `mastodon-au`          |
-| Reddit                 | 9339 | `reddit`               |
+| Reddit                 | 9339 | `reddit-edge`          |
 
 ## Channel status
 
