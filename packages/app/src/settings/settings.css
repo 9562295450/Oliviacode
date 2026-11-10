@@ -376,13 +376,6 @@
   gap: 12px;
 }
 
-.settings-about-anomaly-brush {
-  width: 126.72px;
-  height: 48.384px;
-  flex-shrink: 0;
-  pointer-events: none;
-}
-
 .settings-about-content a {
   color: inherit;
   cursor: pointer;

@@ -33,7 +33,7 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
   <summary>${summary}</summary>
 
   <developer id="ai.oliviacode">
-    <name>oliviacode</name>
+    <name>Malbe</name>
   </developer>
 
   <description>
@@ -47,12 +47,12 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 
   <content_rating type="oars-1.1" />
 
-  <url type="homepage">https://opencode.ai</url>
-  <url type="vcs-browser">https://github.com/anomalyco/opencode</url>
+  <url type="homepage">https://github.com/9562295450/Oliviacode</url>
+  <url type="vcs-browser">https://github.com/9562295450/Oliviacode</url>
 
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/anomalyco/opencode/b75d4d1c5ec449585d515c756fc81f080a157a9a/packages/web/src/assets/lander/screenshot.png</image>
+      <image>https://raw.githubusercontent.com/9562295450/Oliviacode/main/docs/og.png</image>
     </screenshot>
   </screenshots>
 </component>

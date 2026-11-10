@@ -1,6 +1,7 @@
 OLIVIACODE - LICENCE AND NOTICES
 
-Oliviacode is an open-source network client. It is not affiliated with OpenCode. The default
+Oliviacode is created and maintained by Malbe (https://github.com/9562295450/Oliviacode).
+It is an open-source network client, not affiliated with OpenCode. The default
 presets are community-provided and users are responsible for complying with the Terms of
 Service of any API they connect to.
 

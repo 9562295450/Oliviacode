@@ -1,5 +1,10 @@
 # Notice
 
+**Publisher.** Oliviacode is created and maintained by Malbe
+(https://github.com/9562295450/Oliviacode). Copyright (c) 2026 Malbe and oliviacode
+contributors. The MIT License lets this fork carry its own name and its own copyright line;
+the upstream notice travels with it, below.
+
 > **Disclaimer**
 >
 > Oliviacode is an open-source network client. It is not affiliated with OpenCode. The default

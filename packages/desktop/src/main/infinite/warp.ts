@@ -5,10 +5,11 @@
  * the tunnel in proxy mode and wait for the daemon to report connected. The exit address
  * changes because the registration does — not because anything is spoofed.
  *
- * Proxy mode is a SOCKS5 listener, and the bundled CLI only speaks HTTP proxies through
- * `HTTP_PROXY`, so the lane exposes a local HTTP bridge in front of the daemon's SOCKS
- * port (see `socks-bridge.ts`). Without it the endpoint handed to the app is an HTTP
- * proxy URL pointing at something that answers SOCKS — a proxy that is up and unusable.
+ * Proxy mode opens a loopback listener on the daemon's proxy port. That listener answers
+ * HTTP on the client built here; older documented builds describe it as SOCKS5 only. The
+ * lane probes the port and hands back that URL when it answers, falling back to a local
+ * HTTP bridge in front of it (`socks-bridge.ts`) when it does not. Without the fallback
+ * the app would be pointed at an HTTP proxy URL that only speaks SOCKS — up, and unusable.
  *
  * The call budgets here are deliberately generous where the daemon is slow. A cold
  * `registration new` routinely takes longer than fifteen seconds while the client
@@ -26,6 +27,8 @@ const REGISTER_TIMEOUT_MS = 120_000
 /** Status and mode switches are local IPC to the daemon and answer immediately. */
 const CONTROL_TIMEOUT_MS = 20_000
 const CONNECT_TIMEOUT_MS = 60_000
+/** Long enough for a cold tunnel to carry one trace, short enough to fail while the user watches. */
+const PROBE_TIMEOUT_MS = 20_000
 
 const CANDIDATES = [
   "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\warp-cli.exe",
@@ -61,8 +64,9 @@ export type WarpStatus = {
 export class Warp {
   #binary: string | null = null
   #missedAt = 0
-  /** The daemon's SOCKS5 port, which `proxy mode` opens on loopback. */
+  /** The daemon's proxy port, opened on loopback by `mode proxy`. */
   #port = 40000
+  #endpoint = ""
   #bridge: Bridge | null = null
   #rotations = 0
 
@@ -70,12 +74,40 @@ export class Warp {
     return this.#port
   }
 
-  /** The loopback HTTP proxy in front of the daemon's SOCKS port, or "" before prepare. */
+  /** The loopback HTTP proxy this lane hands the app, or "" before prepare succeeds. */
   get endpoint() {
-    return this.#bridge?.url ?? ""
+    return this.#endpoint
   }
 
-  /** The local HTTP proxy this lane hands the app. */
+  /**
+   * Decide what gets handed to the app: the daemon's port when it answers HTTP, or a
+   * local bridge in front of it when it only speaks SOCKS5.
+   *
+   * The build installed here serves HTTP on its proxy port, and a bridge in that case
+   * costs a listener and a hop for nothing. Older builds documented `mode proxy` as
+   * SOCKS5 only, so the probe decides per machine instead of per assumption.
+   */
+  async #resolveEndpoint(port: number): Promise<string> {
+    await this.#stopBridge()
+    this.#endpoint = ""
+
+    const direct = `http://127.0.0.1:${port}`
+    const answered = await probe(direct, PROBE_TIMEOUT_MS)
+
+    if (answered.ok) {
+      this.#endpoint = direct
+      return ""
+    }
+
+    const bridged = await this.#bridgeTo(port)
+    if (bridged) return bridged
+
+    await this.#stopBridge()
+    this.#endpoint = ""
+    return `Cloudflare WARP is connected, but its local proxy on 127.0.0.1:${port} did not answer: ${answered.error}. Restart the WARP client, then select the WARP lane again.`
+  }
+
+  /** Build the SOCKS→HTTP bridge and point the lane at it. */
   async #bridgeTo(port: number): Promise<string> {
     await this.#stopBridge()
 
@@ -85,6 +117,7 @@ export class Warp {
       return `Cloudflare WARP is connected, but its local proxy bridge did not start: ${message(error)}`
     }
 
+    this.#endpoint = this.#bridge.url
     return ""
   }
 
@@ -92,6 +125,10 @@ export class Warp {
     const bridge = this.#bridge
     this.#bridge = null
     if (!bridge) return
+
+    // The direct endpoint belongs to the daemon and outlives the bridge; only the
+    // bridge's own URL is dropped here.
+    if (this.#endpoint === bridge.url) this.#endpoint = ""
     await bridge.stop().catch(() => undefined)
   }
 
@@ -187,6 +224,11 @@ export class Warp {
   async prepare(port: number): Promise<string> {
     this.#port = port
 
+    // Every prepare starts with no endpoint. A stale URL from a previous session would
+    // let the engine probe a listener this call has not proven yet.
+    this.#endpoint = ""
+    await this.#stopBridge()
+
     // A lane with no client installed has nothing to prepare. Reporting the tunnel that
     // never came up hides the one fact the user needs: the download they are missing.
     if (!(await this.find())) return NOT_INSTALLED
@@ -214,7 +256,7 @@ export class Warp {
       connect = await this.#cli(["connect"], CONNECT_TIMEOUT_MS)
     }
 
-    if (await this.#waitConnected(CONNECT_TIMEOUT_MS)) return this.#bridgeTo(port)
+    if (await this.#waitConnected(CONNECT_TIMEOUT_MS)) return this.#resolveEndpoint(port)
 
     const status = await this.status()
     const why =
@@ -284,6 +326,12 @@ export class Warp {
 
   /** True when the local proxy answers and the trace says WARP is carrying it. */
   async healthy(timeoutMs: number) {
+    // `probe` treats an empty proxy as the direct lane. A lane that never resolved its
+    // endpoint must not report the machine's own address back as a WARP exit.
+    if (!this.#endpoint) {
+      return { alive: false, latencyMs: 0, detail: "Cloudflare WARP lane is not prepared", trace: null }
+    }
+
     const outcome = await probe(this.endpoint, timeoutMs)
     return {
       alive: outcome.ok,

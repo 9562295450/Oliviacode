@@ -8,7 +8,6 @@ import { ExternalLink } from "@/runtime/platform/external-link"
 import { BRAND } from "@/runtime/brand"
 import { showToast } from "@/shell/notifications/toast"
 import legal from "./legal.svg"
-import anomalyBrush from "./anomaly-brush.svg"
 import { AnimatedWordmark } from "./animated-wordmark"
 import { FALLBACK_OTHER_CONTRIBUTORS, loadOtherContributorCount } from "./contributors"
 import {
@@ -18,6 +17,11 @@ import {
   type AboutCopyEffect,
   type AboutCopyEvent,
 } from "./machine"
+
+/** Whoever publishes this fork. The MIT licence lets a fork carry its own name. */
+const CREATOR = { name: "Malbe", url: "https://github.com/9562295450" } as const
+
+const UPSTREAM = "https://github.com/anomalyco/opencode" as const
 
 const writers = [
   "thdxr",
@@ -101,7 +105,7 @@ export function SettingsAbout(props: { active: boolean }) {
 
   const writerCredits = () => [
     ...writers.map(credit),
-    <ExternalLink href="https://github.com/anomalyco/opencode/graphs/contributors">
+    <ExternalLink href={`${UPSTREAM}/graphs/contributors`}>
       {language.plural("settings.about.otherContributor", otherContributors.latest, {
         count: otherContributors.latest,
       })}
@@ -146,6 +150,13 @@ export function SettingsAbout(props: { active: boolean }) {
           </Tooltip>
         </div>
         <p>{language.t("settings.about.license")}</p>
+        <p class="settings-about-maintainer">
+          <span>oliviacode is created and maintained by </span>
+          <ExternalLink href={CREATOR.url}>
+            <bdi dir="ltr">{CREATOR.name}</bdi>
+          </ExternalLink>
+          <span>.</span>
+        </p>
       </div>
 
       <AnimatedWordmark active={props.active} />
@@ -172,10 +183,10 @@ export function SettingsAbout(props: { active: boolean }) {
 
       <p class="settings-about-faint">
         <span>oliviacode is a fork of </span>
-        <ExternalLink href="https://github.com/anomalyco/opencode">
+        <ExternalLink href={UPSTREAM}>
           <bdi dir="ltr">OpenCode</bdi>
         </ExternalLink>
-        <span>, redistributed under the MIT license.</span>
+        <span>, redistributed under the MIT license with its copyright notice intact.</span>
       </p>
 
       <div class="settings-about-details">
@@ -189,11 +200,18 @@ export function SettingsAbout(props: { active: boolean }) {
         </p>
       </div>
 
+      <p class="settings-about-faint settings-about-warranty">
+        <span>{language.t("settings.about.warranty")} </span>
+        <ExternalLink href={`${BRAND.repo}/blob/main/LICENSE`}>
+          <bdi dir="ltr">MIT License</bdi>
+        </ExternalLink>
+      </p>
+
       <p>{language.t("settings.about.tagline")}</p>
       <img class="settings-about-legal" src={legal} alt="" />
       <div class="settings-about-copyright">
         <p>{language.t("settings.about.copyright")}</p>
-        <img class="settings-about-anomaly-brush" src={anomalyBrush} alt="" />
+        <p>{language.t("settings.about.upstreamCopyright")}</p>
       </div>
     </div>
   )

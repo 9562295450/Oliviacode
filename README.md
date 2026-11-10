@@ -228,6 +228,13 @@ configured. Provider entries are community data files (`presets.json` locally,
 terms; see [PRESETS.md](./PRESETS.md). Responsibility for what an account is used for, and
 whether a given client is permitted, rests with that account's owner.
 
+## Credits
+
+- **Oliviacode** — created and maintained by [Malbe](https://github.com/9562295450).
+  Copyright (c) 2026 Malbe and oliviacode contributors.
+- **OpenCode** — the upstream application and engine this fork is derived from, MIT licensed,
+  written by its contributors. Upstream copyright (c) 2025 opencode.
+
 ## License
 
 MIT. See [LICENSE](./LICENSE). This distribution is derived from the OpenCode desktop

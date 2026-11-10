@@ -83,6 +83,23 @@ if (-not $SkipPush) {
   $basic = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$Token"))
   git -c "http.extraheader=AUTHORIZATION: basic $basic" push --no-verify origin "HEAD:refs/heads/main" | Out-Host
   if ($LASTEXITCODE -ne 0) { throw "git push main failed ($LASTEXITCODE)" }
+
+  # A second publish of a version that is already out moves the tag. The release workflow builds
+  # macOS and Linux from the tagged commit, so a tag left on the previous commit would attach
+  # binaries that do not contain the changes these notes describe.
+  $head = (git rev-parse HEAD).Trim()
+  $remoteTag = @(git ls-remote --tags origin "refs/tags/$tag" 2>$null) |
+    ForEach-Object { ($_ -split "`t")[0] } |
+    Select-Object -First 1
+
+  if ($remoteTag -and $remoteTag -ne $head) {
+    git -c "http.extraheader=AUTHORIZATION: basic $basic" push --no-verify --force origin "refs/tags/$tag" | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "git push tag failed ($LASTEXITCODE)" }
+    # The tag push is the event publish.yml listens for, so dispatching as well would queue a
+    # second full build of the same commit.
+    $tagMoved = $true
+    Write-Host "tag       moved $tag -> $($head.Substring(0,8))"
+  }
 }
 
 # 2. About box: description, homepage, topics.
@@ -123,7 +140,14 @@ if (-not $release) {
   $release = Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/$Repo/releases" -Headers $headers -Body $payload
   Write-Host "release   created $($release.html_url)"
 } else {
-  Write-Host "release   exists  $($release.html_url)"
+  # Re-publishing an existing tag replaces assets, so the body has to be replaced too: the
+  # release body is what documents the bytes that were just uploaded.
+  $patch = @{
+    name = "Oliviacode $Version"
+    body = [System.IO.File]::ReadAllText($notes)
+  } | ConvertTo-Json
+  $release = Invoke-RestMethod -Method Patch -Uri "https://api.github.com/repos/$Repo/releases/$($release.id)" -Headers $headers -Body $patch
+  Write-Host "release   updated $($release.html_url)"
 }
 
 # 4. Assets. Delete a same-named asset first so a re-run replaces it.
@@ -144,10 +168,13 @@ Publish-Asset $sums
 Publish-Asset $feed
 Publish-Asset $blockmap
 
-# 5. Build the other platforms. The release API created the tag pointing at the commit just pushed;
-# a git tag push would be a no-op and would raise no workflow event, so dispatch the workflow
-# explicitly. Its Windows job sees the installer above and skips; Linux and macOS build and attach.
-if (-not $SkipPush) {
+# 5. Build the other platforms. A first publish has to dispatch the workflow because the release
+# API created the tag server-side and that raises no push event. A re-publish already raised one by
+# moving the tag, so dispatching here would queue the same build twice.
+if ($tagMoved) {
+  Write-Host "workflow  publish.yml queued by the tag push @ $tag"
+}
+if (-not $SkipPush -and -not $tagMoved) {
   $dispatch = @{ ref = $tag; inputs = @{ version = $Version } } | ConvertTo-Json
   $queued = $false
   foreach ($attempt in 1..5) {

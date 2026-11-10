@@ -79,6 +79,9 @@ const getBase = (appId: string): Configuration => {
 
   return {
     artifactName: "oliviacode-desktop-${os}-${arch}.${ext}",
+    // File properties on Windows and the maintainer field in deb/rpm read these. The upstream
+    // copyright travels in LICENSE and NOTICE; this names who publishes this build.
+    copyright: "Copyright © 2026 Malbe and oliviacode contributors",
     publish: resolvePublish(),
     directories: {
       output: "dist",
