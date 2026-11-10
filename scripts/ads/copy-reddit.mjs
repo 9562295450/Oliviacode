@@ -77,7 +77,10 @@ the endpoint and the key; the app is the window, the session store and the egres
 
 ${egress}
 
-MIT, no telemetry, no account with the project. Write-up: ${writeup} — Discord: ${discord}`,
+MIT, no telemetry, no account with the project.
+Repo: ${repo}
+Write-up: ${writeup}
+Discord: ${discord}`,
   },
 
   foss: {
