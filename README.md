@@ -5,13 +5,15 @@
 **A provider-agnostic desktop AI client.** An open-source AI client for developers: nothing
 preconfigured, with multi-lane egress and isolated sessions built into the UI instead of bolted on.
 
-[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.8) ·
-[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-Setup-2.2.8.exe) ·
-[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-arm64.dmg) ·
-[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-x64.dmg) ·
-[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-x64.AppImage) ·
-[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-x64.deb) ·
-[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.8/Oliviacode-2.2.8-x64.rpm)
+[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.10) ·
+[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/Oliviacode-Setup-2.2.10.exe) ·
+[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/Oliviacode-2.2.10-arm64.dmg) ·
+[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/Oliviacode-2.2.10-x64.dmg) ·
+[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/Oliviacode-2.2.10-x64.AppImage) ·
+[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/Oliviacode-2.2.10-x64.deb) ·
+[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/Oliviacode-2.2.10-x64.rpm)
+
+**Community:** [Discord](https://discord.gg/kDcRCu6ek) — release notes, Tor-lane questions, bug reports.
 
 - **Multi-lane egress** — Direct, WARP, Tor and proxy lanes, each with health, latency and
   rotation. Rotate on demand, or arm a lane and let it rotate.
