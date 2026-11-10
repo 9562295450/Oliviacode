@@ -75,12 +75,20 @@ sha256sum Oliviacode-2.2.11-x64.AppImage</pre>
     <tbody>
       <tr><td class="name">Oliviacode-Setup-2.2.11.exe</td><td>60300aaf81ac88a2fb9e9b29036f04e0ad8e8ab579d4009089f87ac5b90121c1</td></tr>
       <tr><td class="name">Oliviacode-Setup-2.2.11.exe.blockmap</td><td>bc61c1e908b03234fcb3c3a384ea97990a8b252bfbd826e342a69461064b1918</td></tr>
+      <tr><td class="name">Oliviacode-2.2.11-x64.dmg</td><td>c3697f23bd6e3abb028f83ece987b5616b27f29fa62a14008cc47ce53b01e023</td></tr>
+      <tr><td class="name">Oliviacode-2.2.11-arm64.dmg</td><td>ff87ef3acaabfb396238e2c74612f67e1910659bf4a3d9e9dc6ec53bdd19b004</td></tr>
+      <tr><td class="name">Oliviacode-2.2.11-x64.zip</td><td>3bdd8017034cad5354b5522814784799f0ce4c08eff9038600617b63c03418a8</td></tr>
+      <tr><td class="name">Oliviacode-2.2.11-arm64.zip</td><td>5144463f3b31302797db4a152f706c4ddfc89bac30b4317ed95cf4a8ea07b4aa</td></tr>
+      <tr><td class="name">Oliviacode-2.2.11-x64.AppImage</td><td>fcabfa642d30f52e3fbd7882b3a0e40351378cc6ee2ee6a4302cd59bcde7422e</td></tr>
+      <tr><td class="name">Oliviacode-2.2.11-x64.deb</td><td>1bcc7763fbf89d40d50ad054d38e462d015652f0c9730c30da2e7d6225171110</td></tr>
+      <tr><td class="name">Oliviacode-2.2.11-x64.rpm</td><td>6a6db63ce514d7c438b4d29c9aec8f4dffddfe416a118365cc5b685b6b113655</td></tr>
       <tr><td class="name">latest.yml</td><td>063786ce8cbf83f2817995784d200b1cd252f7095a7034f4c785c53e8c25f24a</td></tr>
-      <tr><td class="name">SHA256SUMS.txt</td><td>rewritten from GitHub's digests when the macOS and Linux jobs finish - see the file</td></tr>
+      <tr><td class="name">latest-linux.yml</td><td>ebd55a6b416bcfe0f93532f9739768bd245e739a09a27eb29946d9e7e4d3861a</td></tr>
+      <tr><td class="name">SHA256SUMS.txt</td><td>488591e588e52a0691c38b0324b8239c996c75d9f067ea0d904817c710a6de7d</td></tr>
     </tbody>
   </table>
 
-  <p style="margin:16px 0 0;color:var(--muted)">macOS and Linux artifacts are built on clean runners from the tagged commit and attach to the same release as they finish. Their rows appear here once the run completes.</p>
+  <p style="margin:16px 0 0;color:var(--muted)">The macOS and Linux artifacts were built on clean runners from the same tagged commit (<code>b6e26485</code>) that produced the installer. <code>SHA256SUMS.txt</code> lists every asset except itself, taken from GitHub's stored digest for each upload.</p>
 
   <footer>
     The installer is not code-signed. The application binary's hash is different from the installer's on purpose: the installer is an NSIS container and the executable is one file inside it. Oliviacode is not affiliated with OpenCode or any provider named in a preset or community registry.

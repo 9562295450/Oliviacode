@@ -128,25 +128,34 @@ try {
   if ($_.Exception.Response.StatusCode.value__ -ne 404) { throw }
 }
 
+# The notes carry typographic quotes and dashes. Windows PowerShell serialises a string body as
+# ISO-8859-1 unless it is handed the bytes, which mangles them into an invalid JSON payload that
+# GitHub rejects with "Problems parsing JSON". Always send explicit UTF-8.
+function Send-Json([string]$Method, [string]$Uri, $Payload) {
+  $bytes = [System.Text.Encoding]::UTF8.GetBytes(($Payload | ConvertTo-Json -Compress))
+  Invoke-RestMethod -Method $Method -Uri $Uri -Headers $headers `
+    -ContentType "application/json; charset=utf-8" -Body $bytes
+}
+
+$notesBody = [System.IO.File]::ReadAllText($notes, [System.Text.Encoding]::UTF8)
+
 if (-not $release) {
-  $payload = @{
+  $release = Send-Json Post "https://api.github.com/repos/$Repo/releases" @{
     tag_name         = $tag
     target_commitish = "main"
     name             = "Oliviacode $Version"
-    body             = [System.IO.File]::ReadAllText($notes)
+    body             = $notesBody
     draft            = $false
     prerelease       = $false
-  } | ConvertTo-Json
-  $release = Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/$Repo/releases" -Headers $headers -Body $payload
+  }
   Write-Host "release   created $($release.html_url)"
 } else {
   # Re-publishing an existing tag replaces assets, so the body has to be replaced too: the
   # release body is what documents the bytes that were just uploaded.
-  $patch = @{
+  $release = Send-Json Patch "https://api.github.com/repos/$Repo/releases/$($release.id)" @{
     name = "Oliviacode $Version"
-    body = [System.IO.File]::ReadAllText($notes)
-  } | ConvertTo-Json
-  $release = Invoke-RestMethod -Method Patch -Uri "https://api.github.com/repos/$Repo/releases/$($release.id)" -Headers $headers -Body $patch
+    body = $notesBody
+  }
   Write-Host "release   updated $($release.html_url)"
 }
 
@@ -164,9 +173,28 @@ function Publish-Asset([string]$Path) {
 }
 
 Publish-Asset $installer
-Publish-Asset $sums
 Publish-Asset $feed
 Publish-Asset $blockmap
+Publish-Asset $sums
+
+# 4b. The sums file lists every asset on the release, not just the Windows three. On a re-publish
+# the macOS and Linux artifacts are already attached, so fold them in before the file is final.
+# GitHub's digest is the hash of the stored upload, which is what a downloader actually receives.
+$release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$tag" -Headers $headers
+$assetLines = @($release.assets |
+  Where-Object { $_.name -ne "SHA256SUMS.txt" -and $_.state -eq "uploaded" -and $_.digest } |
+  Sort-Object name |
+  ForEach-Object { "$($_.digest -replace '^sha256:', '')  $($_.name)" })
+if ($assetLines.Count -gt 3) {
+  [System.IO.File]::WriteAllText($sums, (($assetLines -join "`n") + "`n"), (New-Object System.Text.UTF8Encoding($false)))
+  $previous = $release.assets | Where-Object { $_.name -eq "SHA256SUMS.txt" }
+  if ($previous) {
+    Invoke-RestMethod -Method Delete -Uri "https://api.github.com/repos/$Repo/releases/assets/$($previous.id)" -Headers $headers | Out-Null
+  }
+  $upload = "https://uploads.github.com/repos/$Repo/releases/$($release.id)/assets?name=SHA256SUMS.txt"
+  Invoke-RestMethod -Method Post -Uri $upload -Headers $headers -ContentType "application/octet-stream" -InFile $sums | Out-Null
+  Write-Host "asset     uploaded SHA256SUMS.txt ($($assetLines.Count) entries)"
+}
 
 # 5. Build the other platforms. A first publish has to dispatch the workflow because the release
 # API created the tag server-side and that raises no push event. A re-publish already raised one by
