@@ -745,7 +745,7 @@ export class InfiniteEngine extends EventEmitter {
     const targets: { lane: InfiniteLane; endpoint: string }[] = [{ lane: "direct", endpoint: "" }]
 
     const warp = await this.warp.status()
-    if (warp.found) targets.push({ lane: "warp", endpoint: this.warp.endpoint })
+    if (warp.found && this.warp.endpoint) targets.push({ lane: "warp", endpoint: this.warp.endpoint })
 
     const tor = await this.tor.status()
     if (tor.installed) targets.push({ lane: "tor", endpoint: this.tor.endpoint })

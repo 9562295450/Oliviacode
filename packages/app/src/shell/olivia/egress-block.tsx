@@ -5,6 +5,7 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { usePlatform } from "@/runtime/platform/platform"
 import { infiniteLanes, laneLabel, phaseLabel, type InfiniteLane } from "@/egress"
 import { EgressPanel } from "@/shell/egress/panel"
+import { Linkified } from "@/shell/egress/linkified"
 
 /**
  * The sidebar's view of the egress engine: the exit address, the lane switch, and the one
@@ -19,6 +20,11 @@ export function OliviaEgress() {
   const [busy, setBusy] = createSignal(false)
   const [started, setStarted] = createSignal(0)
   const [tick, setTick] = createSignal(0)
+  const [result, setResult] = createSignal("")
+
+  let resultTimer: ReturnType<typeof setTimeout> | undefined
+
+  onCleanup(() => clearTimeout(resultTimer))
 
   const engine = () => platform.egress
   const state = () => engine()?.state()
@@ -59,9 +65,19 @@ export function OliviaEgress() {
     if (busy()) return
 
     setBusy(true)
+    setResult("")
 
     try {
-      await engine()?.rotate()
+      const outcome = await engine()?.rotate()
+
+      if (!outcome?.ok) return
+
+      // A rotation ends with the phase back on `armed` or `ready`, which reads the same as
+      // never having pressed anything. Say what moved, where to, and how long it took.
+      setResult(`New exit ${outcome.to} · ${laneLabel(outcome.lane)} · ${(outcome.ms / 1_000).toFixed(1)}s`)
+
+      clearTimeout(resultTimer)
+      resultTimer = setTimeout(() => setResult(""), 8_000)
     } finally {
       setBusy(false)
     }
@@ -157,10 +173,12 @@ export function OliviaEgress() {
           </p>
         </Show>
 
+        <Show when={result()}>
+          {(line) => <Linkified slot="olivia-egress-result" tone="ok" text={line()} />}
+        </Show>
+
         <Show when={state()?.phase === "error" && state()?.lastError}>
-          <p data-slot="olivia-egress-error" title={state()!.lastError}>
-            {state()!.lastError}
-          </p>
+          {(error) => <Linkified slot="olivia-egress-error" tone="bad" text={error()} />}
         </Show>
       </section>
     </Show>

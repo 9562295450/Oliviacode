@@ -629,12 +629,35 @@
 }
 
 [data-slot="olivia-egress-error"] {
+  display: -webkit-box;
   margin: 0;
   overflow: hidden;
   color: var(--v2-state-fg-danger);
   font-size: 10px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+[data-slot="olivia-egress-result"] {
+  margin: 0;
+  overflow: hidden;
+  color: var(--v2-state-fg-success);
+  font-size: 10px;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* A lane failure that names its own fix: the URL is the control, the sentence is the frame. */
+[data-slot="egress-open"] {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 /* ── theme ────────────────────────────────────────────────────────────── */

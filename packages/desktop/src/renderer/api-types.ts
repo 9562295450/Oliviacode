@@ -2,7 +2,7 @@ import type { DesktopMenuAction, DesktopZoomLevel } from "@opencode/app/desktop-
 import type { DesktopNativeBundle } from "@opencode/app/i18n/desktop-native"
 import type { StorageSnapshot } from "../shared/ipc-transport"
 import type { WindowBootstrap } from "../shared/window-bootstrap"
-import type { InfiniteLane, InfiniteSettings, InfiniteState } from "@opencode/app/egress"
+import type { InfiniteLane, InfiniteSettings, InfiniteState, RotateResult } from "@opencode/app/egress"
 import type { UpdateStatus } from "../shared/ipc-rpc/updates"
 import type {
   ClipboardImage,
@@ -89,7 +89,7 @@ export type ElectronAPI = {
   infiniteState(): Promise<InfiniteState>
   infiniteSettings(): Promise<InfiniteSettings>
   infiniteSetLane(lane: string): Promise<void>
-  infiniteRotate(lane?: InfiniteLane): Promise<{ ok: boolean; error?: string }>
+  infiniteRotate(lane?: InfiniteLane): Promise<RotateResult>
   infiniteArm(armed: boolean): Promise<void>
   infiniteCheckLanes(): Promise<InfiniteState>
   infiniteSetSettings(next: InfiniteSettings): Promise<void>

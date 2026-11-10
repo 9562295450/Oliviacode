@@ -4,7 +4,7 @@ import type { Accessor } from "solid-js"
 import type { DesktopMenuAction, DesktopZoomLevel } from "@/shell/commands/desktop-menu"
 import type { DraftStore } from "@/runtime/persistence/drafts"
 import type { Bridge } from "@opencode/plugin/gui/host"
-import type { InfiniteSettings, InfiniteState } from "@opencode/app/egress"
+import type { InfiniteLane, InfiniteSettings, InfiniteState, RotateResult } from "@opencode/app/egress"
 
 type PickerPaths = string | string[] | null
 
@@ -177,8 +177,8 @@ export type PresetPlatform = {
 export type EgressPlatform = {
   state(): InfiniteState | undefined
   settings(): InfiniteSettings | undefined
-  setLane(lane: string): Promise<void>
-  rotate(lane?: string): Promise<{ ok: boolean; from?: string; to?: string; lane?: string; ms?: number; error?: string }>
+  setLane(lane: InfiniteLane): Promise<void>
+  rotate(lane?: InfiniteLane): Promise<RotateResult>
   arm(armed: boolean): Promise<void>
   check(): Promise<void>
   checkUpdate(): Promise<{ available: boolean; version: string }>

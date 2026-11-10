@@ -14,6 +14,7 @@ import {
   type InfiniteSettings,
   type ProviderVerdict,
 } from "@/egress"
+import { Linkified } from "@/shell/egress/linkified"
 import "./egress.css"
 
 type Notice = { tone: "ok" | "bad"; text: string }
@@ -188,6 +189,10 @@ export function EgressPanel() {
                 <span>{line()}</span>
               </p>
             )}
+          </Show>
+
+          <Show when={state()?.phase === "error" && state()?.lastError}>
+            {(error) => <Linkified slot="egress-fault" tone="bad" text={error()} />}
           </Show>
         </section>
 

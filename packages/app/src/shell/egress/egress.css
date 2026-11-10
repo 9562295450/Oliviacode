@@ -163,11 +163,13 @@
 }
 
 [data-slot="egress-fault"] {
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin: 0;
   color: var(--v2-state-fg-danger);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+[data-slot="egress-fault"] [data-slot="egress-open"] {
   font-family: var(--v2-font-family-mono);
 }
 
