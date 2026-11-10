@@ -10,6 +10,42 @@ import { writeFile } from "node:fs/promises"
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+/**
+ * Page-side element lookup that crosses shadow boundaries.
+ *
+ * Reddit's auth form renders its inputs inside faceplate web components, so
+ * `document.querySelector('input[name=email]')` returns nothing while the field is plainly on
+ * screen. Looking at the screenshot said the field was there; looking at the DOM said it wasn't;
+ * the difference was the shadow root. This helper is what makes the two agree.
+ */
+const DEEP_HELPERS = `(() => {
+  if (window.__adsDeep) return true
+  const walk = (root, out = []) => {
+    for (const el of root.querySelectorAll("*")) {
+      out.push(el)
+      if (el.shadowRoot) walk(el.shadowRoot, out)
+    }
+    return out
+  }
+  window.__adsDeep = {
+    one(selector) {
+      const direct = document.querySelector(selector)
+      if (direct) return direct
+      for (const el of walk(document)) {
+        const hit = el.shadowRoot && el.shadowRoot.querySelector(selector)
+        if (hit) return hit
+      }
+      return null
+    },
+    many(selector) {
+      const out = [...document.querySelectorAll(selector)]
+      for (const el of walk(document)) if (el.shadowRoot) out.push(...el.shadowRoot.querySelectorAll(selector))
+      return out
+    },
+  }
+  return true
+})()`
+
 async function json(url, method = "GET") {
   const response = await fetch(url, { method })
   const text = await response.text()
@@ -22,6 +58,24 @@ export async function openTab(port, url = "about:blank") {
   const target = await json(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url)}`, "PUT")
   const session = new Session(target.webSocketDebuggerUrl)
   await session.init()
+  session.targetId = target.id
+  return session
+}
+
+/**
+ * Reattach to a tab that is already open.
+ *
+ * Used where a human has to step out and come back — a signup code in an inbox, a payment
+ * confirmation — and the page must survive the gap. Closing the socket must not close the tab,
+ * so this pairs with `detach()` rather than `close()`.
+ */
+export async function attachTab(port, targetId) {
+  const targets = await json(`http://127.0.0.1:${port}/json/list`)
+  const target = targets.find((entry) => entry.id === targetId)
+  if (!target) throw new Error(`no tab ${targetId} on port ${port}`)
+  const session = new Session(target.webSocketDebuggerUrl)
+  await session.init()
+  session.targetId = target.id
   return session
 }
 
@@ -122,6 +176,21 @@ export class Session {
     throw new Error(`timed out waiting for ${expression}`)
   }
 
+  /** Wait for an element that may live inside a shadow root. */
+  async waitForElement(selector, timeoutMs = 20_000, intervalMs = 300) {
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() < deadline) {
+      try {
+        await this.eval(DEEP_HELPERS)
+        if (await this.eval(`Boolean(window.__adsDeep.one(${JSON.stringify(selector)}))`)) return true
+      } catch {
+        // Mid-navigation; poll again.
+      }
+      await sleep(intervalMs)
+    }
+    throw new Error(`timed out waiting for element ${selector}`)
+  }
+
   async text() {
     return this.eval("document.body.innerText")
   }
@@ -145,8 +214,9 @@ export class Session {
 
   /** Click the centre of the first element matching `selector`. */
   async click(selector) {
+    await this.eval(DEEP_HELPERS)
     const rect = await this.eval(`(() => {
-      const el = document.querySelector(${JSON.stringify(selector)})
+      const el = window.__adsDeep.one(${JSON.stringify(selector)})
       if (!el) return null
       el.scrollIntoView({ block: "center", inline: "center" })
       const r = el.getBoundingClientRect()
@@ -159,8 +229,9 @@ export class Session {
 
   /** Click the first element matching `selector` whose text contains `text`. */
   async clickByText(selector, text) {
+    await this.eval(DEEP_HELPERS)
     const rect = await this.eval(`(() => {
-      const nodes = [...document.querySelectorAll(${JSON.stringify(selector)})]
+      const nodes = window.__adsDeep.many(${JSON.stringify(selector)})
       const el = nodes.find((node) => (node.innerText || node.textContent || node.value || "").trim().includes(${JSON.stringify(text)}))
       if (!el) return null
       el.scrollIntoView({ block: "center", inline: "center" })
@@ -187,8 +258,9 @@ export class Session {
 
   /** Focus `selector`, optionally clearing it first. */
   async focus(selector, clear = true) {
+    await this.eval(DEEP_HELPERS)
     const focused = await this.eval(`(() => {
-      const el = document.querySelector(${JSON.stringify(selector)})
+      const el = window.__adsDeep.one(${JSON.stringify(selector)})
       if (!el) return false
       el.focus()
       if (${clear}) {
@@ -267,6 +339,15 @@ export class Session {
     } catch {
       // The tab may already be gone.
     }
+    try {
+      this.#ws.close()
+    } catch {
+      // Socket already dropped.
+    }
+  }
+
+  /** Drop the socket and leave the tab open. */
+  async detach() {
     try {
       this.#ws.close()
     } catch {

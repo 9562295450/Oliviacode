@@ -8,9 +8,12 @@
  *
  * Reddit answers 403 to this host's plain HTTP clients, so all of it goes through the browser.
  */
+import { join } from "node:path"
+import { attachTab } from "../lib/cdp.mjs"
 import { reddit as copy, order, skipped } from "../copy-reddit.mjs"
 
 const defaultPort = 9339
+const signupState = "reddit-signup.json"
 
 function plan() {
   for (const sub of order) {
@@ -49,14 +52,11 @@ async function ensureSignedIn(session, ctx) {
 
   ctx.log("reddit: signing in")
   await session.goto("https://www.reddit.com/login/")
-  await session.waitFor("document.querySelector('#login-username, input[name=\"username\"]')", 30_000)
+  await session.waitForElement('input[name="username"], #login-username', 30_000)
   await session.pause(1200, 2500)
-  const userField = (await session.eval(`Boolean(document.querySelector('#login-username'))`))
-    ? "#login-username"
-    : 'input[name="username"]'
-  await session.typeHuman(userField, ctx.args.user)
+  await session.typeHuman('input[name="username"], #login-username', ctx.args.user)
   await session.pause(400, 900)
-  await session.typeHuman("#login-password, input[name='password']", ctx.args.password)
+  await session.typeHuman('input[name="password"], #login-password', ctx.args.password)
   await session.pause(600, 1400)
   await session.clickByText("button", "Log In")
   await ctx.sleep(6000)
@@ -144,7 +144,115 @@ async function comment(session, ctx, url, body) {
   return link
 }
 
+/**
+ * Create the account, in two passes, because the code goes to a person's inbox.
+ *
+ * Reddit's signup is email -> six-digit code -> username and password, with the inputs inside
+ * faceplate web components and an invisible reCAPTCHA watching. The first pass types the address
+ * and leaves the tab waiting on the code screen; the socket detaches so the tab survives the gap.
+ * The second pass reattaches to that same tab, types the code and finishes the account.
+ *
+ * Every step leaves a screenshot on disk. Read the picture, not the innerText: the DOM cannot say
+ * that an overlay is covering the button or that the page that answered is not the page asked for.
+ */
+async function createAccount(ctx) {
+  const port = Number(ctx.args.port ?? defaultPort)
+  const profile = ctx.args.profile ?? "reddit-edge"
+  const email = ctx.args.email ?? "marlfielixdumlao@gmail.com"
+
+  await ctx.ensureGhost({ port, name: profile, browser: ctx.args.browser ?? "edge" })
+  const saved = await ctx.readState(signupState)
+
+  let session = saved?.targetId ? await attachTab(port, saved.targetId).catch(() => null) : null
+  if (!session) session = await ctx.openPage({ port, name: profile, browser: ctx.args.browser ?? "edge" })
+  ctx.log(`reddit: signup tab ${session.targetId}`)
+
+  const shoot = async (name) => {
+    const file = join(ctx.stateDir, `reddit-signup-${name}.png`)
+    await session.screenshot(file)
+    ctx.log(`screenshot: ${file}`)
+  }
+
+  try {
+    if (!saved?.targetId || ctx.args.fresh) {
+      await session.goto("https://www.reddit.com/register/")
+      await session.waitFor("document.readyState === 'complete'", 35_000).catch(() => undefined)
+      await ctx.sleep(4000)
+
+      await session.waitForElement('input[name="email"]', 25_000)
+      await session.typeHuman('input[name="email"]', email)
+      await session.pause(900, 2200)
+      await shoot("1-email")
+
+      await session.clickByText("button", "Continue")
+      await ctx.sleep(7000)
+      await shoot("2-code")
+
+      await ctx.writeState(signupState, {
+        targetId: session.targetId,
+        email,
+        step: "code",
+        startedAt: new Date().toISOString(),
+      })
+      ctx.log(`reddit: code sent to ${email} - rerun with --code <six digits> while this tab is alive`)
+      await session.detach()
+      return { step: "code", targetId: session.targetId }
+    }
+
+    if (!ctx.args.code) throw new Error("reddit: a signup is waiting on its code - pass --code <six digits>")
+
+    await session.waitForElement('input[name="code"]', 25_000)
+    await session.pause(900, 1900)
+    await session.typeHuman('input[name="code"]', String(ctx.args.code))
+    await session.pause(700, 1500)
+    await shoot("3-code-filled")
+
+    await session.clickByText("button", "Continue")
+    await ctx.sleep(7000)
+    await shoot("4-account")
+
+    await session.waitForElement('input[name="username"]', 25_000)
+    await session.pause(1200, 2400)
+    await session.typeHuman('input[name="username"]', ctx.args.handle ?? "oliviacodeapp")
+    await session.pause(600, 1400)
+    const password = ctx.args.password ?? ctx.randomPassword(20)
+    await session.typeHuman('input[name="password"]', password)
+    await session.pause(900, 1800)
+    await shoot("5-account-filled")
+
+    await session.clickByText("button", "Continue")
+    await ctx.sleep(9000)
+    await shoot("6-result")
+
+    const url = await session.url()
+    const text = (await session.text()).replace(/\s+/g, " ")
+    const handle = ctx.args.handle ?? "oliviacodeapp"
+    const done = !/\/register/.test(url)
+
+    if (!done) {
+      throw new Error(`reddit: signup did not finish at ${url} - ${text.slice(0, 240)}`)
+    }
+
+    await ctx.writeState(signupState, {
+      targetId: session.targetId,
+      email,
+      handle,
+      password,
+      step: "done",
+      finishedAt: new Date().toISOString(),
+    })
+    await ctx.saveAccount({ platform: "reddit", handle, password, profileUrl: `https://www.reddit.com/user/${handle}` })
+    ctx.log(`reddit: account ${handle} created`)
+    await session.detach()
+    return { handle }
+  } finally {
+    await session.detach()
+  }
+}
+
 export default async function reddit(ctx) {
+  if (ctx.args.signup || ctx.args.code) return createAccount(ctx)
+
   if (ctx.args.list) {
     plan()
     return undefined
@@ -160,6 +268,16 @@ export default async function reddit(ctx) {
 
   const port = Number(ctx.args.port ?? defaultPort)
   const profile = ctx.args.profile ?? "reddit-edge"
+
+  // An account created here signs itself in on later runs; the password stays in state.
+  if (!ctx.args.user && !ctx.args.password && !ctx.args.cookie) {
+    const record = await ctx.readState(signupState)
+    if (record?.step === "done" && record.handle && record.password) {
+      ctx.args.user = record.handle
+      ctx.args.password = record.password
+    }
+  }
+
   const stateFile = `reddit-${sub}.json`
   const saved = await ctx.readState(stateFile)
   if (saved?.postUrl && !ctx.args.force) {

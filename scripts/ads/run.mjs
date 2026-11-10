@@ -265,6 +265,45 @@ async function identity(args) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// look
+
+/**
+ * Screenshot the page and print the path. Nothing else.
+ *
+ * This is the observation step, and it exists because reading `innerText` is not seeing. The DOM
+ * says what the document contains; the image says what is on the screen — which pane is scrolled
+ * where, what sits above the fold, whether an overlay is covering the button, whether the page
+ * that answered is the page that was asked for. Look at the file before acting on it.
+ */
+async function look(args) {
+  const url = args._[1] ?? args.url
+  const port = Number(args.port ?? 9333)
+  const session = await openPage({ port, name: args.profile ?? args.name ?? "bench", browser: args.browser })
+  try {
+    if (args.width || args.height) {
+      await session.send("Emulation.setDeviceMetricsOverride", {
+        width: Number(args.width ?? 1440),
+        height: Number(args.height ?? 900),
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+    }
+    if (url) {
+      await session.goto(url)
+      await session.waitFor("document.readyState === 'complete'", 30_000).catch(() => undefined)
+      await sleep(Number(args.settle ?? 3000))
+    }
+    await mkdir(stateDir, { recursive: true })
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)
+    const shot = join(stateDir, args.out ?? `look-${port}-${stamp}.png`)
+    await session.screenshot(shot)
+    log(shot)
+  } finally {
+    await session.close()
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
 // channels
 async function channel(name) {
   const module = await import(`./channels/${name}.mjs`)
@@ -293,6 +332,7 @@ async function main() {
   if (command === "smoke") return smoke(argv)
   if (command === "mail") return mail(argv)
   if (command === "inspect") return inspect(argv)
+  if (command === "look") return look(argv)
   if (command === "identity") return identity(argv)
   if (command === "accounts") {
     const accounts = (await readState("accounts.json")) ?? []
@@ -311,7 +351,9 @@ async function main() {
   }
 
   log(`unknown command: ${command}`)
-  log("commands: smoke | identity | mail | inspect | hn | bsky | mastodon | devto | telegraph | reddit | accounts")
+  log(
+    "commands: smoke | identity | look | mail | inspect | hn | bsky | mastodon | devto | telegraph | reddit | accounts",
+  )
   process.exitCode = 2
 }
 

@@ -9,6 +9,7 @@ node scripts/ads/run.mjs smoke                     # CDP socket + inbox clients
 node scripts/ads/run.mjs identity --port N         # what the browser claims, and whether it agrees
 node scripts/ads/run.mjs mail                      # mint a disposable inbox
 node scripts/ads/run.mjs inspect <url> --port N    # map a page's forms and fields, screenshot it
+node scripts/ads/run.mjs look [url] --port N       # screenshot only; read the file, not the DOM
 node scripts/ads/run.mjs hn [--submit --plain --text]
 node scripts/ads/run.mjs bsky
 node scripts/ads/run.mjs mastodon [--instance host --user name --port N --email addr --login]
@@ -110,9 +111,17 @@ it is spam. One account, real comment history, one post per community, days apar
 
 ```
 node scripts/ads/run.mjs reddit --list
+node scripts/ads/run.mjs reddit --signup --email you@example.com   # types the address, sends the code
+node scripts/ads/run.mjs reddit --code 123456                      # reattaches to that tab and finishes
 node scripts/ads/run.mjs reddit --sub coolgithubprojects --cookie $REDDIT_SESSION
 node scripts/ads/run.mjs reddit --sub LocalLLaMA --dry      # fill, screenshot-free, no submit
 ```
+
+Signup is two passes because the six-digit code goes to a person's inbox. The first pass keeps
+the tab alive with `detach()` instead of `close()`, the second reattaches by target id, types the
+code and finishes username/password. Both leave screenshots in `state/`: read the picture before
+deciding a step worked, because a shadow-root input can be on screen while `querySelector` swears
+it is not.
 
 `--cookie` takes the `reddit_session` value from a browser that is already signed in, which is
 the only path that does not need the password or trip a two-factor prompt.
