@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oliviacode 2.2.10 — checksums and scans</title>
-<meta name="description" content="SHA-256 checksums for every Oliviacode 2.2.10 artifact, plus the VirusTotal reports for the 2.2.7 installer and application binary.">
+<title>Oliviacode 2.2.11 - checksums and scans</title>
+<meta name="description" content="SHA-256 checksums for every Oliviacode 2.2.11 artifact, plus the VirusTotal reports for the 2.2.7 installer and application binary.">
 <link rel="icon" type="image/svg+xml" href="assets/owl-mark.svg">
 <style>
   :root{--bg:#08080a;--panel:#101014;--line:#24242c;--text:#ececf1;--muted:#9b9ba6;--accent:#6ee7c8;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",Inter,sans-serif}
@@ -38,13 +38,13 @@
 <body>
 <header><div class="wrap"><img src="assets/owl-mark.svg" alt="Oliviacode owl mark"><span class="name">Oliviacode</span><a class="back" href="./">← back to overview</a></div></header>
 <div class="wrap">
-  <h1>Checksums and scans — 2.2.10</h1>
-  <p class="lead">Every artifact below is attached to the <a href="https://github.com/9562295450/Oliviacode/releases/tag/v2.2.10">v2.2.10 release</a>. Hashes are the published <a href="https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/SHA256SUMS.txt">SHA256SUMS.txt</a>, unedited — GitHub's digest for each uploaded asset.</p>
+  <h1>Checksums and scans — 2.2.11</h1>
+  <p class="lead">Every artifact below is attached to the <a href="https://github.com/9562295450/Oliviacode/releases/tag/v2.2.11">v2.2.11 release</a>. Hashes are the published <a href="https://github.com/9562295450/Oliviacode/releases/download/v2.2.11/SHA256SUMS.txt">SHA256SUMS.txt</a>, unedited — GitHub's digest for each uploaded asset.</p>
 
   <div class="row">
     <span class="pill"><span class="ok"></span><b>2.2.7 installer 0/50</b> · VirusTotal</span>
     <span class="pill"><span class="ok"></span><b>2.2.7 binary 0/68</b> · VirusTotal</span>
-    <span class="pill"><span class="wait"></span><b>2.2.10</b> scan pending</span>
+    <span class="pill"><span class="wait"></span><b>2.2.11</b> scan pending</span>
     <span class="pill"><b>MIT</b> licensed</span>
   </div>
 
@@ -56,35 +56,31 @@
     <p style="margin:0"><b>Application binary, 2.2.7</b> — <code>Oliviacode.exe</code>, 246,924,288 bytes<br>
       <span style="color:var(--muted)">0/68 engines, scanned 9 November 2026 —</span>
       <a href="https://www.virustotal.com/gui/file/3dda8e6a3d82634e5f7c749238ca5701cd3cb7b60f9ee85e122295c55d93bb1d">report</a></p>
-    <p style="margin:12px 0 0;color:var(--muted)">The 2.2.10 installer is a different binary and has not been scanned yet. Its SHA-256 is below; check it before running.</p>
+    <p style="margin:12px 0 0;color:var(--muted)">The 2.2.11 installer is a different binary and has not been scanned yet. Its SHA-256 is below; check it before running.</p>
   </div>
 
   <h2>Verify a download</h2>
   <pre># Windows
-Get-FileHash .\Oliviacode-Setup-2.2.10.exe -Algorithm SHA256
+Get-FileHash .\Oliviacode-Setup-2.2.11.exe -Algorithm SHA256
 
 # macOS
-shasum -a 256 Oliviacode-2.2.10-arm64.dmg
+shasum -a 256 Oliviacode-2.2.11-arm64.dmg
 
 # Linux
-sha256sum Oliviacode-2.2.10-x64.AppImage</pre>
+sha256sum Oliviacode-2.2.11-x64.AppImage</pre>
 
   <h2>All artifacts</h2>
   <table>
     <thead><tr><th>File</th><th>SHA-256</th></tr></thead>
     <tbody>
-      <tr><td class="name">Oliviacode-Setup-2.2.10.exe</td><td>6f0646326fac00795ca0e35b0e1ad06197e36017287bd09fd5b7f6393fe16616</td></tr>
-      <tr><td class="name">Oliviacode-Setup-2.2.10.exe.blockmap</td><td>fef15c7b82eff2a77823b7402294e9eca561e82ae1c1e60876ee4de19e21ff36</td></tr>
-      <tr><td class="name">Oliviacode-2.2.10-arm64.dmg</td><td>e18df1c396023a9bb0983836c51902f95cd301dd5d4f7f850b9bc00b57e1d002</td></tr>
-      <tr><td class="name">Oliviacode-2.2.10-arm64.zip</td><td>134d52356acfafe8eae1dc76d4b96eda17ba52e974152b9a0b717f242d05a43c</td></tr>
-      <tr><td class="name">Oliviacode-2.2.10-x64.dmg</td><td>ba309c174fe85e9d8d26a74256889976c95713fec1cc6dc49da5e15b9b04c812</td></tr>
-      <tr><td class="name">Oliviacode-2.2.10-x64.zip</td><td>0b6ae926a54fc1ca543d7f03e32eca2547c058ee3359c679886faa435439c9de</td></tr>
-      <tr><td class="name">Oliviacode-2.2.10-x64.AppImage</td><td>902c1227e8ff6ee54e08fa36a4253a2198ca0393836566a1fefe0c48d107fbb4</td></tr>
-      <tr><td class="name">Oliviacode-2.2.10-x64.deb</td><td>3af5b31f05a3265e8c1b5645f8788c04f09564aef09c521472f5866565ca7ef8</td></tr>
-      <tr><td class="name">Oliviacode-2.2.10-x64.rpm</td><td>f86cc8b7e8252e5808d6acf877085b53bab35c8956acc45705aca782f67c4b36</td></tr>
-      <tr><td class="name">latest-linux.yml</td><td>a4561ea74b301c9ee0255445478b19b9d77f8e6981457993ab8c70ed9d1d7ccc</td></tr>
-      <tr><td class="name">latest.yml</td><td>bd0bdcfdb0254e9b5b8136207a342fd9600dfbd65c782e113f468fc96ccebcd3</td></tr>    </tbody>
+      <tr><td class="name">Oliviacode-Setup-2.2.11.exe</td><td>521d4247eecd9e018aa3506a9eff866a8addd8d77047a8b59a33a6101a167731</td></tr>
+      <tr><td class="name">Oliviacode-Setup-2.2.11.exe.blockmap</td><td>44bc2ba6d0a17979ef310c49c34eae193bbdfccafb2848281c746fad92315c2c</td></tr>
+      <tr><td class="name">latest.yml</td><td>612bb583469b81526cda16cada2f61324db07455a97d255523c03f2d0bddb022</td></tr>
+      <tr><td class="name">SHA256SUMS.txt</td><td>216af745eef3920f9c4a6660b5a3b0cb712132ae3b7b41cbbf1731efa3537690</td></tr>
+    </tbody>
   </table>
+
+  <p style="margin:16px 0 0;color:var(--muted)">macOS and Linux artifacts are built on clean runners from the tagged commit and attach to the same release as they finish. Their rows appear here once the run completes.</p>
 
   <footer>
     The installer is not code-signed. The application binary's hash is different from the installer's on purpose: the installer is an NSIS container and the executable is one file inside it. Oliviacode is not affiliated with OpenCode or any provider named in a preset or community registry.
