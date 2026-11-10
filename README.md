@@ -13,7 +13,8 @@ preconfigured, with multi-lane egress and isolated sessions built into the UI in
 [deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/Oliviacode-2.2.10-x64.deb) ·
 [rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/Oliviacode-2.2.10-x64.rpm)
 
-**Community:** [Discord](https://discord.gg/kDcRCu6ek) — release notes, Tor-lane questions, bug reports.
+**Community:** [Discord](https://discord.gg/kDcRCu6ek) - release notes, Tor-lane questions, bug reports.
+**Write-up:** [A desktop AI coding client with no provider baked in](https://dev.to/oliviacodeapp/a-desktop-ai-coding-client-with-no-provider-baked-in-1mpn) - DEV Community.
 
 - **Multi-lane egress** — Direct, WARP, Tor and proxy lanes, each with health, latency and
   rotation. Rotate on demand, or arm a lane and let it rotate.

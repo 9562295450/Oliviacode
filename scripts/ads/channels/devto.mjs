@@ -13,6 +13,9 @@ import { links as messageLinks, waitForMail, resumeMailtm, resumeTempmail } from
 const signupUrl = "https://dev.to/users/sign_up?state=email_signup"
 const enterUrl = "https://dev.to/enter"
 
+/** A published article permalink, as opposed to the editor or a profile. */
+const isArticleUrl = (href) => /^https:\/\/dev\.to\/[^/]+\/[a-z0-9-]{8,}\/?$/i.test(href ?? "")
+
 function waitForToken(session, timeoutMs = 45_000) {
   return session.waitFor(
     `(() => { const el = document.querySelector('[name="cf-turnstile-response"]'); return el && el.value && el.value.length > 20 })()`,
@@ -199,15 +202,104 @@ export default async function devto(ctx) {
 
     if (!ctx.args.post) return account
 
+    if (account?.postUrl && !ctx.args.force) {
+      ctx.log(`devto: already posted - ${account.postUrl}`)
+      return account
+    }
+
     await session.goto("https://dev.to/new")
     await session.waitFor("document.readyState === 'complete'", 30_000).catch(() => undefined)
-    await ctx.sleep(3000)
-    const map = await session.eval(`JSON.stringify({
-      title: [...document.querySelectorAll('input, textarea')].filter((el) => /title/i.test(el.name || el.id || el.placeholder || '')).map((el) => ({ tag: el.tagName, id: el.id, name: el.name, placeholder: el.placeholder })),
-      editors: [...document.querySelectorAll('textarea, [contenteditable="true"]')].map((el) => ({ tag: el.tagName, id: el.id, name: el.name, cls: String(el.className).slice(0, 80), placeholder: el.placeholder || '' })),
-      buttons: [...document.querySelectorAll('button')].map((el) => (el.innerText || '').trim()).filter(Boolean).slice(0, 30),
-    }, null, 1)`)
-    ctx.log(map)
+    await session.waitFor("document.querySelector('#article-form-title')", 30_000)
+    await session.pause(1400, 2700)
+
+    await session.typeHuman("#article-form-title", devtoTitle)
+    await session.pause(700, 1500)
+
+    // Nobody types six thousand characters; they paste the article and nudge it afterwards.
+    await session.focus("#article_body_markdown")
+    for (const chunk of devtoBody.match(/[\s\S]{1,320}/g) ?? []) {
+      await session.send("Input.insertText", { text: chunk })
+      await session.pause(160, 520)
+    }
+    await session.pause(1200, 2400)
+
+    const bodyLen = await session.eval(`document.querySelector('#article_body_markdown')?.value.length ?? 0`)
+    ctx.log(`devto: editor holds ${bodyLen} characters of body`)
+
+    // Publish either publishes straight through or opens the options drawer, depending on the
+    // release and on whether the editor already has tags. Both paths are one click from live.
+    await session.clickByText("button", "Publish")
+    await session.pause(2200, 3800)
+    await session.waitFor("document.readyState === 'complete'", 20_000).catch(() => undefined)
+
+    if (ctx.args.dry) {
+      const panel = await session.eval(`JSON.stringify({
+        inputs: [...document.querySelectorAll('input')].filter((el) => el.offsetParent).map((el) => ({ type: el.type, id: el.id, name: el.name, placeholder: el.placeholder })),
+        buttons: [...document.querySelectorAll('button, input[type="submit"]')].filter((el) => el.offsetParent).map((el) => ({ text: (el.innerText || el.value || '').trim(), type: el.type, id: el.id })).filter((el) => el.text),
+      })`)
+      ctx.log(`devto: dry, url is ${await session.url()}`)
+      ctx.log(panel)
+      return account
+    }
+
+    if (!isArticleUrl(await session.url())) {
+      // Tags live in the drawer's own field on current releases; the article publishes without
+      // them, so a missing field is not a reason to stop.
+      const tagSelector = await session.eval(`(() => {
+        const el = [...document.querySelectorAll('input')].find((n) => n.offsetParent && /tag/i.test(n.id + n.name + n.placeholder))
+        if (!el) return null
+        if (!el.id) el.id = "ads-tag-field"
+        return el.id ? "#" + el.id : null
+      })()`)
+      if (tagSelector) {
+        await session.typeHuman(tagSelector, "opensource, ai, tools, privacy")
+        await session.pause(400, 900)
+        await session.send("Input.dispatchKeyEvent", {
+          type: "keyDown",
+          key: "Enter",
+          code: "Enter",
+          windowsVirtualKeyCode: 13,
+        })
+        await session.send("Input.dispatchKeyEvent", {
+          type: "keyUp",
+          key: "Enter",
+          code: "Enter",
+          windowsVirtualKeyCode: 13,
+        })
+        await session.pause(700, 1500)
+      }
+
+      // The drawer's submit is the last visible Publish; the toolbar one is behind it.
+      const submitted = await session.eval(`(() => {
+        const hits = [...document.querySelectorAll('button, input[type="submit"]')]
+          .filter((el) => el.offsetParent && /^publish$/i.test((el.innerText || el.value || '').trim()))
+        const el = hits[hits.length - 1]
+        if (!el) return false
+        el.click()
+        return true
+      })()`)
+      if (!submitted) throw new Error("no publish submit in the drawer")
+
+      await ctx.sleep(6000)
+      await session.waitFor("document.readyState === 'complete'", 25_000).catch(() => undefined)
+      await session.pause(1500, 3000)
+    }
+
+    const postUrl = isArticleUrl(await session.url())
+      ? (await session.url()).split("?")[0]
+      : await session.eval(`(() => {
+          const href = [...document.querySelectorAll('a[href*="/@"]')].map((a) => a.href)
+            .find((candidate) => /dev\\.to\\/[^/]+\\/[a-z0-9-]{8,}$/i.test(candidate))
+          return href ?? null
+        })()`)
+    const text = (await session.text()).replace(/\s+/g, " ")
+    ctx.log(`devto: after publish - ${text.slice(0, 200)}`)
+    if (!postUrl) throw new Error(`published but no permalink found; page said: ${text.slice(0, 300)}`)
+
+    account = { ...account, postUrl, postedAt: new Date().toISOString() }
+    await ctx.writeState("devto.json", account)
+    await ctx.saveAccount(account)
+    ctx.log(`devto: posted - ${postUrl}`)
 
     return account
   } finally {

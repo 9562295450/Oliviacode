@@ -15,6 +15,7 @@ official or endorsed provider, and nothing telephones home.
 - [Latest release](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.10)
 - [Checksums and VirusTotal results](https://9562295450.github.io/Oliviacode/checksums.html)
 - [Community Discord](https://discord.gg/kDcRCu6ek)
+- [Write-up: a desktop AI coding client with no provider baked in](https://dev.to/oliviacodeapp/a-desktop-ai-coding-client-with-no-provider-baked-in-1mpn)
 - [Installer SHA-256 list](https://github.com/9562295450/Oliviacode/releases/download/v2.2.10/SHA256SUMS.txt)
 
 ## What it does
