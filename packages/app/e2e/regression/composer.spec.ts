@@ -414,7 +414,7 @@ for (const action of ["tray", "picker"] as const) {
     const tray = page.locator('[data-component="session-go-limit-tray"]')
     await expect(tray).toContainText(/Go 5 hour usage limit reached\. It resets at .+?\./)
     await expect(
-      page.getByRole("status").filter({ hasText: /^You've reached your OpenCode Go usage limit\. It resets at / }),
+      page.getByRole("status").filter({ hasText: /^You've reached this provider's usage limit\. It resets at / }),
     ).toBeVisible()
     await expect(view.editor).toHaveText("Refactor the parser")
     await expect(page.getByText("OpenCode Go 5 hour usage limit reached.")).toHaveCount(0)

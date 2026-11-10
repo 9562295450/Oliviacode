@@ -95,16 +95,17 @@ const source = {
   "ui.sessionTurn.budgetLimit.modelsUntilReset": "Model budget reached · this model is paused until it resets",
   "ui.sessionTurn.budgetLimit.useFreeModel": "Use a free model",
   "ui.sessionTurn.budgetLimit.switchModel": "Switch model",
-  "ui.sessionTurn.goLimit.title": "You've reached your OpenCode Go usage limit.",
-  "ui.sessionTurn.goLimit.lineReset": "You've reached your OpenCode Go usage limit. It resets at {{time}}.",
+  "ui.sessionTurn.goLimit.title": "You've reached this provider's usage limit.",
+  "ui.sessionTurn.goLimit.lineReset": "You've reached this provider's usage limit. It resets at {{time}}.",
+  "ui.sessionTurn.limit.connect": "Connect a provider",
   "ui.sessionTurn.error.freeUsageExceeded": "Free usage exceeded",
   "ui.sessionTurn.error.addCredits": "Add credits",
 
   "dialog.usageExceeded.freeTier.title": "Free limit reached",
   "dialog.usageExceeded.freeTier.description":
-    "Subscribe to OpenCode Go for reliable access to the best open-source models for $10/month.",
+    "Add a provider you already use to keep going, or switch to another model.",
   "dialog.usageExceeded.freeTier.reset": "Your free messages reset at {{time}}.",
-  "dialog.usageExceeded.freeTier.actionLabel": "Subscribe",
+  "dialog.usageExceeded.freeTier.actionLabel": "Connect a provider",
 
   "ui.sessionTurn.status.delegating": "Delegating work",
   "ui.sessionTurn.status.planning": "Planning next steps",

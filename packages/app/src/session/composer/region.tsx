@@ -405,6 +405,7 @@ export function createActiveSessionRegion(input: {
           fork: forkMessage,
           pending: pendingSteer,
           chooseModel: () => command.trigger("model.choose"),
+          connectProvider: () => command.trigger("provider.connect"),
           openAttachment,
         }),
     },

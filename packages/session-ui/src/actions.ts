@@ -38,6 +38,8 @@ export type SessionUserActions = {
   openAttachment?: (file: PromptAttachment) => void
   /** Opens the model picker, which a budget notice offers when a budget pauses the model in use. */
   chooseModel?: () => void
+  /** Opens the provider connect dialog, which a free or subscription limit notice offers as the way out. */
+  connectProvider?: () => void
   revert?: (input: { sessionID: string; messageID: string }) => Promise<void> | void
   /** Starts a new session with the history before this message and its prompt in the composer. */
   fork?: (input: { sessionID: string; messageID: string }) => Promise<void> | void

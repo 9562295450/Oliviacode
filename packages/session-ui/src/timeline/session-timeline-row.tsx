@@ -1327,9 +1327,11 @@ export function createSessionTimelineRowRenderer(input: {
           ? ({ title: "ui.sessionTurn.goLimit.title", lineReset: "ui.sessionTurn.goLimit.lineReset" } as const)
           : ({ title: "ui.sessionTurn.freeLimit.title", lineReset: "ui.sessionTurn.freeLimit.lineReset" } as const)
 
+      const action = i18n.t("ui.sessionTurn.limit.connect")
       const at = current().resetAt
 
-      if (at === undefined || !Number.isFinite(at) || Number.isNaN(new Date(at).getTime())) return i18n.t(keys.title)
+      if (at === undefined || !Number.isFinite(at) || Number.isNaN(new Date(at).getTime()))
+        return { text: i18n.t(keys.title), action }
 
       const now = Date.now()
       const sameDay = new Date(at).toDateString() === new Date(now).toDateString() && at - now < 86_400_000
@@ -1339,7 +1341,7 @@ export function createSessionTimelineRowRenderer(input: {
         sameDay ? { timeStyle: "short" } : { dateStyle: "medium", timeStyle: "short" },
       ).format(at)
 
-      return i18n.t(keys.lineReset, { time })
+      return { text: i18n.t(keys.lineReset, { time }), action }
     })
 
     // A budget pauses paid models, or only the ones it covers, until it resets at the start of a month.
@@ -1405,12 +1407,26 @@ export function createSessionTimelineRowRenderer(input: {
               )}
             </Match>
             <Match when={usageLimit()}>
-              {(text) => (
+              {(notice) => (
                 <div
                   role="status"
                   class="text-[13px] font-[440] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted"
                 >
-                  {text()}
+                  {notice().text}
+                  <Show when={input.actions?.connectProvider}>
+                    {(connect) => (
+                      <>
+                        <span aria-hidden="true">{" · "}</span>
+                        <button
+                          type="button"
+                          class="font-[530] text-v2-text-text-base hover:underline focus-visible:underline focus-visible:outline-none"
+                          onClick={() => connect()()}
+                        >
+                          {notice().action}
+                        </button>
+                      </>
+                    )}
+                  </Show>
                 </div>
               )}
             </Match>

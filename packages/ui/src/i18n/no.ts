@@ -87,11 +87,12 @@ export const dict: Record<Keys, string> = {
   "ui.sessionTurn.retry.geminiHot": "Gemini er veldig overbelastet nå",
   "ui.sessionTurn.error.freeUsageExceeded": "Gratisforbruket er overskredet",
   "ui.sessionTurn.error.addCredits": "Legg til kreditter",
+  "ui.sessionTurn.limit.connect": "Koble til en leverandør",
 
   "dialog.usageExceeded.freeTier.title": "Gratisgrensen er nådd",
   "dialog.usageExceeded.freeTier.description":
-    "Abonner på OpenCode Go for $10/måned for pålitelig tilgang til de beste modellene med åpen kildekode.",
-  "dialog.usageExceeded.freeTier.actionLabel": "Abonner",
+    "Legg til en leverandør du allerede bruker for å fortsette, eller bytt til en annen modell.",
+  "dialog.usageExceeded.freeTier.actionLabel": "Koble til en leverandør",
 
   "ui.sessionTurn.status.delegating": "Delegerer arbeid",
   "ui.sessionTurn.status.planning": "Planlegger neste trinn",
