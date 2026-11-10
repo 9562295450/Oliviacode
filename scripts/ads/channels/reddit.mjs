@@ -26,12 +26,30 @@ function plan() {
   for (const [sub, reason] of Object.entries(skipped)) console.log(`  ${sub.padEnd(18)} ${reason}`)
 }
 
+/**
+ * Whether this browser carries a Reddit session.
+ *
+ * `/api/v1/me` used to answer with the account name; it now returns `{"features": …}` and nothing
+ * else, so a name check called a perfectly signed-in profile signed out and walked it to the login
+ * page, which answered "You are already logged in". The cookie store is the session speaking for
+ * itself: `reddit_session` is httpOnly, and CDP reads it from outside the page.
+ */
+async function isSignedIn(session) {
+  try {
+    await session.send("Network.enable", {})
+    const { cookies } = await session.send("Network.getCookies", { urls: ["https://www.reddit.com/"] })
+    return (cookies ?? []).some((cookie) => cookie.name === "reddit_session" && (cookie.value ?? "").length > 20)
+  } catch {
+    return false
+  }
+}
+
 /** Sign in if the profile is not already carrying a session. */
 async function ensureSignedIn(session, ctx) {
-  const signedIn = await session.eval(
-    `Boolean(document.querySelector('#USER_DROPDOWN_ID, [aria-label="Open user menu"], button[aria-label*="profile" i]'))`,
-  )
-  if (signedIn) return true
+  if (await isSignedIn(session)) {
+    ctx.log("reddit: session cookie present")
+    return true
+  }
 
   if (ctx.args.cookie) {
     await session.send("Network.enable", {})
@@ -45,7 +63,7 @@ async function ensureSignedIn(session, ctx) {
     })
     await session.goto("https://www.reddit.com/")
     await ctx.sleep(4000)
-    return session.eval(`Boolean(document.querySelector('#USER_DROPDOWN_ID, [aria-label="Open user menu"]'))`)
+    return isSignedIn(session)
   }
 
   if (!ctx.args.user || !ctx.args.password) return false
@@ -62,56 +80,118 @@ async function ensureSignedIn(session, ctx) {
   await ctx.sleep(6000)
   await session.waitFor("document.readyState === 'complete'", 25_000).catch(() => undefined)
 
+  if (await isSignedIn(session)) {
+    ctx.log("reddit: signed in")
+    return true
+  }
   const text = (await session.text()).replace(/\s+/g, " ")
   if (/verification code|two-factor|two factor/i.test(text)) {
     throw new Error("reddit: two-factor prompt - pass --cookie with reddit_session instead")
   }
-  const ok = await session.eval(`Boolean(document.querySelector('#USER_DROPDOWN_ID, [aria-label="Open user menu"]'))`)
-  if (!ok) throw new Error(`reddit: sign-in failed - ${text.slice(0, 220)}`)
-  ctx.log("reddit: signed in")
-  return true
+  throw new Error(`reddit: sign-in failed - ${text.slice(0, 220)}`)
 }
 
-/** Fill the text composer on a submission page and leave it ready to send. */
+/**
+ * Fill the composer and leave it ready to send.
+ *
+ * The current composer is a shadow-DOM title field plus a rich-text body: the body is the first
+ * visible `contenteditable`, and it only accepts text after a real click lands inside it, which is
+ * also how a person gets the caret there.
+ */
 async function fillComposer(session, ctx, { title, body }) {
-  await session.waitFor("document.querySelector('#post-title, textarea[name=\"title\"]')", 30_000)
+  await session.waitForElement('textarea[name="title"]', 30_000)
   await session.pause(1600, 3200)
-
-  const titleField = (await session.eval(`Boolean(document.querySelector('#post-title'))`))
-    ? "#post-title"
-    : 'textarea[name="title"]'
-  await session.typeHuman(titleField, title, { clear: true })
+  await session.typeHuman('textarea[name="title"]', title, { clear: true })
   await session.pause(900, 1900)
 
-  const editor = await session.eval(`(() => {
-    const el = [...document.querySelectorAll('[contenteditable="true"], textarea[name="text"]')]
-      .find((node) => node.offsetParent && !/comment/i.test(node.getAttribute('placeholder') || ''))
+  const box = await session.eval(`(() => {
+    const walk = (root, out = []) => {
+      for (const el of root.querySelectorAll("*")) {
+        if (el.shadowRoot) walk(el.shadowRoot, out)
+        if (el.isContentEditable && el.getClientRects().length) out.push(el)
+      }
+      return out
+    }
+    const el = walk(document)[0]
     if (!el) return null
-    if (!el.id) el.id = "ads-body"
-    return "#" + el.id
+    const r = el.getBoundingClientRect()
+    return JSON.stringify({ x: r.x, y: r.y, w: r.width, h: r.height })
   })()`)
-  if (!editor) throw new Error("reddit: no body editor on the submit page")
+  if (!box) throw new Error("reddit: no body editor on the submit page")
+  const rect = JSON.parse(box)
 
-  await session.focus(editor, true)
-  for (const chunk of body.match(/[\s\S]{1,280}/g) ?? []) {
-    await session.send("Input.insertText", { text: chunk })
-    await session.pause(150, 470)
+  await session.pause(500, 1100)
+  await session.clickAt(rect.x + Math.min(60, rect.w / 2), rect.y + Math.min(18, rect.h / 2))
+  await session.pause(500, 1100)
+
+  // One paste, then verify. The editor re-renders while text is arriving; paced chunks can land
+  // out of order and leave a sentence scrambled, so the body goes in whole and gets compared
+  // against the copy before anything is submitted.
+  const normalize = (value) => value.replace(/\s+/g, " ").trim()
+  const readBody = () =>
+    session.eval(`(() => {
+    const walk = (root, out = []) => {
+      for (const el of root.querySelectorAll("*")) {
+        if (el.shadowRoot) walk(el.shadowRoot, out)
+        if (el.isContentEditable && el.getClientRects().length) out.push(el)
+      }
+      return out
+    }
+    const el = walk(document)[0]
+    return el ? el.innerText : ""
+  })()`)
+
+  await session.send("Input.insertText", { text: body })
+  await session.pause(1200, 2400)
+
+  if (normalize(await readBody()) !== normalize(body)) {
+    ctx.log("reddit: body came out mangled, clearing and retyping")
+    await session.send("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      key: "a",
+      code: "KeyA",
+      windowsVirtualKeyCode: 65,
+      nativeVirtualKeyCode: 65,
+      modifiers: 2,
+    })
+    await session.send("Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: "a",
+      code: "KeyA",
+      windowsVirtualKeyCode: 65,
+      nativeVirtualKeyCode: 65,
+      modifiers: 2,
+    })
+    await session.pause(300, 800)
+    await session.send("Input.insertText", { text: body })
+    await session.pause(1200, 2400)
+    if (normalize(await readBody()) !== normalize(body)) {
+      throw new Error("reddit: composer body does not match the copy - refusing to submit")
+    }
   }
   await session.pause(1400, 2600)
-  return editor
 }
 
-/** Click the submit control whose label matches, ignoring the disabled state check. */
+/** Press the button whose whole label matches, as a real mouse press. */
 async function submitComposer(session, ctx, label) {
-  const clicked = await session.eval(`(() => {
-    const el = [...document.querySelectorAll('button')]
-      .filter((node) => node.offsetParent && new RegExp('^' + ${JSON.stringify(label)} + '$', 'i').test((node.innerText || '').trim()))
-    const hit = el[el.length - 1]
-    if (!hit) return false
-    hit.click()
-    return true
+  const box = await session.eval(`(() => {
+    const walk = (root, out = []) => {
+      for (const el of root.querySelectorAll("*")) {
+        if (el.shadowRoot) walk(el.shadowRoot, out)
+        if (el.tagName === "BUTTON" && el.getClientRects().length) out.push(el)
+      }
+      return out
+    }
+    const hit = walk(document).filter((el) => (el.innerText || "").trim() === ${JSON.stringify(label)}).pop()
+    if (!hit) return null
+    hit.scrollIntoView({ block: "center" })
+    const r = hit.getBoundingClientRect()
+    return JSON.stringify({ x: r.left + r.width / 2, y: r.top + r.height / 2 })
   })()`)
-  if (!clicked) throw new Error(`reddit: no "${label}" button`)
+  if (!box) throw new Error(`reddit: no "${label}" button`)
+  const point = JSON.parse(box)
+  await session.pause(500, 1200)
+  await session.clickAt(point.x, point.y)
   await ctx.sleep(6000)
   await session.waitFor("document.readyState === 'complete'", 25_000).catch(() => undefined)
   await session.pause(1500, 3000)
@@ -263,6 +343,7 @@ export default async function reddit(ctx) {
     plan()
     throw new Error("reddit: name a community with --sub, from the list above")
   }
+  if (skipped[sub]) throw new Error(`reddit: r/${sub} is on the skip list - ${skipped[sub]}`)
   const entry = copy[sub]
   if (!entry) throw new Error(`reddit: no copy for r/${sub}; add it to copy-reddit.mjs first`)
 
@@ -270,12 +351,11 @@ export default async function reddit(ctx) {
   const profile = ctx.args.profile ?? "reddit-edge"
 
   // An account created here signs itself in on later runs; the password stays in state.
-  if (!ctx.args.user && !ctx.args.password && !ctx.args.cookie) {
-    const record = await ctx.readState(signupState)
-    if (record?.step === "done" && record.handle && record.password) {
-      ctx.args.user = record.handle
-      ctx.args.password = record.password
-    }
+  const record = await ctx.readState(signupState)
+  const storedUser = record?.step === "done" ? record.handle : null
+  if (!ctx.args.user && !ctx.args.password && !ctx.args.cookie && record?.password) {
+    ctx.args.user = record.handle
+    ctx.args.password = record.password
   }
 
   const stateFile = `reddit-${sub}.json`
@@ -289,9 +369,11 @@ export default async function reddit(ctx) {
   try {
     await session.goto("https://www.reddit.com/")
     await session.waitFor("document.readyState === 'complete'", 35_000).catch(() => undefined)
-    if (!(await ensureSignedIn(session, ctx))) {
+    const signedIn = await ensureSignedIn(session, ctx)
+    if (!signedIn) {
       throw new Error("reddit: not signed in - pass --user and --password, or --cookie with a reddit_session value")
     }
+    const signedInAs = ctx.args.user ?? storedUser ?? "reddit"
 
     if (entry.megathread) {
       const megathread = await session.eval(`(async () => {
@@ -305,38 +387,62 @@ export default async function reddit(ctx) {
       const postUrl = await comment(session, ctx, megathread, entry.body)
       const account = { platform: "reddit", sub, kind: "comment", postUrl, postedAt: new Date().toISOString() }
       await ctx.writeState(stateFile, account)
-      await ctx.saveAccount({ ...account, handle: ctx.args.user ?? "reddit" })
+      await ctx.saveAccount({ ...account, handle: signedInAs ?? "reddit" })
       ctx.log(`reddit: commented - ${postUrl}`)
       return account
     }
 
-    const kind = ctx.args.link ? "LINK" : "TEXT"
-    await session.goto(`https://www.reddit.com/r/${sub}/submit?type=${kind}`)
+    // Text submissions only. Reddit's submit page takes `?type=TEXT` but ignores `?type=LINK`
+    // (the hidden submission-type input stays TEXT), so communities that require a link post are
+    // on the skip list rather than half-supported here.
+    await session.goto(`https://www.reddit.com/r/${sub}/submit?type=TEXT`)
     await session.waitFor("document.readyState === 'complete'", 35_000).catch(() => undefined)
-
-    if (ctx.args.link) {
-      await session.waitFor('input[name="url"], #post-url', 30_000)
-      await session.pause(1500, 3000)
-      await session.typeHuman('input[name="url"], #post-url', ctx.args.link)
-      await session.pause(600, 1300)
-      await session.typeHuman('#post-title, textarea[name="title"]', entry.title, { clear: true })
-    } else {
-      await fillComposer(session, ctx, entry)
-    }
+    await fillComposer(session, ctx, entry)
 
     if (ctx.args.dry) {
       ctx.log(`reddit: dry, composer filled for r/${sub} at ${await session.url()}`)
-      const found = await session.eval(`JSON.stringify({
-        title: document.querySelector('#post-title, textarea[name="title"]')?.value?.slice(0, 80) ?? null,
-        bodyLength: [...document.querySelectorAll('[contenteditable="true"]')].map((el) => (el.innerText || '').length),
-        buttons: [...document.querySelectorAll('button')].filter((el) => el.offsetParent).map((el) => (el.innerText || '').trim()).filter(Boolean).slice(0, 12),
-      })`)
+      const found = await session.eval(`(() => {
+        const walk = (root, out = []) => {
+          for (const el of root.querySelectorAll("*")) {
+            if (el.shadowRoot) walk(el.shadowRoot, out)
+            out.push(el)
+          }
+          return out
+        }
+        const nodes = walk(document)
+        const title = nodes.find((el) => el.name === "title")
+        const body = nodes.find((el) => el.isContentEditable && el.getClientRects().length)
+        const post = nodes.filter((el) => el.tagName === "BUTTON" && el.getClientRects().length).find((el) => (el.innerText || "").trim() === "Post")
+        return JSON.stringify({
+          title: title ? title.value.slice(0, 80) : null,
+          bodyLength: body ? (body.innerText || "").length : 0,
+          postEnabled: post ? !post.disabled : null,
+        })
+      })()`)
       ctx.log(found)
+      const shot = join(ctx.stateDir, `reddit-dry-${sub}.png`)
+      await session.screenshot(shot)
+      ctx.log(`screenshot: ${shot}`)
       return { platform: "reddit", sub, dry: true }
     }
 
     await submitComposer(session, ctx, "Post")
-    const url = await session.url()
+    const shot = join(ctx.stateDir, `reddit-post-${sub}.png`)
+    await session.screenshot(shot)
+    ctx.log(`screenshot: ${shot}`)
+
+    // Reddit answers a successful submission with a "Posted!" modal over the community feed, not
+    // a redirect to the new thread, so the URL has to be resolved from the profile afterwards.
+    let url = await session.url()
+    if (!/\/comments\//.test(url)) {
+      const fromProfile = await session.eval(`(async () => {
+        const response = await fetch('https://www.reddit.com/user/${signedInAs}/submitted/', { headers: { accept: 'text/html' } })
+        const html = await response.text()
+        const hit = html.match(/href="(\\/r\\/[^"]+\\/comments\\/[a-z0-9]+\\/[^"]*)"/i)
+        return hit ? 'https://www.reddit.com' + hit[1] : null
+      })()`)
+      if (fromProfile) url = fromProfile
+    }
     const text = (await session.text()).replace(/\s+/g, " ")
     if (!/\/comments\//.test(url)) throw new Error(`reddit: r/${sub} did not accept the post - ${text.slice(0, 260)}`)
 
@@ -354,7 +460,7 @@ export default async function reddit(ctx) {
     }
 
     await ctx.writeState(stateFile, account)
-    await ctx.saveAccount({ ...account, handle: ctx.args.user ?? "reddit" })
+    await ctx.saveAccount({ ...account, handle: signedInAs ?? "reddit" })
     ctx.log(`reddit: posted to r/${sub} - ${account.postUrl}`)
     return account
   } finally {

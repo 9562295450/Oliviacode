@@ -69,20 +69,6 @@ Discord: ${discord}
 ${disclosure} Feedback on anything broken is more useful to me than stars.`,
   },
 
-  coolgithubprojects: {
-    weight: 1,
-    title: "Oliviacode – provider-agnostic desktop AI client with Direct/WARP/Tor egress per session (MIT)",
-    body: `A desktop AI coding client that bundles no provider, no base URL and no credential. You supply
-the endpoint and the key; the app is the window, the session store and the egress layer.
-
-${egress}
-
-MIT, no telemetry, no account with the project.
-Repo: ${repo}
-Write-up: ${writeup}
-Discord: ${discord}`,
-  },
-
   foss: {
     weight: 1,
     title: "Oliviacode: MIT desktop AI client, no bundled provider, Tor egress lane",
@@ -195,15 +181,9 @@ export const skipped = {
   ChatGPTCoding: "rule 5 bans pure self-promotion and low-value project posts; needs account history first",
   programming: "self-promotion ban; the post would be removed on sight",
   InternetIsBeautiful: "websites only, not desktop software",
+  coolgithubprojects:
+    "rejects text posts: 'This community requires you to add an image, link, or AMA', and the submit page " +
+    "ignores ?type=LINK (the hidden input stays TEXT), so a link post cannot be composed here",
 }
 
-export const order = [
-  "LocalLLaMA",
-  "SideProject",
-  "coolgithubprojects",
-  "foss",
-  "opensource",
-  "LLMDevs",
-  "AI_Agents",
-  "selfhosted",
-]
+export const order = ["LocalLLaMA", "SideProject", "foss", "opensource", "LLMDevs", "AI_Agents", "selfhosted"]
