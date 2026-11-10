@@ -130,6 +130,19 @@ export class Session {
     return this.eval("location.href")
   }
 
+  /** Move to a point, settle, then press and release — not one frame. */
+  async clickAt(x, y) {
+    await this.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: x + (Math.random() - 0.5) * 3,
+      y: y + (Math.random() - 0.5) * 3,
+    })
+    await this.pause(120, 320)
+    await this.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 })
+    await this.pause(60, 140)
+    await this.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 })
+  }
+
   /** Click the centre of the first element matching `selector`. */
   async click(selector) {
     const rect = await this.eval(`(() => {
@@ -140,6 +153,7 @@ export class Session {
       return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }
     })()`)
     if (!rect || rect.w === 0 || rect.h === 0) throw new Error(`cannot click ${selector}`)
+    await this.pause(400, 1100)
     await this.clickAt(rect.x, rect.y)
   }
 
@@ -154,6 +168,7 @@ export class Session {
       return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }
     })()`)
     if (!rect || rect.w === 0 || rect.h === 0) throw new Error(`cannot click "${text}" in ${selector}`)
+    await this.pause(400, 1100)
     await this.clickAt(rect.x, rect.y)
   }
 
@@ -163,8 +178,15 @@ export class Session {
     await this.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 })
   }
 
-  /** Focus `selector` and insert text as a real keyboard would. */
-  async type(selector, text, { clear = true } = {}) {
+  /** A pause with human variance, for the gaps between actions. */
+  async pause(min = 400, max = 1200) {
+    const ms = Math.round(min + Math.random() * Math.max(0, max - min))
+    await sleep(ms)
+    return ms
+  }
+
+  /** Focus `selector`, optionally clearing it first. */
+  async focus(selector, clear = true) {
     const focused = await this.eval(`(() => {
       const el = document.querySelector(${JSON.stringify(selector)})
       if (!el) return false
@@ -180,7 +202,30 @@ export class Session {
       return true
     })()`)
     if (!focused) throw new Error(`no element ${selector}`)
+  }
+
+  /** Focus `selector` and insert text as a real keyboard would. */
+  async type(selector, text, { clear = true } = {}) {
+    await this.focus(selector, clear)
     if (text) await this.send("Input.insertText", { text })
+    await this.eval(`document.activeElement?.dispatchEvent(new Event("change", { bubbles: true }))`)
+  }
+
+  /**
+   * Type one character at a time with human inter-key timing.
+   *
+   * A form filled in one insertText lands in a single frame, which no person has ever done.
+   * Field-by-field character entry with a variable beat costs a few seconds and looks like
+   * someone at a keyboard.
+   */
+  async typeHuman(selector, text, { min = 55, max = 165, clear = true } = {}) {
+    await this.focus(selector, clear)
+    for (const char of text) {
+      await this.send("Input.insertText", { text: char })
+      // Now and then a longer beat, as if reading the next bit of the label.
+      const beat = Math.random() < 0.08 ? 260 + Math.random() * 420 : min + Math.random() * (max - min)
+      await sleep(Math.round(beat))
+    }
     await this.eval(`document.activeElement?.dispatchEvent(new Event("change", { bubbles: true }))`)
   }
 

@@ -25,11 +25,18 @@ async function fillSignup(session, ctx, { username, email, password }) {
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     await session.goto(signupUrl)
     await session.waitFor("document.querySelector('input[name=\"user[email]\"]')", 30_000)
-    await session.type('input[name="user[name]"]', "Oliviacode")
-    await session.type('input[name="user[username]"]', username)
-    await session.type('input[name="user[email]"]', email)
-    await session.type('input[name="user[password]"]', password)
-    await session.type('input[name="user[password_confirmation]"]', password)
+    await session.pause(1400, 2900)
+
+    await session.typeHuman('input[name="user[name]"]', "Oliviacode")
+    await session.pause(350, 850)
+    await session.typeHuman('input[name="user[username]"]', username)
+    await session.pause(400, 950)
+    await session.typeHuman('input[name="user[email]"]', email)
+    await session.pause(500, 1200)
+    await session.typeHuman('input[name="user[password]"]', password)
+    await session.pause(300, 800)
+    await session.typeHuman('input[name="user[password_confirmation]"]', password)
+    await session.pause(700, 1600)
     try {
       await waitForToken(session, 25_000)
       return
@@ -42,6 +49,12 @@ async function fillSignup(session, ctx, { username, email, password }) {
 
 /** Follow the confirmation link from the mail and report what the site said. */
 async function confirmAddress(session, ctx, account) {
+  // A real address belongs to a person, not to this process: the link gets clicked there.
+  if (account.mailbox === "own") {
+    ctx.log(`devto: ${account.email} needs the confirmation link clicked in that inbox`)
+    return account
+  }
+
   const inbox =
     account.mailbox === "mail.tm"
       ? await resumeMailtm(account.email, account.emailPassword)
@@ -93,12 +106,18 @@ export default async function devto(ctx) {
       loggedIn = await session.eval(`Boolean(document.querySelector('a[href="/new"]'))`)
       if (!loggedIn) {
         const text = (await session.text()).replace(/\s+/g, " ")
+        if (/confirm your email/i.test(text)) {
+          ctx.log(`devto: waiting on the confirmation click for ${account.email}`)
+          return account
+        }
         throw new Error(`sign-in failed: ${text.slice(0, 300)}`)
       }
     }
 
     if (!loggedIn) {
-      const inbox = await ctx.createInbox(ctx.args["mail-provider"] ? [ctx.args["mail-provider"]] : undefined)
+      const inbox = ctx.args.email
+        ? { address: ctx.args.email, provider: "own", password: null }
+        : await ctx.createInbox(ctx.args["mail-provider"] ? [ctx.args["mail-provider"]] : undefined)
       ctx.log(`devto: mailbox ${inbox.address} (${inbox.provider})`)
 
       const password = ctx.randomPassword(20)

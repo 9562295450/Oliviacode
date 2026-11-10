@@ -9,16 +9,9 @@ const host = "9562295450.github.io"
 const key = "bb8aa6e6a79c1abb386d98808816d0e1"
 const keyLocation = `https://${host}/Oliviacode/${key}.txt`
 
-const urls = [
-  `https://${host}/Oliviacode/`,
-  `https://${host}/Oliviacode/checksums.html`,
-]
+const urls = [`https://${host}/Oliviacode/`, `https://${host}/Oliviacode/checksums.html`]
 
-const endpoints = [
-  "https://api.indexnow.org/indexnow",
-  "https://www.bing.com/indexnow",
-  "https://yandex.com/indexnow",
-]
+const endpoints = ["https://api.indexnow.org/indexnow", "https://www.bing.com/indexnow", "https://yandex.com/indexnow"]
 
 const payload = { host, key, keyLocation, urlList: urls }
 

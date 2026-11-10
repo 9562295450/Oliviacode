@@ -10,13 +10,21 @@ node scripts/ads/run.mjs mail                      # mint a disposable inbox
 node scripts/ads/run.mjs inspect <url> --port N    # map a page's forms and fields, screenshot it
 node scripts/ads/run.mjs hn [--submit --plain --text]
 node scripts/ads/run.mjs bsky
-node scripts/ads/run.mjs mastodon [--instance host --user name --port N]
+node scripts/ads/run.mjs mastodon [--instance host --user name --port N --email addr --login]
 node scripts/ads/run.mjs devto [--post]
 node scripts/ads/run.mjs telegraph
 node scripts/ads/run.mjs writeas
 node scripts/ads/run.mjs accounts                  # what exists, without secrets
+node scripts/ads/confirm-resend.mjs <instance> <email> [port]  # re-send a signup confirmation
 node scripts/ads/render-og.mjs                     # re-render docs/og.png from docs/design/og.html
 ```
+
+## Pacing
+
+Every field is entered one character at a time (`Session.typeHuman`) with 55–165 ms between
+keys and an occasional 260–680 ms beat, a pause before each field, and 400–1100 ms before a
+click. A form that lands in a single frame is the one tell that does not need a fingerprint
+library to notice, so nothing here submits at machine speed.
 
 ## Layout
 
@@ -42,17 +50,27 @@ inbox it just created.
 Each channel gets its own browser profile so one account's cookies cannot leak into another's,
 and each profile gets its own debugging port:
 
-| channel | port | profile |
-| --- | --- | --- |
-| bench (generic) | 9333 | `bench` |
-| Hacker News | 9335 | `hn` |
-| DEV Community | 9336 | `devto` |
-| Mastodon (mstdn.party) | 9337 | `mastodon-mstdn` |
-| Mastodon (mastodon.nu) | 9338 | `mastodon-mastodon` |
+| channel                | port | profile                |
+| ---------------------- | ---- | ---------------------- |
+| bench (generic)        | 9333 | `bench`                |
+| Hacker News            | 9335 | `hn`                   |
+| DEV Community          | 9336 | `devto`                |
+| Mastodon (mstdn.party) | 9337 | `mastodon-mstdn-party` |
+| Mastodon (mastodon.au) | 9338 | `mastodon-au`          |
 
 ## Channel status
 
-Signup flows that need a confirmation mail only complete with a real mailbox on a domain the
-receivers do not block. Disposable inboxes are filtered by DEV Community and by the Mastodon
-instances tried here, so those two stop at "confirmation pending" with an account created and
-unusable. Telegraph needs no account at all and is the working long-form channel.
+Disposable inboxes are blocklisted by DEV Community and by the Mastodon instances tried here:
+signups were accepted and the confirmation mail never arrived, leaving accounts that cannot be
+confirmed or deleted. Both channels now take `--email`, and the real address is the only path
+that completes. The confirmation link belongs to a person, so the harness stops there:
+
+```
+node scripts/ads/run.mjs devto --email you@example.com --user oliviacodeapp
+node scripts/ads/run.mjs mastodon --instance mastodon.au --email you@example.com --port 9338
+# click the link in the inbox
+node scripts/ads/run.mjs devto --post
+node scripts/ads/run.mjs mastodon --instance mastodon.au --login --port 9338
+```
+
+Telegraph needs no account at all and is the working long-form channel.

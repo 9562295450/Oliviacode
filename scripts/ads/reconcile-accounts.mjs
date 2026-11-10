@@ -32,5 +32,7 @@ for (const account of accounts) {
 
 await writeFile(file, `${JSON.stringify(keep, null, 2)}\n`, "utf8")
 for (const account of keep) {
-  console.log(`${account.platform.padEnd(11)} ${String(account.handle).padEnd(24)} ${account.status.padEnd(12)} ${account.postUrl ?? account.profileUrl ?? ""}`)
+  console.log(
+    `${account.platform.padEnd(11)} ${String(account.handle).padEnd(24)} ${account.status.padEnd(12)} ${account.postUrl ?? account.profileUrl ?? ""}`,
+  )
 }
