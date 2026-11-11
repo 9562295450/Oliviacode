@@ -19,6 +19,7 @@ import { ConfigDiscovery } from "./config/discovery.js"
 import { ConfigWatch } from "./config/watch.js"
 import { ConfigIntegration } from "./config/integration.js"
 import { ConfigManaged } from "./config/managed.js"
+import { ConfigProvider } from "@opencode/schema/config/provider"
 import { ManagedPolicy } from "./managed-policy.js"
 import { Connection } from "@opencode/schema/connection"
 import { WellKnown } from "./wellknown.js"
@@ -28,6 +29,25 @@ import { ChildProcess } from "effect/process"
 export function latest<K extends keyof Info>(entries: readonly Entry[], key: K): Info[K] | undefined {
   return entries.findLast((entry): entry is Document => entry.type === "document" && entry.info[key] !== undefined)
     ?.info[key]
+}
+
+/**
+ * Applies the supported patch keys to one config document as JSONC edits, so comments, key order and
+ * formatting outside the touched keys survive. Returns text ending in a newline.
+ */
+export function patchDocument(text: string, patch: Patch): string {
+  const formattingOptions = { tabSize: 2, insertSpaces: true }
+  let edited = text
+  if (patch.shell !== undefined) {
+    edited = applyEdits(edited, modify(edited, ["shell"], patch.shell ?? undefined, { formattingOptions }))
+  }
+  for (const [id, provider] of Object.entries(patch.providers ?? {})) {
+    // The wire value is JSON so its type stays free of branded IDs; decode here, at the one boundary
+    // that writes a provider, so a malformed entry is refused instead of landing in the config file.
+    const value = provider === null ? null : Schema.decodeUnknownSync(ConfigProvider.Info)(provider)
+    edited = applyEdits(edited, modify(edited, ["providers", id], value ?? undefined, { formattingOptions }))
+  }
+  return edited.length === 0 || edited.endsWith("\n") ? edited : `${edited}\n`
 }
 
 export interface Interface {
@@ -470,16 +490,10 @@ export const layer = (options?: Options) =>
             (yield* Effect.filter(candidates, fs.isFile)).at(-1) ?? path.join(directory, "opencode.jsonc")
           const text = (yield* fs.readFileStringSafe(filepath)) ?? "{}\n"
           const updated = yield* Effect.try({
-            try: () =>
-              applyEdits(
-                text,
-                modify(text, ["shell"], patch.shell ?? undefined, {
-                  formattingOptions: { tabSize: 2, insertSpaces: true },
-                }),
-              ),
+            try: () => patchDocument(text, patch),
             catch: (cause) => new FSUtil.FileSystemError({ method: "config.update", cause }),
           })
-          yield* fs.writeWithDirs(filepath, updated.endsWith("\n") ? updated : `${updated}\n`)
+          yield* fs.writeWithDirs(filepath, updated)
           yield* requestReload
         },
         (effect) => updateLock.withPermit(effect),

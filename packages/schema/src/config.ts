@@ -117,7 +117,15 @@ export class Info extends Schema.Class<Info>("Config.Info")({
 }) {}
 
 export const Patch = Schema.Struct({
-  shell: Schema.NullOr(Schema.String),
+  /** Null clears the shell; leaving it out leaves the current value alone. */
+  shell: Schema.NullOr(Schema.String).pipe(optional),
+  /**
+   * Provider entries written to the highest-precedence global document, keyed by provider ID. A null
+   * value removes that provider, which is how the settings screen deletes one it added itself. Values
+   * carry JSON rather than the decoded provider shape so the wire type has no branded IDs; the server
+   * decodes each entry before writing it.
+   */
+  providers: Schema.Record(Schema.String, Schema.NullOr(Schema.Json)).pipe(optional),
 }).annotate({ identifier: "Config.Patch" })
 export interface Patch extends Schema.Schema.Type<typeof Patch> {}
 

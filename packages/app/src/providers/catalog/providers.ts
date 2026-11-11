@@ -37,7 +37,11 @@ export function useProviders(directory: Accessor<string | undefined>) {
       if (!ref) await data.location.syncInfo()
       const resolved = ref ?? data.location.default()
       await syncWhileBooting(() =>
-        Promise.all([data.location.provider.sync(resolved), data.location.model.sync(resolved)]),
+        Promise.all([
+          data.location.provider.sync(resolved),
+          data.location.model.sync(resolved),
+          data.location.config.sync(resolved),
+        ]),
       )
     })().catch(() => undefined)
   })
@@ -70,10 +74,22 @@ export function useProviders(directory: Accessor<string | undefined>) {
       ),
   )
 
+  // A provider the user wrote into their own config, including one added from Settings with no API
+  // key. It is a provider they supplied, so a keyless local endpoint stays listed.
+  const configuredProviders = createMemo(
+    () =>
+      new Set(
+        (data.location.config.list(location()) ?? []).flatMap((entry) =>
+          entry.type === "document" ? Object.keys(entry.info.providers ?? {}) : [],
+        ),
+      ),
+  )
+
   const supplied = createMemo(() => {
     const listed = addons()
     const credentials = credentialProviders()
-    const visible = (id: string) => listed.has(id) || credentials.has(id)
+    const configured = configuredProviders()
+    const visible = (id: string) => listed.has(id) || credentials.has(id) || configured.has(id)
 
     const all = new Map([...providers().all].filter(([id]) => visible(id)))
 

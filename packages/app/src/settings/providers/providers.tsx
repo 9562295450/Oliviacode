@@ -20,6 +20,7 @@ import { SettingsList } from "@/settings/list"
 import { activeProviderAccount, providerAccounts, type ProviderAccount } from "./accounts"
 import { AccountNameInput } from "./account-name"
 import { useProviderAccountActions } from "./account-actions"
+import { DialogCustomProvider } from "./custom-provider-dialog"
 import {
   availableProviders,
   connectedProviders,
@@ -180,6 +181,17 @@ export const SettingsProviders: Component<{
   // The list stays as it was while the dialog connects, so a new sign-in that briefly drops the
   // Console workspace providers from the catalog can't flash rows behind the dialog.
   const connect = (provider?: string) => dispatch({ type: "dialog.opened", provider, catalog: untrack(available) })
+
+  // A provider the user brings themselves: the endpoint and model IDs go into config, the key goes
+  // into the credential store. Saving re-reads the catalog so the new row appears immediately.
+  const addCustom = () => {
+    void dialog.show(() => (
+      <DialogCustomProvider
+        existing={[...providers.all().keys()]}
+        onSaved={() => void accountActions.refresh().catch(() => undefined)}
+      />
+    ))
+  }
 
   const liveAvailable = createMemo(() => {
     const connected = providers.connected()
@@ -449,7 +461,12 @@ export const SettingsProviders: Component<{
             <h2 class="settings-tab-title">{language.t("settings.providers.title")}</h2>
             <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.providers.description")}</span>
           </div>
-          <div class="settings-tab-header-actions">{props.headerAction}</div>
+          <div class="settings-tab-header-actions">
+            <Button size="normal" variant="outline" icon="plus" onClick={addCustom}>
+              {language.t("settings.providers.custom.add")}
+            </Button>
+            {props.headerAction}
+          </div>
         </div>
       </div>
 

@@ -29,10 +29,12 @@ export function useProviderAccountActions(directory: () => string | undefined) {
     data.location.integration.invalidate(ref)
     data.location.provider.invalidate(ref)
     data.location.model.invalidate(ref)
+    data.location.config.invalidate(ref)
     await Promise.all([
       data.location.integration.sync(ref),
       data.location.provider.sync(ref),
       data.location.model.sync(ref),
+      data.location.config.sync(ref),
     ])
   }
 

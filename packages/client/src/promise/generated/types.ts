@@ -4853,7 +4853,10 @@ export type ConfigGetOutput = Array<ConfigEntry>
 
 export type ConfigShellsOutput = Array<ConfigShellOption>
 
-export type ExperimentalConfigUpdateInput = { readonly shell: string | null }
+export type ExperimentalConfigUpdateInput = {
+  readonly shell?: string | null | undefined
+  readonly providers?: { readonly [x: string]: JsonValue | null } | undefined
+}
 
 export type ExperimentalConfigUpdateOutput = void
 
