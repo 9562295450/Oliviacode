@@ -28,7 +28,9 @@ env:
   # The public installer is the prod channel: appId ai.oliviacode.desktop, productName
   # Oliviacode, no ".dev" suffix in Add/Remove Programs.
   OPENCODE_CHANNEL: "prod"
-  # Pinned engine: the CLI package published to npm as 2.2.6. The shell version moves on its own.
+  # Fallback engine pin, used only when packages/cli/dist holds no build for the target. Every job
+  # builds the engine from this commit first, so the released packages carry the same code as the
+  # shell: a route or a schema that only exists in the shell would break on the bundled engine.
   OLIVIACODE_CLI_VERSION: "2.2.6"
   # The shell's release feed: electron-updater reads it from resources/app-update.yml, which
   # pack.ts writes only when this names a repository.
@@ -99,6 +101,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build the bundled engine
+        working-directory: packages/cli
+        env:
+          OPENCODE_TARGET: windows-x64-baseline
+          OPENCODE_CHANNEL: latest
+          OPENCODE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: bun run build
+
       - name: Build
         working-directory: packages/desktop
         run: bun run build
@@ -158,6 +168,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build the bundled engine
+        working-directory: packages/cli
+        env:
+          OPENCODE_TARGET: linux-x64-baseline
+          OPENCODE_CHANNEL: latest
+          OPENCODE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: bun run build
+
       - name: Build
         working-directory: packages/desktop
         run: bun run build
@@ -187,8 +205,10 @@ jobs:
           # macos-latest is Apple Silicon; macos-15-intel is GitHub's last x86_64 image.
           - runner: macos-latest
             arch: arm64
+            target: darwin-arm64
           - runner: macos-15-intel
             arch: x64
+            target: darwin-x64-baseline
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
@@ -200,6 +220,14 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Build the bundled engine
+        working-directory: packages/cli
+        env:
+          OPENCODE_TARGET: ${{ matrix.target }}
+          OPENCODE_CHANNEL: latest
+          OPENCODE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: bun run build
 
       - name: Build
         working-directory: packages/desktop

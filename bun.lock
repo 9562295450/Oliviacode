@@ -52,7 +52,7 @@
     },
     "packages/app": {
       "name": "@opencode/app",
-      "version": "2.2.5",
+      "version": "2.2.7",
       "dependencies": {
         "@corvu/drawer": "catalog:",
         "@dnd-kit/abstract": "0.5.0",
@@ -281,7 +281,7 @@
     },
     "packages/desktop": {
       "name": "@opencode/desktop",
-      "version": "2.2.5",
+      "version": "2.2.13",
       "dependencies": {
         "@zip.js/zip.js": "2.7.62",
         "electron-context-menu": "5.0.0",

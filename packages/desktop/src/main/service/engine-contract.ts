@@ -28,6 +28,11 @@ export const requiredOperations: ReadonlyArray<Operation> = [
   { method: "GET", path: "/api/info" },
   { method: "GET", path: "/api/event" },
   { method: "GET", path: "/api/config" },
+  // Settings writes a custom provider through the config document and stores its key as a credential.
+  // Both routes are required: an engine without them cannot save a provider, and 2.2.12 shipped one.
+  { method: "PATCH", path: "/api/experimental/config" },
+  { method: "GET", path: "/api/credential" },
+  { method: "POST", path: "/api/credential" },
   { method: "GET", path: "/api/agent" },
   { method: "GET", path: "/api/model" },
   { method: "GET", path: "/api/model/default" },
