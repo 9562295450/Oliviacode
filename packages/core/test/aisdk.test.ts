@@ -855,7 +855,8 @@ it.effect("fails with a retryable transport error when response headers time out
     expect(error.reason).toMatchObject({
       _tag: "Transport",
       operation: "request",
-      message: "Response headers timed out",
+      message: "Response headers timed out (dialled example.test)",
+      url: expect.stringContaining("example.test/v1/chat/completions"),
     })
     expect(SessionRunnerRetry.isRetryable(error)).toBeTrue()
   }),
@@ -1174,7 +1175,8 @@ it.effect("retries status-less AI SDK transport failures", () =>
     expect(error.reason).toBeInstanceOf(Error)
     expect(error.cause).toBe(error.reason)
     expect(error.reason.cause).toBe(cause)
-    expect(error.message).toBe(cause.message)
+    // The wrapped message names the endpoint too, so a card never hides which hop failed.
+    expect(error.message).toBe("Cannot connect to API: connection refused (dialled api.example.com)")
     expect(error.reason.body).toBe(JSON.stringify(cause.data))
     expect(error.reason).toMatchObject({ url: "https://api.example.com/chat" })
     expect(error.reason.http).toBeUndefined()
@@ -1196,6 +1198,38 @@ it.effect("classifies native fetch failures as request transport errors", () =>
     expect(error.message).toBe("connect ECONNREFUSED 127.0.0.1:443")
     expect(error.reason.cause).toBe(cause)
     expect(SessionRunnerRetry.isRetryable(error)).toBeTrue()
+  }),
+)
+
+it.effect("names the dialled host when a connect through the provider fetch fails", () =>
+  Effect.gen(function* () {
+    const aisdk = yield* AISDK.Service
+    // Bun's refused connect carries no address of its own, so the wrapper has to supply it.
+    const refused = Object.assign(new TypeError("ECONNREFUSED: Unable to connect. Is the computer able to access the url?"), {
+      code: "ECONNREFUSED",
+    })
+    const baseURL = "http://127.0.0.1:9/v1"
+    yield* aisdk.hook.sdk((event) => {
+      event.sdk = createOpenAICompatible({
+        ...event.options,
+        name: String(event.options.name),
+        baseURL: String(event.options.baseURL),
+      })
+    })
+    const resolved = yield* aisdk.model(
+      model("@ai-sdk/openai-compatible", {
+        baseURL,
+        fetch: () => Promise.reject(refused),
+      }),
+    )
+    const error = yield* LLMClient.generate(ai.request({ model: resolved, prompt: "Hello" })).pipe(
+      Effect.provide(client),
+      Effect.flip,
+    )
+    expect(error.reason).toMatchObject({ _tag: "Transport", code: "ECONNREFUSED" })
+    expect(error.message).toContain("dialled 127.0.0.1:9")
+    expect(error.reason).toMatchObject({ url: expect.stringContaining("127.0.0.1:9") })
+    expect(toSessionError(error).message).toContain("127.0.0.1:9")
   }),
 )
 

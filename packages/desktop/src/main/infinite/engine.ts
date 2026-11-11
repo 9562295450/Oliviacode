@@ -29,6 +29,7 @@ import {
 } from "../../shared/infinite"
 import { ProxyPool } from "./proxies"
 import { providerProbe, type ProviderConfig } from "./provider"
+import { SidecarEndpoint } from "./sidecar-endpoint"
 import { probe, type Trace } from "./trace"
 import { Tor } from "./tor"
 import { sleep, Warp } from "./warp"
@@ -41,6 +42,9 @@ const HISTORY_LIMIT = 40
 const RECENT_EXITS = 8
 /** A reconnect that has not answered by now is left running; the next request still lands. */
 const RESUME_TIMEOUT_MS = 20_000
+/** How many restarts one endpoint move gets before the next rotation or lane switch tries again. */
+const RESUME_ATTEMPTS = 2
+const RESUME_RETRY_MS = 1_500
 /** This build's version, compared against OpenCode's CLI releases. */
 const __OLIVIACODE_VERSION__ = "0.1.0"
 
@@ -107,6 +111,8 @@ export class InfiniteEngine extends EventEmitter {
   #next: InfiniteLane | null = null
   #trace: Trace | null = null
   #endpoint = ""
+  /** The endpoint the running sidecar was actually started with, which lags `#endpoint`. */
+  readonly #service = new SidecarEndpoint()
   #armed = true
   #rotations = 0
   #recoveries = 0
@@ -182,9 +188,11 @@ export class InfiniteEngine extends EventEmitter {
             .map((record) => ({ ...record, verified: record.verified === true }))
         : []
       // The endpoint is restored and applied, so a relaunch keeps using the lane it was on
-      // without paying for a fresh registration or a Tor bootstrap.
+      // without paying for a fresh registration or a Tor bootstrap. The sidecar starts after
+      // this and inherits the variable, so it is recorded as the one that started.
       if (typeof raw.endpoint === "string" && raw.endpoint) {
         this.#endpoint = raw.endpoint
+        this.#service.adopt(raw.endpoint)
         applyEndpoint(raw.endpoint)
       }
     } catch {
@@ -301,6 +309,9 @@ export class InfiniteEngine extends EventEmitter {
 
     this.#endpoint = prepared.endpoint
     applyEndpoint(this.#endpoint)
+    // A lane switch starts a fresh bridge on a fresh port. Without this the sidecar would keep
+    // dialling the old one, which is the refused-connect ticket this patch exists for.
+    void this.#resume()
     this.#trace = outcome.trace
     this.#since = Date.now()
     this.#phase = this.#armed ? "armed" : "ready"
@@ -360,7 +371,6 @@ export class InfiniteEngine extends EventEmitter {
     const target = lane ?? this.#lane
     const started = Date.now()
     const from = this.#trace?.ip ?? ""
-    const endpointBefore = this.#endpoint
     this.#phase = "rotating"
     this.#next = null
     this.#lastError = ""
@@ -449,10 +459,11 @@ export class InfiniteEngine extends EventEmitter {
           error: "",
         })
 
-        // The service only has to be restarted when the address it connects to moved. WARP
-        // and Tor keep the same local proxy across a rotation — only the exit behind it
-        // changes — so a restart there would abort live turns for nothing.
-        if (this.#endpoint !== endpointBefore) void this.#resume()
+        // The sidecar inherits this process's proxy environment, so it only picks up a moved
+        // endpoint once it is started again. `#resume` decides against the endpoint the sidecar
+        // was last started with, not the one this rotation began on — that is what lands a port
+        // change even when the rotation returned the same url it started from.
+        void this.#resume()
 
         this.#next = null
         this.#save()
@@ -811,10 +822,19 @@ export class InfiniteEngine extends EventEmitter {
    * Move the service onto a new endpoint after the rotation has already been reported.
    * The rotation stands even when the reconnect does not; the next request reconnects on
    * its own, and a stuck service can only hold this fiber for the timeout.
+   *
+   * The decision is made against the endpoint the sidecar was started with, never against the
+   * endpoint the rotation began on. A bridge that comes back on a different port moves
+   * `#endpoint` while the sidecar is still holding the old variable, and a restart that fails
+   * leaves the record behind so the next rotation or lane switch tries again.
    */
-  #resume() {
+  #resume(attempt = 1) {
     const restart = this.#hooks.restartSidecar
     if (!this.#settings.resume || !restart) return
+
+    const endpoint = this.#endpoint
+
+    if (!this.#service.moved(endpoint)) return
 
     const timeout = new Promise<never>((_, reject) => {
       const timer = setTimeout(() => reject(new Error(`no answer in ${RESUME_TIMEOUT_MS / 1000}s`)), RESUME_TIMEOUT_MS)
@@ -823,12 +843,17 @@ export class InfiniteEngine extends EventEmitter {
 
     void Promise.race([restart(), timeout])
       .then(() => {
+        // A newer move can land while this restart was in flight; only claim the endpoint it
+        // was started for, otherwise the next call would see the sidecar as already moved.
+        if (this.#endpoint === endpoint) this.#service.adopt(endpoint)
         this.#lastError = ""
         this.#emit()
       })
       .catch((error) => {
         this.#lastError = `rotation ok, resume failed: ${message(error)}`
         this.#emit()
+        if (this.#disposed || attempt >= RESUME_ATTEMPTS || this.#endpoint !== endpoint) return
+        setTimeout(() => this.#resume(attempt + 1), RESUME_RETRY_MS).unref?.()
       })
   }
 

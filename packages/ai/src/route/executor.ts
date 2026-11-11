@@ -160,6 +160,28 @@ const rootCause = (error: unknown): unknown =>
 
 const CONNECTION_LOST = "Connection lost while reading the response"
 
+/** `host`, or `host:port` when the port is not the scheme's default. */
+const dialledHost = (url: string | undefined) => {
+  if (!url) return undefined
+  try {
+    const parsed = new URL(url)
+    return parsed.port === "" ? parsed.hostname : `${parsed.hostname}:${parsed.port}`
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Names the endpoint in a connect failure. Bun reports a refused connect as
+ * `ECONNREFUSED: Unable to connect. Is the computer able to access the url?` — the address is the
+ * one detail missing, and with a local bridge or a lane proxy it is the whole answer. The
+ * runtime's wording is kept; the dialled host is appended when the message does not already say it.
+ */
+const withDialledHost = (message: string, url: string | undefined) => {
+  const host = dialledHost(url)
+  return host === undefined || message.includes(host) ? message : `${message} (dialled ${host})`
+}
+
 const httpError = (input: {
   readonly error: unknown
   readonly request: HttpClientRequest.HttpClientRequest
@@ -170,7 +192,9 @@ const httpError = (input: {
   const transportError = (failure: { readonly message: string; readonly code?: string | undefined }) =>
     new AIError({
       reason: new TransportError({
-        message: failure.message,
+        // A transport failure is the only place the app can say which hop refused. The runtime's
+        // wording is kept and the dialled host is appended when the message does not already say it.
+        message: withDialledHost(failure.message, request.url),
         cause: source,
         http: input.http,
         transport: "http",

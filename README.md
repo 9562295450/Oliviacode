@@ -5,13 +5,13 @@
 **A provider-agnostic desktop AI client.** An open-source AI client for developers: nothing
 preconfigured, with multi-lane egress and isolated sessions built into the UI instead of bolted on.
 
-[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.13) ·
-[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.13/Oliviacode-Setup-2.2.13.exe) ·
-[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.13/Oliviacode-2.2.13-arm64.dmg) ·
-[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.13/Oliviacode-2.2.13-x64.dmg) ·
-[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.13/Oliviacode-2.2.13-x64.AppImage) ·
-[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.13/Oliviacode-2.2.13-x64.deb) ·
-[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.13/Oliviacode-2.2.13-x64.rpm)
+[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.14) ·
+[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.14/Oliviacode-Setup-2.2.14.exe) ·
+[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.14/Oliviacode-2.2.14-arm64.dmg) ·
+[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.14/Oliviacode-2.2.14-x64.dmg) ·
+[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.14/Oliviacode-2.2.14-x64.AppImage) ·
+[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.14/Oliviacode-2.2.14-x64.deb) ·
+[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.14/Oliviacode-2.2.14-x64.rpm)
 
 **Community:** [Discord](https://discord.gg/kDcRCu6ek) - release notes, Tor-lane questions, bug reports.
 **Write-up:** [A desktop AI coding client with no provider baked in](https://dev.to/oliviacodeapp/a-desktop-ai-coding-client-with-no-provider-baked-in-1mpn) - DEV Community.

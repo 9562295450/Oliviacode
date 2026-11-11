@@ -134,7 +134,7 @@ describe("RequestExecutor", () => {
 
       expectAIError(error)
       expect(error.message).toBe(
-        "Connection lost while reading the response: ECONNRESET: disconnected query-secret-123 header-secret-456",
+        "Connection lost while reading the response: ECONNRESET: disconnected query-secret-123 header-secret-456 (dialled provider.test)",
       )
       expect(error.reason.http).toMatchObject({ status: 200, url: secretRequest.url })
       expect(error.reason.cause).toMatchObject({ code: "ECONNRESET" })
@@ -165,7 +165,9 @@ describe("RequestExecutor", () => {
       const error = yield* RequestExecutor.stream(executor, secretRequest).pipe(Stream.runDrain, Effect.flip)
 
       expectAIError(error)
-      expect(error.message).toBe("Connection lost while reading the response: ECONNRESET: socket closed")
+      expect(error.message).toBe(
+        "Connection lost while reading the response: ECONNRESET: socket closed (dialled provider.test)",
+      )
       expect(error.reason.cause).toBeInstanceOf(TypeError)
       expect(error.reason).toMatchObject({
         _tag: "Transport",
@@ -207,7 +209,9 @@ describe("RequestExecutor", () => {
 
       expectAIError(error)
       expect(new TextDecoder().decode(chunks[0])).toBe('data: {"type":"ping"}\n\n')
-      expect(error.message).toBe("Connection lost while reading the response: ECONNRESET: other side closed")
+      expect(error.message).toBe(
+        "Connection lost while reading the response: ECONNRESET: other side closed (dialled provider.test)",
+      )
       expect(error.reason.cause).toBeInstanceOf(TypeError)
       expect(error.reason.http).toMatchObject({ status: 200 })
       expect(error.reason).toMatchObject({ _tag: "Transport", operation: "read", code: "ECONNRESET" })
@@ -228,7 +232,7 @@ describe("RequestExecutor", () => {
       const error = yield* RequestExecutor.stream(executor, sseRequest).pipe(Stream.runDrain, Effect.flip)
 
       expectAIError(error)
-      expect(error.message).toBe("Connection lost while reading the response")
+      expect(error.message).toBe("Connection lost while reading the response (dialled provider.test)")
       expect(error.reason).toMatchObject({ _tag: "Transport", operation: "read", code: undefined })
       expect(isRetryable(error)).toBeTrue()
     }).pipe(Effect.provide(truncatedStream(['data: {"type":"ping"}\n\n'], new DOMException("aborted", "AbortError")))),
@@ -242,7 +246,7 @@ describe("RequestExecutor", () => {
         .pipe(Effect.flip)
 
       expectAIError(error)
-      expect(error.message).toBe("plugin rejected request")
+      expect(error.message).toBe("plugin rejected request (dialled provider.test)")
       expect(error.reason.cause).toBeInstanceOf(Error)
       expect(error.reason.http).toBeUndefined()
     }).pipe(Effect.provide(dynamicResponse(() => Effect.die(new Error("unexpected HTTP request"))))),
@@ -263,7 +267,7 @@ describe("RequestExecutor", () => {
         .pipe(Effect.flip)
 
       expectAIError(error)
-      expect(error.message).toBe("ECONNRESET: proxy disconnected proxy-secret")
+      expect(error.message).toBe("ECONNRESET: proxy disconnected proxy-secret (dialled proxy.test)")
       expect(error.reason.http).toBeUndefined()
       expect(error.reason).toMatchObject({
         _tag: "Transport",

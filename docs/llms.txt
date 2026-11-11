@@ -2,7 +2,7 @@
 
 > Oliviacode is an independent, MIT-licensed, provider-agnostic desktop AI client. It bundles
 > no model provider, no base URL and no credential: you connect a provider or you do not.
-> Windows, macOS and Linux. Current release: 2.2.13.
+> Windows, macOS and Linux. Current release: 2.2.14.
 
 Oliviacode is a shell, not a service. The agent engine is a bundled open-source CLI; this
 project supplies the window, the session store and the egress layer. Nothing in it names an
@@ -12,11 +12,11 @@ official or endorsed provider, and nothing telephones home.
 
 - [Source repository](https://github.com/9562295450/Oliviacode)
 - [Project site](https://9562295450.github.io/Oliviacode/)
-- [Latest release](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.13)
+- [Latest release](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.14)
 - [Checksums and VirusTotal results](https://9562295450.github.io/Oliviacode/checksums.html)
 - [Community Discord](https://discord.gg/kDcRCu6ek)
 - [Write-up: a desktop AI coding client with no provider baked in](https://dev.to/oliviacodeapp/a-desktop-ai-coding-client-with-no-provider-baked-in-1mpn)
-- [Installer SHA-256 list](https://github.com/9562295450/Oliviacode/releases/download/v2.2.13/SHA256SUMS.txt)
+- [Installer SHA-256 list](https://github.com/9562295450/Oliviacode/releases/download/v2.2.14/SHA256SUMS.txt)
 
 ## What it does
 

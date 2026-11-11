@@ -64,7 +64,7 @@ export interface LanguageEvent {
   language?: LanguageModelV3
 }
 
-function wrapSSE(res: Response, ms: number, ctl: AbortController) {
+function wrapSSE(res: Response, ms: number, ctl: AbortController, url?: string) {
   if (typeof ms !== "number" || ms <= 0) return res
   if (!res.body) return res
   if (!res.headers.get("content-type")?.includes("text/event-stream")) return res
@@ -82,7 +82,7 @@ function wrapSSE(res: Response, ms: number, ctl: AbortController) {
       const part = await new Promise<Awaited<ReturnType<typeof reader.read>>>((resolve, reject) => {
         const remaining = Math.max(0, expires - Date.now())
         const id = setTimeout(() => {
-          const err = new Error("SSE read timed out")
+          const err = stampRequestUrl(new Error("SSE read timed out"), url)
           ctl.abort(err)
           void reader.cancel(err)
           reject(err)
@@ -136,13 +136,17 @@ function prepareOptions(model: RuntimeInfo, pkg: string, outbound: Fetch) {
   const timeouts = Provider.timeouts(settings)
   options.fetch = async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const opts = { ...(init ?? {}) }
+    const dialed = requestUrl(input)
     // A plain AbortSignal.timeout would keep running into the body stream, so the header limit uses
     // a timer that is cleared once headers arrive. The whole-request limit is meant to span the body.
     const headers = new AbortController()
     const headerTimer =
       timeouts.headerTimeout === false
         ? undefined
-        : setTimeout(() => headers.abort(new Error(HEADER_TIMEOUT_MESSAGE)), timeouts.headerTimeout)
+        : setTimeout(
+            () => headers.abort(stampRequestUrl(new Error(HEADER_TIMEOUT_MESSAGE), dialed)),
+            timeouts.headerTimeout,
+          )
     const chunks = new AbortController()
     opts.signal = AbortSignal.any(
       [
@@ -162,13 +166,20 @@ function prepareOptions(model: RuntimeInfo, pkg: string, outbound: Fetch) {
 
     const send: Fetch = isFetch(customFetch) ? customFetch : outbound
     const middleware = httpMiddleware.getStore()
-    const res = await (
-      middleware
-        ? throughMiddleware(middleware, send, input, { ...opts, timeout: false })
-        : send(input, { ...opts, timeout: false })
-    ).finally(() => clearTimeout(headerTimer))
+    let res: Response
+    try {
+      res = await (
+        middleware
+          ? throughMiddleware(middleware, send, input, { ...opts, timeout: false })
+          : send(input, { ...opts, timeout: false })
+      )
+    } catch (error) {
+      throw stampRequestUrl(error, dialed)
+    } finally {
+      clearTimeout(headerTimer)
+    }
     if (timeouts.chunkTimeout === false) return res
-    return wrapSSE(res, timeouts.chunkTimeout, chunks)
+    return wrapSSE(res, timeouts.chunkTimeout, chunks, dialed)
   }
 
   return options
@@ -177,6 +188,55 @@ function prepareOptions(model: RuntimeInfo, pkg: string, outbound: Fetch) {
 type Fetch = (input: Parameters<typeof fetch>[0], init?: BunFetchRequestInit) => Promise<Response>
 
 const isFetch = (value: unknown): value is Fetch => typeof value === "function"
+
+/**
+ * The endpoint a request actually dialled.
+ *
+ * Bun reports a refused connect as `ECONNREFUSED: Unable to connect. Is the computer able to
+ * access the url?` — the one detail a support thread needs, the url, is absent. The wrapper
+ * stamps it on the failure so `llmError` can name the host in the message the window shows.
+ */
+const REQUEST_URL = Symbol.for("opencode.requestUrl")
+
+function requestUrl(input: Parameters<typeof fetch>[0]): string | undefined {
+  if (typeof input === "string") return input
+  if (input instanceof URL) return input.toString()
+  if (input instanceof Request) return input.url
+  return undefined
+}
+
+function stampRequestUrl(error: unknown, url: string | undefined) {
+  if (url === undefined || typeof error !== "object" || error === null) return error
+  try {
+    Object.defineProperty(error, REQUEST_URL, { value: url, configurable: true })
+  } catch {
+    // A frozen failure keeps its own message; the host is then simply absent.
+  }
+  return error
+}
+
+function requestUrlOf(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined
+  const value = (error as { [REQUEST_URL]?: unknown })[REQUEST_URL]
+  return typeof value === "string" ? value : undefined
+}
+
+/** `host`, or `host:port` when the port is not the scheme's default. */
+function dialledHost(url: string | undefined): string | undefined {
+  if (url === undefined) return undefined
+  const parsed = URL.parse(url)
+  if (!parsed) return undefined
+  return parsed.port === "" ? parsed.hostname : `${parsed.hostname}:${parsed.port}`
+}
+
+/**
+ * Names the endpoint in a connect failure. The runtime's wording is kept and the one missing
+ * fact — what was dialled — is appended, so a report says which hop refused without a log dive.
+ */
+function withDialledHost(message: string, url: string | undefined) {
+  const host = dialledHost(url)
+  return host === undefined || message.includes(host) ? message : `${message} (dialled ${host})`
+}
 
 // HTTP hook middleware is scoped to one model request, but the SDK's fetch is baked into the
 // cached language model, so the active middleware rides along in async context instead.
@@ -911,16 +971,22 @@ function llmError(error: unknown, operation: "request" | "read") {
   if (error instanceof AIError) return error
   if (APICallError.isInstance(error)) return apiCallError(error)
   const network = networkFailure(error)
-  if (network)
+  if (network) {
+    const url = requestUrlOf(error)
+    const message = network.message.trim() === "" ? unknownErrorMessage(error) : network.message
     return new AIError({
       reason: new TransportError({
-        message: network.message.trim() === "" ? unknownErrorMessage(error) : network.message,
+        // The host is appended, not substituted: the runtime's wording stays intact and the
+        // one missing fact — what was dialled — rides along with it.
+        message: withDialledHost(message, url),
         cause: error,
         transport: "http",
         operation,
         code: network.code,
+        ...(url === undefined ? {} : { url }),
       }),
     })
+  }
   return RequestExecutor.httpFailure({
     message: unknownErrorMessage(error),
     data: errorValue(error) ?? error,
@@ -999,7 +1065,7 @@ function apiCallError(error: APICallError) {
   const code = networkFailure(error.cause)?.code
   return new AIError({
     reason: new TransportError({
-      message: failure.message,
+      message: withDialledHost(failure.message, error.url),
       body: failure.reason.body,
       http: failure.reason.http,
       cause: failure.reason.cause,

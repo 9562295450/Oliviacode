@@ -5,6 +5,7 @@ import { Card } from "@opencode/ui/card"
 import { Icon } from "@opencode/ui/icon"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
 import { Tooltip } from "@opencode/ui/tooltip"
+import { retryMessage } from "./retry-message"
 import { SessionErrorMessage } from "./session-error"
 
 export function SessionRetry(props: { status: SessionStatus; show?: boolean }) {
@@ -43,9 +44,7 @@ export function SessionRetry(props: { status: SessionStatus; show?: boolean }) {
       return i18n.t("ui.sessionTurn.retry.geminiHot")
     }
 
-    if (current.message.length > 80) return current.message.slice(0, 80) + "…"
-
-    return current.message
+    return retryMessage(current.message)
   })
 
   const info = createMemo(() => {
