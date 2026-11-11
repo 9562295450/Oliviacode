@@ -5,13 +5,13 @@
 **A provider-agnostic desktop AI client.** An open-source AI client for developers: nothing
 preconfigured, with multi-lane egress and isolated sessions built into the UI instead of bolted on.
 
-[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.11) ·
-[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.11/Oliviacode-Setup-2.2.11.exe) ·
-[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.11/Oliviacode-2.2.11-arm64.dmg) ·
-[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.11/Oliviacode-2.2.11-x64.dmg) ·
-[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.11/Oliviacode-2.2.11-x64.AppImage) ·
-[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.11/Oliviacode-2.2.11-x64.deb) ·
-[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.11/Oliviacode-2.2.11-x64.rpm)
+[**Download**](https://github.com/9562295450/Oliviacode/releases/tag/v2.2.12) ·
+[Windows](https://github.com/9562295450/Oliviacode/releases/download/v2.2.12/Oliviacode-Setup-2.2.12.exe) ·
+[macOS arm64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.12/Oliviacode-2.2.12-arm64.dmg) ·
+[macOS x64](https://github.com/9562295450/Oliviacode/releases/download/v2.2.12/Oliviacode-2.2.12-x64.dmg) ·
+[Linux AppImage](https://github.com/9562295450/Oliviacode/releases/download/v2.2.12/Oliviacode-2.2.12-x64.AppImage) ·
+[deb](https://github.com/9562295450/Oliviacode/releases/download/v2.2.12/Oliviacode-2.2.12-x64.deb) ·
+[rpm](https://github.com/9562295450/Oliviacode/releases/download/v2.2.12/Oliviacode-2.2.12-x64.rpm)
 
 **Community:** [Discord](https://discord.gg/kDcRCu6ek) - release notes, Tor-lane questions, bug reports.
 **Write-up:** [A desktop AI coding client with no provider baked in](https://dev.to/oliviacodeapp/a-desktop-ai-coding-client-with-no-provider-baked-in-1mpn) - DEV Community.
@@ -101,6 +101,12 @@ Oliviacode is a generic client: nothing is connected on first run and no provide
 compiled into the app. Open the provider picker from the model chip in the composer. You can pick
 a provider from the engine's catalogue and supply your own credential, or apply a community
 template, which fills in a base URL for you.
+
+For an endpoint no catalogue knows, open **Settings → Providers → + Add Custom Provider**. Enter a
+name, the OpenAI-compatible base URL, an API key if the endpoint needs one, and its model IDs —
+**Detect models** reads them from `{baseURL}/models`. The base URL and models are written to your
+config; the key is stored as a credential, never in the config file. A local server that needs no key
+stays listed.
 
 ![The model picker on a fresh profile: no provider, no results, nothing preselected](docs/screenshots/02-model-picker.png)
 
