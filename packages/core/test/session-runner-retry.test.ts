@@ -32,6 +32,15 @@ const refused = new AIError({
     code: "ECONNREFUSED",
   }),
 })
+const refusedHosted = new AIError({
+  reason: new TransportError({
+    message: "ECONNREFUSED: Unable to connect. Is the computer able to access the url? (dialled opencode.ai)",
+    transport: "http",
+    operation: "request",
+    code: "ECONNREFUSED",
+    url: "https://opencode.ai/zen/v1/chat/completions",
+  }),
+})
 
 const input = (cause: AIError) => ({
   cause,
@@ -125,6 +134,17 @@ describe("toSessionError", () => {
       type: "provider.transport",
       message: "Can't reach opencode.ai. Check the network connection. (getaddrinfo ENOTFOUND opencode.ai)",
     })
-    expect(toSessionError(refused)).toEqual({ type: "provider.transport", message: "Unable to connect" })
+  })
+
+  test("names the host that refused the connection", () => {
+    expect(toSessionError(refusedHosted)).toEqual({
+      type: "provider.transport",
+      message:
+        "Nothing answered at opencode.ai. Check the Base URL in the provider's settings. (ECONNREFUSED: Unable to connect. Is the computer able to access the url?)",
+    })
+    // Without a url there is no host to name, so the wording stays general instead of inventing one.
+    expect(toSessionError(refused).message).toBe(
+      "Nothing answered at the provider's address. Check the Base URL in the provider's settings. (Unable to connect)",
+    )
   })
 })

@@ -51,6 +51,7 @@ export function toSessionError(cause: unknown): SessionError.Error {
         return providerError("provider.content-filter", cause.reason)
       case "Transport":
         if (ModelRetry.isUnreachable(cause)) return unreachable(cause.reason)
+        if (refused(cause.reason)) return notListening(cause.reason)
         return providerError("provider.transport", cause.reason)
       case "ProviderInternal":
         return providerError("provider.internal", cause.reason)
@@ -128,6 +129,25 @@ function unreachable(reason: AIError["reason"]): SessionError.Error {
   return {
     ...providerError("provider.transport", reason),
     message: `Can't reach ${host || "the provider"}. Check the network connection. (${reason.message})`,
+  }
+}
+
+// Something answered and refused the connection: the host is up but nothing is listening on that
+// address and port. Nothing about the request will change that, so the message says which address
+// was dialled and where the value comes from.
+function refused(reason: AIError["reason"]) {
+  return reason._tag === "Transport" && reason.code === "ECONNREFUSED"
+}
+
+function notListening(reason: AIError["reason"]): SessionError.Error {
+  const host = "url" in reason && reason.url !== undefined ? URL.parse(reason.url)?.hostname : undefined
+  // The transport message already ends with `(dialled host:port)`; the sentence names the host, so
+  // keeping both reads as a stutter.
+  const detail = reason.message.replace(/\s*\(dialled [^)]*\)$/, "")
+
+  return {
+    ...providerError("provider.transport", reason),
+    message: `Nothing answered at ${host || "the provider's address"}. Check the Base URL in the provider's settings. (${detail})`,
   }
 }
 

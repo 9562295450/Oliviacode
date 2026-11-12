@@ -1,11 +1,9 @@
-## Oliviacode 2.2.14
+## Oliviacode 2.2.15
 
-**A refused connection now says what it dialled, and the sidecar follows the lane onto a new port.**
-Two bugs made a dead lane look like a dead provider. Bun reports a refused connect as
-`ECONNREFUSED: Unable to connect. Is the computer able to access the url?` — the address is the one
-detail missing, so a report could not tell a stale local bridge from an endpoint that is down. And the
-sidecar reads the proxy environment once, at spawn, while the engine's endpoint moves on every
-rotation: when a Tor or WARP bridge came back on a different port, the CLI kept dialling the old one.
+**Errors read like sentences again.** Two failures reached users in 2.2.14 with the answer buried:
+a provider that answered 503 put its whole JSON body in the retry card, and a refused connection
+said only `ECONNREFUSED: Unable to connect.` with no hint about which address refused or what to
+fix. Both are copy bugs, and copy bugs are the ones users read first.
 
 A provider-agnostic, open-source desktop AI client. Nothing is preconfigured: no provider, no
 endpoint in the code, no credential. You connect an account, or you don't.
@@ -13,70 +11,69 @@ endpoint in the code, no credential. You connect an account, or you don't.
 ### Downloads
 | Platform | File |
 | --- | --- |
-| Windows 10/11 x64 | `Oliviacode-Setup-2.2.14.exe` |
-| macOS Apple Silicon (arm64) | `Oliviacode-2.2.14-arm64.dmg` |
-| macOS Intel (x64) | `Oliviacode-2.2.14-x64.dmg` |
-| Linux x64 | `Oliviacode-2.2.14-x64.AppImage`, `Oliviacode-2.2.14-x64.deb`, `Oliviacode-2.2.14-x64.rpm` |
+| Windows 10/11 x64 | `Oliviacode-Setup-2.2.15.exe` |
+| macOS Apple Silicon (arm64) | `Oliviacode-2.2.15-arm64.dmg` |
+| macOS Intel (x64) | `Oliviacode-2.2.15-x64.dmg` |
+| Linux x64 | `Oliviacode-2.2.15-x64.AppImage`, `Oliviacode-2.2.15-x64.deb`, `Oliviacode-2.2.15-x64.rpm` |
 
 macOS and Linux packages are built by the release workflow on native runners. They are unsigned;
 see the platform notes below.
 
 ### What's new
 
-**The error message names the host**
-- **`(dialled 127.0.0.1:8091)` is appended to the failure.** The request wrapper records the URL it
-  actually dialled and the message carries it, so the card reads
-  `ECONNREFUSED: Unable to connect. Is the computer able to access the url? (dialled 127.0.0.1:8091)`
-  instead of leaving the address out.
-- **The host rides on the transport error too.** `TransportError.url` is set, which is what the
-  "Can't reach …" card reads to name the host, and what `Export Logs` preserves.
-- **Both layers of the stack are covered.** An error that the AI SDK wraps ("Cannot connect to API")
-  and one it passes through raw both end up naming the endpoint. Only the host and port are added;
-  the runtime's own wording is untouched.
-- **Applies to read timeouts as well.** A stalled stream or a header timeout now names the endpoint
-  it was waiting on, not just a connect failure.
-- **The retry card keeps the endpoint.** The one-line retry card cuts a long failure at 80
-  characters; the dialled host is reserved before the cut, so a refused connect reads
-  `ECONNREFUSED: Unable to connect. Is the computer able to… (dialled 127.0.0.1:8091)` instead of
-  dropping the address off the end.
-- **The default port is not printed.** `https://api.example.com` stays `api.example.com`; a
-  non-default port is shown, because a port mismatch is exactly the case this is for.
+**A provider failure is summarised, never pasted**
+- **Google's array-wrapped errors are read properly.** Google returns
+  `[{"error":{"code":503,"message":"…","status":"UNAVAILABLE"}}]` — a one-element array. The decoder
+  only knew object shapes, so it found no message and the caller fell back to echoing the payload.
+  `providerErrorMessage` now unwraps arrays and reads the envelope inside.
+- **A JSON body that still has no readable message is not shown.** When a payload parses as JSON but
+  carries no message field, the card reads `Provider request failed with HTTP 503` and the body stays
+  in the details for bug reports. A wall of braces is not an explanation.
+- **Prose bodies are still shown, capped at 2,000 characters.** A gateway that answers `invalid
+  parameter` in plain text still gets its words through; HTML error pages still do not.
 
-**The sidecar follows the lane**
-- **The restart decision is made against what the sidecar was started with.** The engine keeps the
-  endpoint it last passed to a running sidecar and compares against that, never against the endpoint
-  the rotation began on. A bridge that comes back on a new port is a move, even when the rotation
-  produced the same URL twice.
-- **Lane switches restart it too.** `Settings` → lane, or a rotate that changes lanes, now brings the
-  sidecar onto the new port. Before this, only a rotation whose endpoint changed did.
-- **A failed restart is retried once, then owed again.** The first attempt gets a second try 1.5 s
-  later; if both fail, the pending endpoint is kept, so the next rotation or lane switch tries again
-  instead of recording a move that never happened.
-- **Nothing restarts when the port did not move.** WARP and a Tor `NEWNYM` keep their local proxy
-  across a rotation and only the exit behind it changes, so live turns are not aborted for nothing.
+**A refused connection says which address refused**
+- **The card names the host and the fix.** It now reads
+  `Nothing answered at opencode.ai. Check the Base URL in the provider's settings, or wait for the
+  host to come back. (ECONNREFUSED: …)` instead of leaving `ECONNREFUSED` to explain itself.
+- **A refused connect is separated from an unreachable network.** `ECONNREFUSED` means something
+  answered and refused; `ENOTFOUND`, `ENETUNREACH` and friends mean this machine has no path. The two
+  read differently now, because they need different fixes.
+- **A 503 names its sentence.** The same 503 from the screenshot now reads
+  `This model is currently experiencing high demand. Spikes in demand are usually temporary. Please
+  try again later.`
 
-**Carried from 2.2.13**
+**The gate that stops this shipping again**
+- **`scripts/check-error-copy.ps1`** runs the message suites and then drives the real request
+  executor against a closed port and a Google-style 503, asserting that a refused connect names its
+  address and that neither card contains a JSON payload.
+- **`scripts/publish-release.ps1` refuses to publish without it.** The gate runs before the tag is
+  pushed, so a release cannot go out with copy that has not been read by the same code path a user
+  reads it through.
+
+**Carried from 2.2.14**
+- **The dialled host is appended to transport failures,** including read timeouts, and the one-line
+  retry card reserves the endpoint before it truncates.
+- **The sidecar restarts when the lane moves,** including a lane switch, with one retry and the move
+  left owed if both attempts fail.
 - **Custom providers.** Settings → Providers → **+ Add Custom Provider**: name, base URL, API key and
-  a model list with **Detect models** against `{baseURL}/models`. The key is stored as a credential
-  and never written into the config file.
-- **One engine, built here.** Every release job builds the bundled engine from the tagged commit and
-  the contract gate refuses a binary that cannot answer the routes the window calls.
+  a model list with **Detect models**. The key is stored as a credential and never written into the
+  config file.
 
 ### Verify before you run
-- `Oliviacode-Setup-2.2.14.exe` — 246 MB (257,896,117 bytes) — `27429134ff059970eeb52f93fd46667c64a92f0c3f823282977903ad14d0e02f`.
+- `Oliviacode-Setup-2.2.15.exe` — 246 MB (257,893,099 bytes) — `2fb18f50db83209af06e65dfd23f51ba3314c4a6318f28fec7ff04a526327123`.
 - `SHA256SUMS.txt` carries the SHA-256 for every artifact on this release; it is rewritten from
   GitHub's own digests once the macOS and Linux jobs finish.
 - The 2.2.7 installer was scanned at VirusTotal with **0/50 detections** and the application binary
   with **0/68**; those reports are on the
-  [checksums page](https://9562295450.github.io/Oliviacode/checksums.html). The 2.2.8 through 2.2.14
+  [checksums page](https://9562295450.github.io/Oliviacode/checksums.html). The 2.2.8 through 2.2.15
   installers are pending their first scan.
 - The Windows installer is unsigned. SmartScreen asks you to confirm the publisher; check the hash
   against this release before you do.
 
 ### Installing this one
 - 2.2.8 and newer installs can take this release through the built-in updater.
-- If you are on 2.2.11 or older and use a Tor or WARP lane, this release is the one that fixes the
-  sidecar staying on a dead port after the bridge moves.
+- If a provider failure in 2.2.14 read as a wall of JSON, this is the release that fixes it.
 - macOS builds are unsigned, so automatic updates are not enabled there; download new versions from
   this page until the app is signed and notarized.
 - Linux AppImage installs can check `latest-linux.yml`; deb and rpm installs update through the
@@ -85,7 +82,7 @@ see the platform notes below.
 ### Platform notes
 - **macOS:** the app is not notarized. First launch: right-click the app, choose **Open**, then
   confirm. Drag it to Applications from the dmg.
-- **Linux AppImage:** `chmod +x Oliviacode-2.2.14-x64.AppImage` then run it. The deb and rpm packages
+- **Linux AppImage:** `chmod +x Oliviacode-2.2.15-x64.AppImage` then run it. The deb and rpm packages
   install the same app for your package manager.
 - **Windows:** the installer is per-user and does not require an administrator.
 

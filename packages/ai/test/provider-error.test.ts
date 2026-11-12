@@ -705,6 +705,18 @@ describe("provider error messages", () => {
     )
   })
 
+  test("reads an error body wrapped in an array", () => {
+    // Google's REST errors are a one-element array; without this the caller echoes the whole payload.
+    expect(
+      providerErrorMessage(
+        '[{"error":{"code":503,"message":"This model is currently experiencing high demand.","status":"UNAVAILABLE"}}]',
+      ),
+    ).toBe("This model is currently experiencing high demand.")
+    expect(providerErrorMessage('[{"message":"quota exceeded"}]')).toBe("quota exceeded")
+    expect(providerErrorMessage("[]")).toBeUndefined()
+    expect(providerErrorMessage('[1,2,3]')).toBeUndefined()
+  })
+
   test("ignores blank, non-string, and non-JSON messages", () => {
     expect(
       [

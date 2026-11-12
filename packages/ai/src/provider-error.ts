@@ -185,7 +185,32 @@ const decodeMessage = Schema.decodeUnknownOption(
   ),
 )
 
-export const providerErrorMessage = (body: string) => Option.getOrUndefined(decodeMessage(body))
+const decodeJson = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Unknown))
+
+/**
+ * Google's REST errors arrive as a one-element array (`[{"error":{"code":503,…}}]`), and a few gateways
+ * wrap a provider envelope twice. Both otherwise read as "no message" and the caller falls back to
+ * dumping the raw body, so unwrap them here rather than in every caller.
+ */
+export const providerErrorMessage = (body: string) => {
+  const direct = Option.getOrUndefined(decodeMessage(body))
+
+  if (direct !== undefined) return direct
+
+  const json = Option.getOrUndefined(decodeJson(body))
+
+  if (!Array.isArray(json)) return undefined
+
+  for (const item of json) {
+    if (typeof item !== "object" || item === null) continue
+
+    const nested = Option.getOrUndefined(decodeMessage(JSON.stringify(item)))
+
+    if (nested !== undefined) return nested
+  }
+
+  return undefined
+}
 
 export interface ProviderFailure {
   readonly message: string

@@ -78,14 +78,19 @@ const rateLimitDetails = (headers: Record<string, string>, retryAfter: number | 
 
 const MAX_BODY_CHARS = 2000
 
-// Without a recognized message, show the raw body so the provider's explanation is never dropped.
-const providerMessage = (status: number, body: string | void) => {
+// Without a recognized message, show the raw body so the provider's explanation is never dropped —
+// but only when that body is prose. A JSON payload the decoder could not read is wire data, and
+// showing it turns a one-line failure into a wall of braces that says nothing to the person reading it.
+export const providerFailureMessage = (status: number, body: string | void) => {
   const fallback = `Provider request failed with HTTP ${status}`
   const text = body?.trim() ?? ""
   const message = providerErrorMessage(text)
+
   if (message) return message
   // Gateway and proxy HTML error pages are markup, not an explanation.
   if (!text || /^<(?:!doctype|html)/i.test(text)) return fallback
+  if (/^[[{]/.test(text)) return fallback
+
   return `${fallback}: ${text.length > MAX_BODY_CHARS ? `${text.slice(0, MAX_BODY_CHARS)}…` : text}`
 }
 
@@ -94,7 +99,7 @@ const statusError = (response: HttpClientResponse.HttpClientResponse) =>
     if (response.status < 400) return response
     const result = yield* response.text.pipe(Effect.result)
     return yield* httpFailure({
-      message: providerMessage(response.status, result._tag === "Success" ? result.success : undefined),
+      message: providerFailureMessage(response.status, result._tag === "Success" ? result.success : undefined),
       url: response.request.url,
       status: response.status,
       responseHeaders: headerDetails(response.headers),

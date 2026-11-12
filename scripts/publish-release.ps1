@@ -18,6 +18,11 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
+# User-facing error copy gets its own gate: two 2.2.14 releases shipped raw provider payloads and
+# unnamed connections to the retry card, and neither was caught by typecheck or the build.
+& (Join-Path $PSScriptRoot "check-error-copy.ps1")
+if ($LASTEXITCODE -ne 0) { throw "Error copy gate failed. Fix the copy before publishing." }
+
 $installer = Join-Path $root "dist/desktop/Oliviacode-Setup-$Version.exe"
 if (-not (Test-Path $installer)) {
   throw "Missing $installer. Run: bun run pack; `$env:OPENCODE_DESKTOP_APP='dist/desktop/app'; bun run pack"

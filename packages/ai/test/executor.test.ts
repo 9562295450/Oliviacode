@@ -371,19 +371,38 @@ describe("RequestExecutor", () => {
     }).pipe(Effect.provide(fixedResponse("invalid parameter", { status: 400 }))),
   )
 
-  it.effect("shows unrecognized provider error bodies", () =>
+  it.effect("shows the status instead of a JSON body it cannot read", () =>
     Effect.gen(function* () {
       const executor = yield* RequestExecutor.Service
       const error = yield* executor.execute(request).pipe(Effect.flip)
 
-      expect(error.message).toBe(
-        'Provider request failed with HTTP 422: {"object":"error","message":{"detail":[{"msg":"Input should be less than or equal to 1.5"}]}}',
-      )
+      expect(error.message).toBe("Provider request failed with HTTP 422")
+      // The payload is still kept for diagnostics; it just never becomes the one-line message.
+      expect(error.reason.body).toContain("Input should be less than or equal to 1.5")
     }).pipe(
       Effect.provide(
         fixedResponse('{"object":"error","message":{"detail":[{"msg":"Input should be less than or equal to 1.5"}]}}', {
           status: 422,
         }),
+      ),
+    ),
+  )
+
+  it.effect("reads the message out of a Google-style array error body", () =>
+    Effect.gen(function* () {
+      const executor = yield* RequestExecutor.Service
+      const error = yield* executor.execute(request).pipe(Effect.flip)
+
+      expect(error.message).toBe(
+        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+      )
+      expect(error.reason).toMatchObject({ _tag: "ProviderInternal" })
+    }).pipe(
+      Effect.provide(
+        fixedResponse(
+          '[{"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}]',
+          { status: 503 },
+        ),
       ),
     ),
   )
@@ -439,7 +458,7 @@ describe("RequestExecutor", () => {
     ),
   )
 
-  it.effect("shows the body when structured provider messages are empty", () =>
+  it.effect("does not echo a JSON body whose message is blank", () =>
     Effect.gen(function* () {
       const executor = yield* RequestExecutor.Service
       const error = yield* executor.execute(request).pipe(Effect.flip)
@@ -448,7 +467,7 @@ describe("RequestExecutor", () => {
       expect(error.reason).toMatchObject({
         _tag: "InvalidRequest",
       })
-      expect(error.message).toBe('Provider request failed with HTTP 400: {"error":{"message":"  "}}')
+      expect(error.message).toBe("Provider request failed with HTTP 400")
     }).pipe(Effect.provide(fixedResponse('{"error":{"message":"  "}}', { status: 400 }))),
   )
 
