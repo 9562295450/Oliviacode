@@ -12,12 +12,17 @@ import { watchSidecarLogs, type Watcher } from "./watcher"
 
 let watcher: Watcher | null = null
 let unsubscribe: (() => void) | null = null
-let applied = ""
+/** The rule last handed to Chromium; `null` means this process has not set one yet. */
+let applied: string | null = null
 
 /**
  * Chromium keeps its own proxy configuration; the environment variables the CLI inherits
  * do not reach it. Setting both is what makes the window's fetch and the sidecar's fetch
  * leave by the same door.
+ *
+ * The Direct lane resolves to `system`, not to `direct`. A VPN, a corporate PAC file or a
+ * proxy set in the OS is the machine's own route, and answering "direct" overrode all of
+ * them — turning the lane that is supposed to mean "as configured" into "no proxy at all".
  */
 async function applySessionProxy(endpoint: string) {
   const target = session.defaultSession
@@ -36,7 +41,7 @@ async function applySessionProxy(endpoint: string) {
         proxyBypassRules: "localhost;127.0.0.1;[::1];<local>",
       })
     } else {
-      await target.setProxy({ mode: "direct" })
+      await target.setProxy({ mode: "system" })
     }
     applied = endpoint
   } catch {
@@ -48,9 +53,11 @@ async function applySessionProxy(endpoint: string) {
 export const start = Effect.gen(function* () {
   yield* Effect.promise(() => engine.load())
 
-  // A restored endpoint is applied to Chromium too, not only to the environment.
+  // A restored endpoint is applied to Chromium too, not only to the environment. An empty
+  // one is still applied: it is what puts the session back on the machine's own proxy
+  // configuration instead of leaving a rule from the previous run in place.
   const restored = engine.snapshot().endpoint
-  if (restored) void applySessionProxy(restored)
+  yield* Effect.promise(() => applySessionProxy(restored))
 
   const onState = (state: ReturnType<typeof engine.snapshot>) => {
     void applySessionProxy(state.endpoint)
@@ -59,6 +66,10 @@ export const start = Effect.gen(function* () {
   unsubscribe = () => engine.off("state", onState)
 
   watcher = watchSidecarLogs((line) => engine.observe(line))
+
+  // A bridge that dies between rotations is otherwise invisible: the sidecar keeps dialling
+  // the closed port and every request fails without naming a cause.
+  engine.startWatchdog()
 
   // The saved lane is re-proven after boot so the sidebar opens on the exit address the app
   // left on. WARP answers immediately; Tor pays its bootstrap here, off the startup path.

@@ -19,6 +19,7 @@ import { join } from "node:path"
 import { app } from "electron"
 import { run } from "./exec"
 import { startBridge, type Bridge } from "./socks-bridge"
+import { probe } from "./trace"
 import { sleep } from "./warp"
 
 /**
@@ -59,12 +60,20 @@ export class Tor {
   #ports: Ports | null = null
   #starting: Promise<string> | null = null
   #spawnError = ""
+  /**
+   * A Tor someone else started — Tor Browser, a system daemon, a service — that this lane
+   * borrowed instead of downloading its own bundle. Borrowing is what makes the lane work on
+   * a censored network where `archive.torproject.org` is unreachable, and it is what a user
+   * with Tor Browser already open expects to happen.
+   */
+  #external: { readonly socks: number; readonly control: number } | null = null
 
   get endpoint() {
     return this.#bridge?.url ?? ""
   }
 
   get running() {
+    if (this.#external) return true
     return this.#child !== null && this.#child.exitCode === null
   }
 
@@ -81,13 +90,27 @@ export class Tor {
     return join(this.#root(), "tor", "tor.exe")
   }
 
+  /**
+   * Optional configuration read by the bundled daemon.
+   *
+   * The one thing this file is for is bridges: an ISP that blocks the public Tor relays
+   * blocks a plain bootstrap, and `Bridge`/`UseBridges 1` lines are the documented way
+   * through. It is also where a SOCKS or control port can be pinned.
+   */
+  #torrc() {
+    return join(this.#root(), "torrc")
+  }
+
   async status(): Promise<TorStatus> {
-    const installed = existsSync(this.#path())
+    const installed = existsSync(this.#path()) || this.#external !== null
+    const detail = this.#external
+      ? `using the tor already running on 127.0.0.1:${this.#external.socks}`
+      : (describeLog(this.#log, 1)[0] ?? (installed ? "installed" : "not installed"))
     return {
       installed,
       running: this.running,
       bootstrapped: this.#bootstrapped,
-      detail: describeLog(this.#log, 1)[0] ?? (installed ? "installed" : "not installed"),
+      detail,
     }
   }
 
@@ -144,8 +167,15 @@ export class Tor {
   }
 
   async #launch(onProgress?: (line: string) => void): Promise<string> {
+    // Someone else's Tor first: no download, no bootstrap, and the only option that works
+    // on a network that blocks the Tor Project's archive.
+    onProgress?.("looking for a tor already running on this machine")
+    const adopted = await this.#adopt()
+    if (adopted) return adopted
+    if (this.#external) return ""
+
     const installed = await this.ensureInstalled(onProgress)
-    if (installed) return installed
+    if (installed) return this.#blockedHint(installed)
 
     onProgress?.("starting tor")
 
@@ -157,15 +187,65 @@ export class Tor {
       return ""
     }
 
-    if (!primary.retryable) return primary.error
+    if (!primary.retryable) return this.#blockedHint(primary.error)
 
     onProgress?.("retrying tor on a fresh data directory")
     const fresh = join(this.#root(), `data-${Date.now()}`)
     const retry = await this.#attempt(fresh, onProgress)
-    if (retry.error) return `${primary.error} | retry: ${retry.error}`
+    if (retry.error) return this.#blockedHint(`${primary.error} | retry: ${retry.error}`)
 
     this.#prune(fresh)
     return ""
+  }
+
+  /**
+   * Borrow a Tor that is already listening.
+   *
+   * Tor Browser serves SOCKS on 9150 with its control port on 9151; a system or Expert
+   * Bundle daemon uses 9050/9051. The control port is usually off in Tor Browser, which
+   * only limits rotation — a borrowed circuit can still carry traffic, and that is worth
+   * more than a red error on a network where the bundle cannot even be downloaded.
+   *
+   * The bridge is proven through a trace before it is kept: a stale listener that speaks
+   * SOCKS but has no circuit behind it would otherwise be adopted as a working lane.
+   */
+  async #adopt(): Promise<string> {
+    if (this.#external) return ""
+
+    for (const [socks, control] of [
+      [9150, 9151],
+      [9050, 9051],
+    ] as const) {
+      if (!(await listening(socks))) continue
+
+      let bridge: Bridge
+      try {
+        bridge = await startBridge({ socksHost: "127.0.0.1", socksPort: socks, port: 0 })
+      } catch {
+        // A port that answers the connect but refuses a bridge is not a usable lane.
+        continue
+      }
+
+      const proven = await probe(bridge.url, 8_000)
+      if (!proven.ok) {
+        await bridge.stop().catch(() => undefined)
+        continue
+      }
+
+      this.#bridge = bridge
+      this.#bootstrapped = true
+      this.#external = { socks, control: (await listening(control)) ? control : 0 }
+      this.#ports = { socks, control: this.#external.control, bridge: bridge.port }
+      return ""
+    }
+
+    return ""
+  }
+
+  /** The documented way past a network that blocks the public relays, named once. */
+  #blockedHint(error: string): string {
+    if (!/download|bootstrap|timed out|connect|network|unreachable|refused|proxy/i.test(error)) return error
+    return `${error}. If this network blocks the Tor Project, add Bridge lines to ${this.#torrc()} and select the Tor lane again.`
   }
 
   /** One spawn + bootstrap + bridge on `dataDir`. Ports are allocated fresh each time. */
@@ -202,6 +282,7 @@ export class Tor {
         "0",
         "--DataDirectory",
         dataDir,
+        ...(existsSync(this.#torrc()) ? ["--defaults-torrc", this.#torrc()] : []),
         "--Log",
         "notice stdout",
       ],
@@ -281,6 +362,15 @@ export class Tor {
 
     if (!this.#ports) return { ok: false, error: "tor control port is not resolved" }
 
+    // A borrowed Tor without a control port can still carry the lane; it just cannot be
+    // asked for a new circuit from here. Say that instead of spending the user's time.
+    if (this.#external && !this.#ports.control) {
+      return {
+        ok: false,
+        error: "the tor already running on this machine has no control port; enable ControlPort and pick the Tor lane again, or use WARP or a proxy for a new exit",
+      }
+    }
+
     const signal = await sendControl(this.#ports.control, "SIGNAL NEWNYM")
     if (signal) return { ok: false, error: signal }
 
@@ -299,6 +389,8 @@ export class Tor {
     this.#child = null
     this.#ports = null
     this.#bootstrapped = false
+    // A borrowed daemon belongs to the user; stopping the lane only drops the bridge.
+    this.#external = null
 
     if (!child || child.exitCode !== null) return
 
@@ -347,6 +439,24 @@ export function torInstalled(path: string) {
   } catch {
     return false
   }
+}
+
+/** True when a TCP listener answers on loopback `port` right now. */
+function listening(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = connect({ host: "127.0.0.1", port })
+    let settled = false
+    const done = (value: boolean) => {
+      if (settled) return
+      settled = true
+      socket.destroy()
+      resolve(value)
+    }
+    socket.setTimeout(700)
+    socket.once("connect", () => done(true))
+    socket.once("timeout", () => done(false))
+    socket.once("error", () => done(false))
+  })
 }
 
 /** A loopback port the OS says is free right now, avoiding `taken`. */

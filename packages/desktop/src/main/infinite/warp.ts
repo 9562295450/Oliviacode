@@ -16,8 +16,9 @@
  * renegotiates, and killing it mid-flight leaves the registration half-written, which
  * then makes `delete` fail with "Missing registration".
  */
-import { readdirSync } from "node:fs"
-import { join } from "node:path"
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { app } from "electron"
 import { run, which, type RunResult } from "./exec"
 import { startBridge, type Bridge } from "./socks-bridge"
 import { probe } from "./trace"
@@ -133,6 +134,84 @@ export class Warp {
   }
 
   /**
+   * Where the mode this app displaced is remembered.
+   *
+   * `mode proxy` is not a per-app setting: it changes the whole client, leaves the tunnel
+   * unproxied, and survives a crash. A user who selected the WARP lane and quit used to find
+   * their WARP still in proxy mode with their normal traffic unprotected. Recording the
+   * previous mode before the switch is what lets `restore` put it back on the next lane
+   * change, quit, or relaunch.
+   */
+  #modeFile() {
+    try {
+      return join(app.getPath("userData"), "egress", "warp-mode.json")
+    } catch {
+      return ""
+    }
+  }
+
+  async #currentMode(): Promise<string> {
+    const result = await this.#cli(["settings"], CONTROL_TIMEOUT_MS)
+    return parseWarpMode(`${result.stdout}\n${result.stderr}`)
+  }
+
+  async #captureMode(): Promise<void> {
+    const file = this.#modeFile()
+    if (!file || existsSync(file)) return
+
+    const mode = await this.#currentMode()
+    // Nothing to remember when the client is already in the mode this lane wants, or when
+    // the daemon could not say. A blank previous mode restores the default, which is warp.
+    if (!mode) return
+
+    // Whether the tunnel was up when the app took the client over. Restoring the mode but
+    // not the tunnel would hand back a client that looks idle while the user's traffic is
+    // unprotected, which is worse than the mode being wrong.
+    const wasConnected = (await this.status()).connected
+
+    try {
+      mkdirSync(dirname(file), { recursive: true })
+      writeFileSync(file, JSON.stringify({ mode, connected: wasConnected, at: Date.now() }, null, 2))
+    } catch {
+      // A read-only profile still gets the lane; only the restore is lost.
+    }
+  }
+
+  /** Put the client back in the mode it was in before this lane switched it to proxy. */
+  async restore(): Promise<string> {
+    const file = this.#modeFile()
+    if (!file) return ""
+
+    let previous = ""
+    let wasConnected = false
+    try {
+      const parsed = JSON.parse(readFileSync(file, "utf8")) as { mode?: unknown; connected?: unknown }
+      previous = typeof parsed.mode === "string" ? parsed.mode : ""
+      wasConnected = parsed.connected === true
+    } catch {
+      return ""
+    }
+
+    rmSync(file, { force: true })
+
+    // The lane's own mode needs no restore, and an empty value would leave the client in
+    // proxy mode with no way back.
+    if (!previous || previous === "proxy") return ""
+
+    // The daemon refuses a mode change while a tunnel is up, which is exactly the state this
+    // lane leaves it in. Disconnect first, put the mode back, then reconnect the tunnel the
+    // user had. The reconnect is not awaited to "connected": the daemon keeps working after
+    // this process is gone, and quitting must not wait a minute for a tunnel.
+    await this.#cli(["disconnect"], CONTROL_TIMEOUT_MS)
+    const result = await this.#cli(["mode", previous], CONTROL_TIMEOUT_MS)
+    if (result.code !== 0) {
+      return `WARP is still in proxy mode; restoring "${previous}" failed: ${reason(result, "mode", CONTROL_TIMEOUT_MS)}`
+    }
+    if (wasConnected) await this.#cli(["connect"], CONTROL_TIMEOUT_MS)
+    return ""
+  }
+
+  /**
    * The client's path, or null when it is not installed.
    *
    * A hit is cached for the life of the process. A miss is cached only briefly: WARP is
@@ -213,6 +292,12 @@ export class Warp {
     return MISSING_REGISTRATION.test(`${result.stdout}\n${result.stderr}`)
   }
 
+  /** The enrolled account type, empty when the daemon did not answer. */
+  async #accountType(): Promise<string> {
+    const result = await this.#cli(["registration", "show"], CONTROL_TIMEOUT_MS)
+    return parseAccountType(`${result.stdout}\n${result.stderr}`)
+  }
+
   /**
    * Put the daemon in proxy mode on `port`. Safe to call on every activation: the
    * commands are idempotent and each one is time-bounded on its own.
@@ -233,6 +318,10 @@ export class Warp {
     // never came up hides the one fact the user needs: the download they are missing.
     if (!(await this.find())) return NOT_INSTALLED
 
+    // What the client was doing before this app asks it to be a proxy. Recorded before the
+    // switch, because a crash after it would otherwise leave the user's WARP in proxy mode.
+    await this.#captureMode()
+
     // Disconnecting first is what lets the mode and port settings apply: the daemon
     // refuses both while a tunnel is up. The reconnect is a few lines below.
     await this.#cli(["disconnect"], CONTROL_TIMEOUT_MS)
@@ -244,7 +333,9 @@ export class Warp {
 
     // MASQUE is the modern transport; the older WireGuard path needs a kernel driver.
     await this.#cli(["tunnel", "protocol", "set", "MASQUE"], CONTROL_TIMEOUT_MS)
-    await this.#cli(["mode", "proxy"], CONTROL_TIMEOUT_MS)
+    // Re-applying proxy mode disconnects and reconnects, which drops the user's own traffic
+    // for a moment. It is only set when the client is not already there.
+    if ((await this.#currentMode()) !== "proxy") await this.#cli(["mode", "proxy"], CONTROL_TIMEOUT_MS)
     await this.#cli(["proxy", "port", String(port)], CONTROL_TIMEOUT_MS)
 
     let connect = await this.#cli(["connect"], CONNECT_TIMEOUT_MS)
@@ -305,6 +396,17 @@ export class Warp {
   async rotate(): Promise<{ ok: boolean; error: string }> {
     if (!(await this.find())) return { ok: false, error: NOT_INSTALLED }
 
+    // A Teams/Zero Trust device is enrolled with an organisation. Deleting the registration
+    // would remove it from that account, and the exit address is chosen by the organisation
+    // anyway, so there is no safe rotation to perform.
+    const account = await this.#accountType()
+    if (account && !/free/i.test(account)) {
+      return {
+        ok: false,
+        error: `this WARP install is managed by an organisation (account type: ${account}); re-registering would remove it. Use Tor or a proxy for a new exit.`,
+      }
+    }
+
     await this.#cli(["disconnect"], CONTROL_TIMEOUT_MS)
 
     const removed = await this.#cli(["registration", "delete"], CONTROL_TIMEOUT_MS)
@@ -361,4 +463,26 @@ export function sleep(ms: number) {
     const timer = setTimeout(resolve, ms)
     timer.unref?.()
   })
+}
+
+/**
+ * Read the mode out of `warp-cli settings`.
+ *
+ * The line is `(user set)  Mode: WarpProxy on port 40000`; older builds print `Mode: Warp`.
+ * The labels are matched longest-first so `warp+doh` is not read as plain `warp`.
+ */
+export function parseWarpMode(text: string): string {
+  const match = /^.*?\bMode:\s*(.+)$/im.exec(text)
+  if (!match) return ""
+
+  const value = match[1]!.trim().toLowerCase()
+  for (const mode of ["warp+doh", "warp+dot", "tunnel_only", "proxy", "warp", "doh", "dot"]) {
+    if (value.includes(mode)) return mode
+  }
+  return ""
+}
+
+/** `Account type: Free`; empty when the daemon did not say. */
+export function parseAccountType(text: string): string {
+  return /Account type:\s*([^\r\n]+)/i.exec(text)?.[1]?.trim() ?? ""
 }

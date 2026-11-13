@@ -18,10 +18,16 @@ export type ProbeOutcome =
   | { readonly ok: false; readonly error: string; readonly latencyMs: number }
 
 /**
- * Cloudflare's trace is the primary; `ip-api` is the fallback for proxies that block
- * Cloudflare or answer a challenge page instead of the plain text.
+ * Cloudflare's trace is the primary. The other two exist because a lane can be healthy and
+ * still fail one of them: Tor exits are routinely blocked by `ip-api` (it rate-limits shared
+ * addresses), and some proxies answer Cloudflare with a challenge page. A probe that only
+ * knows one URL calls a working lane broken.
  */
-const TRACE_URLS = ["https://www.cloudflare.com/cdn-cgi/trace", "http://ip-api.com/json/?fields=status,countryCode,query"]
+const TRACE_URLS = [
+  "https://www.cloudflare.com/cdn-cgi/trace",
+  "https://api.ipify.org?format=json",
+  "http://ip-api.com/json/?fields=status,countryCode,query",
+]
 
 /** Node itself, for the direct lane: no proxy, no curl, no dependency. */
 async function fetchTrace(url: string, timeoutMs: number, proxy: string): Promise<string> {
@@ -84,11 +90,13 @@ export function parseTrace(body: string, now = Date.now()): Trace | null {
     try {
       const json = JSON.parse(text) as Record<string, unknown>
       if (json.status && json.status !== "success") return null
-      const ip = typeof json.query === "string" ? json.query : ""
+      // `ip-api` names the address `query`, `ipify` names it `ip`; both are the same fact.
+      const ip = typeof json.query === "string" ? json.query : typeof json.ip === "string" ? json.ip : ""
       if (!ip) return null
+      const country = json.countryCode ?? json.country_code ?? json.country
       return {
         ip,
-        loc: typeof json.countryCode === "string" ? json.countryCode : "",
+        loc: typeof country === "string" ? country : "",
         colo: "",
         warp: "unknown",
         at: now,

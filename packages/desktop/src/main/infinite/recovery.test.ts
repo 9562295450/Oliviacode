@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test"
 import {
+  FREE_ALLOWANCE,
   PROOF_WINDOW_MS,
   STUCK_AFTER,
+  allowanceNotice,
+  freeLimitStuck,
   proofLimit,
   proofReset,
   proofRotated,
@@ -76,5 +79,41 @@ describe("recovery proof", () => {
     const notice = stuckNotice(STUCK_AFTER)
     expect(notice).toContain(`${STUCK_AFTER} new exits`)
     expect(notice).toContain("Switch models or connect a provider.")
+  })
+})
+
+describe("free allowance", () => {
+  // The sidecar logs the gateway's typed error and, when a gateway flattens the body, the prose.
+  test("matches the typed error and its prose form", () => {
+    expect(FREE_ALLOWANCE.test('FreeUsageLimitError: Free usage limit reached')).toBeTrue()
+    expect(FREE_ALLOWANCE.test("Free usage limit reached. Free models work in OpenCode")).toBeTrue()
+    expect(FREE_ALLOWANCE.test('message="free   usage limit reached"')).toBeTrue()
+  })
+
+  test("matches the line the sidecar actually logged when the wall appeared", () => {
+    const line =
+      'level=ERROR message="stream error" providerID=opencode modelID=deepseek-v4.1-flash-free error.error="AI_APICallError: Free usage limit reached. Free models work in OpenCode (https://opencode.ai); subscribe to OpenCode Go to keep going: https://opencode.ai/go"'
+    expect(FREE_ALLOWANCE.test(line)).toBeTrue()
+  })
+
+  test("does not match an ordinary refusal that is about the address", () => {
+    expect(FREE_ALLOWANCE.test("429 Too Many Requests")).toBeFalse()
+    expect(FREE_ALLOWANCE.test("ECONNREFUSED: Unable to connect")).toBeFalse()
+    expect(FREE_ALLOWANCE.test("quota exceeded for this workspace")).toBeFalse()
+  })
+
+  test("the notice names the exit address as the counter and rotation as the lever", () => {
+    const notice = allowanceNotice()
+    expect(notice).toContain("counted per exit address")
+    expect(notice).toContain("Rotating is what clears it")
+    expect(notice).toContain("connect a provider")
+    expect(notice).not.toContain("Rotating will not clear it")
+  })
+
+  test("the stuck notice only fires on refusal of fresh exits and names the count", () => {
+    expect(freeLimitStuck(1)).toContain("1 fresh exits")
+    expect(freeLimitStuck(2)).toContain("2 fresh exits")
+    expect(freeLimitStuck(2)).toContain("Connect a provider")
+    expect(freeLimitStuck(2)).toContain("wait for the provider's reset")
   })
 })

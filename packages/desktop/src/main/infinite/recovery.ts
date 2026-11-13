@@ -76,3 +76,41 @@ export function stuckNotice(strikes: number) {
   if (strikes < STUCK_AFTER) return ""
   return `Rotating is not clearing this limit: ${strikes} new exits were refused too. Switch models or connect a provider.`
 }
+
+/**
+ * Wording that identifies the free lane's allowance refusal.
+ *
+ * `FreeUsageLimitError` is the gateway's own type name and survives body flattening as prose.
+ *
+ * The allowance is counted **per exit address**, not per account. Upstream's inference proxy
+ * forwards the client address as `x-zen-ip` and strips the caller's own credentials
+ * (`proxyInference` in upstream `packages/console/app/src/lib/inference-proxy.ts`), so the
+ * bucket that answers is keyed on the address the request arrives from. Measured on the live
+ * gateway: the same model answered three seconds after a WARP rotation landed on a fresh
+ * exit, then refused again once that exit had served its day's messages — with the same
+ * 00:00 UTC `Retry-After` each time. A new exit therefore does carry a new allowance, which
+ * is exactly why the engine rotates on this refusal instead of sitting on it.
+ */
+export const FREE_ALLOWANCE = /free\s*usage\s*limit|freeusagelimiterror/i
+
+/**
+ * The sentence the panel shows while a free-limit rotation is still the right move.
+ *
+ * It names the mechanism because the mechanism is the answer: people rotate, see it work,
+ * and then get told "rotating will not clear it" — which is the one sentence that makes them
+ * stop using the lever that was working.
+ */
+export function allowanceNotice() {
+  return "The free allowance is counted per exit address, so a fresh exit carries a fresh allowance. Rotating is what clears it; if fresh exits are refused too, connect a provider or wait for the provider's reset."
+}
+
+/**
+ * The sentence the panel shows once fresh exits stop clearing the free allowance.
+ *
+ * Only reachable after the proof module has seen two different exits refused inside the
+ * window — the same evidence standard as every other stuck notice, spent on the one limit
+ * that used to clear on the first rotation.
+ */
+export function freeLimitStuck(strikes: number) {
+  return `The free allowance is counted per exit address, and ${strikes} fresh exits were refused too. Connect a provider or wait for the provider's reset.`
+}

@@ -16,22 +16,28 @@ import { join } from "node:path"
 /**
  * Where the CLI writes its log, in the order the clients actually use.
  *
- * The service logs next to its data (`~/.local/share/opencode/log`) on every platform this
- * ships on. The old state-directory path is kept because a Linux build that sets
- * `XDG_STATE_HOME` writes there, and a watcher pointed at a directory that does not exist
- * never sees a line — which is how automatic recovery stayed armed and silent.
+ * The desktop app redirects `XDG_DATA_HOME` under its own userData before the engine
+ * starts, so the live service writes to `<userData>/engine/data/opencode/log`. That path
+ * comes first: the older state-directory shape belongs to a different installation, and
+ * tailing it is why limit detection never fired on the desktop — the watcher was reading a
+ * file that had stopped growing days earlier.
  */
-function resolveLogDirectory(): string | null {
+export function logCandidates(env: NodeJS.ProcessEnv = process.env, home = homedir()): string[] {
   const candidates: string[] = []
 
-  if (process.env.XDG_STATE_HOME) candidates.push(join(process.env.XDG_STATE_HOME, "opencode", "log"))
-  candidates.push(join(homedir(), ".local", "share", "opencode", "log"))
-  candidates.push(join(homedir(), ".local", "state", "opencode", "log"))
+  if (env.XDG_DATA_HOME) candidates.push(join(env.XDG_DATA_HOME, "opencode", "log"))
+  if (env.XDG_STATE_HOME) candidates.push(join(env.XDG_STATE_HOME, "opencode", "log"))
+  candidates.push(join(home, ".local", "share", "opencode", "log"))
+  candidates.push(join(home, ".local", "state", "opencode", "log"))
   // A packaged Windows build sets its data root under Local AppData, so the service's log
   // is not under the XDG tree at all on that install.
-  if (process.env.LOCALAPPDATA) candidates.push(join(process.env.LOCALAPPDATA, "opencode", "log"))
+  if (env.LOCALAPPDATA) candidates.push(join(env.LOCALAPPDATA, "opencode", "log"))
 
-  for (const candidate of candidates) {
+  return [...new Set(candidates)]
+}
+
+function resolveLogDirectory(): string | null {
+  for (const candidate of logCandidates()) {
     try {
       if (statSync(candidate).isDirectory()) return candidate
     } catch {

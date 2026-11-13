@@ -120,13 +120,22 @@ export type InfiniteSettings = {
   /** Detect `429` and limit wording in the sidecar log and rotate on it. */
   readonly watchLimits: boolean
   /**
-   * Rotate on account-shaped quota lines too. The free lane counts its allowance per
-   * address, so a "free usage limit" line is exactly what a new exit can clear.
+   * Rotate on paid, account-shaped quota lines too. Off by default: a paid quota is spent by
+   * the credential, so a new exit reaches the same answer.
+   *
+   * This does not gate the free lane. Its allowance is counted per exit address (upstream's
+   * inference proxy forwards the client address as `x-zen-ip`), so a fresh exit carries a
+   * fresh allowance and the free-limit refusal always rotates.
    */
   readonly quotaRotates: boolean
   /** Ask the provider whether the new exit may use it before keeping it. */
   readonly verifyProvider: boolean
-  /** The provider endpoint the verification spends one token on. Empty means no provider check. */
+  /**
+   * The provider endpoint the verification spends one token on.
+   *
+   * Empty means "use the provider the session is actually on", which the engine reads from
+   * `opencode.json`. A value here overrides that, for a check pointed somewhere else.
+   */
   readonly providerEndpoint: string
   /** The model the provider check spends one token on. Empty means none selected. */
   readonly providerModel: string
@@ -146,8 +155,11 @@ export const infiniteDefaults: InfiniteSettings = {
   fallback: ["warp", "tor", "proxy"],
   pinnedProxy: "",
   watchLimits: true,
-  quotaRotates: true,
-  verifyProvider: false,
+  quotaRotates: false,
+  // On by default now that the target is resolved from the config: a rotation that is never
+  // checked is an exit the app keeps for no reason. A loopback provider is reported without
+  // being probed, so the local-pool setup costs nothing.
+  verifyProvider: true,
   providerEndpoint: "",
   providerModel: "",
   providerKey: "",

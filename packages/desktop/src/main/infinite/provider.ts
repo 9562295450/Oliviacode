@@ -134,14 +134,20 @@ function payload(model: string) {
 }
 
 /**
- * Ask the provider whether this address may use it. `endpoint` is the lane's local proxy;
- * empty means the machine's own route. Never rejects: a probe that cannot answer is a
- * verdict of `unknown`, not an exception the rotation loop has to catch.
+ * Ask the provider whether this address may use it.
+ *
+ * `config.endpoint` is the provider URL and `options.proxy` is the lane's local proxy — two
+ * different things that both look like a URL. The lane goes in `--proxy` and the provider goes
+ * in the request line; swapping them makes every probe dial the provider as a proxy and answer
+ * `unknown`, which is the same as having no check at all.
+ *
+ * Never rejects: a probe that cannot answer is a verdict of `unknown`, not an exception the
+ * rotation loop has to catch.
  */
 export async function providerProbe(
   config: ProviderConfig,
   ip: string,
-  options: { readonly timeoutMs: number; readonly model: string; readonly key: string },
+  options: { readonly timeoutMs: number; readonly model: string; readonly key: string; readonly proxy?: string },
 ): Promise<ProviderVerdict> {
   const model = options.model || config.model || ""
   const body = payload(model)
@@ -149,8 +155,8 @@ export async function providerProbe(
   // healthy Tor circuit is not called broken for being Tor.
   const timeoutMs = Math.min(30_000, Math.max(5_000, options.timeoutMs * 2))
 
-  const answer = config.endpoint
-    ? await postViaCurl(config.endpoint, body, options.key || config.key, timeoutMs)
+  const answer = options.proxy
+    ? await postViaCurl(options.proxy, config.endpoint, body, options.key || config.key, timeoutMs)
     : await postDirect(config.endpoint, body, options.key || config.key, timeoutMs)
 
   return parseProviderVerdict({ status: answer.status, body: answer.body, ip, model })
@@ -162,7 +168,7 @@ type Answer = { readonly status: number; readonly body: string }
  * curl is the one HTTP client that speaks both HTTP and SOCKS proxies without a
  * dispatcher, and it is what the trace probe already uses on a lane.
  */
-async function postViaCurl(proxy: string, body: string, key: string, timeoutMs: number): Promise<Answer> {
+async function postViaCurl(proxy: string, endpoint: string, body: string, key: string, timeoutMs: number): Promise<Answer> {
   const seconds = Math.max(1, Math.round(timeoutMs / 1000))
   const result = await run(
     process.platform === "win32" ? "curl.exe" : "curl",
@@ -191,7 +197,7 @@ async function postViaCurl(proxy: string, body: string, key: string, timeoutMs: 
       // The status is appended after a newline the body cannot fake at the end.
       "--write-out",
       "\n%{http_code}",
-      proxy,
+      endpoint,
     ],
     { timeoutMs: timeoutMs + 2_000 },
   )

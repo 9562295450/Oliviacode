@@ -29,7 +29,17 @@ import {
 } from "../../shared/infinite"
 import { ProxyPool } from "./proxies"
 import { providerProbe, type ProviderConfig } from "./provider"
-import { proofLimit, proofReset, proofRotated, recoveryProof, stuckNotice, type RecoveryProof } from "./recovery"
+import { classifyProvider, readActiveProvider, type ActiveProvider } from "./provider-config"
+import {
+  FREE_ALLOWANCE,
+  freeLimitStuck,
+  proofLimit,
+  proofReset,
+  proofRotated,
+  recoveryProof,
+  stuckNotice,
+  type RecoveryProof,
+} from "./recovery"
 import { SidecarEndpoint } from "./sidecar-endpoint"
 import { probe, type Trace } from "./trace"
 import { Tor } from "./tor"
@@ -46,6 +56,18 @@ const RESUME_TIMEOUT_MS = 20_000
 /** How many restarts one endpoint move gets before the next rotation or lane switch tries again. */
 const RESUME_ATTEMPTS = 2
 const RESUME_RETRY_MS = 1_500
+/**
+ * How often the active lane is checked when nobody is asking.
+ *
+ * A bridge or a tunnel can die between rotations — Tor crashes, WARP is disconnected from
+ * its own window, a free proxy expires. The sidecar keeps dialling the dead loopback port
+ * and every request fails with a refused connect that names no cause. Two failed checks in
+ * a row is enough evidence to put the app back on the machine's own route.
+ */
+const WATCHDOG_MS = 45_000
+const WATCHDOG_STRIKES = 2
+/** A provider key is re-read at most this often; the config changes on a person's click. */
+const PROVIDER_CACHE_MS = 30_000
 /** This build's version, compared against OpenCode's CLI releases. */
 const __OLIVIACODE_VERSION__ = "0.1.0"
 
@@ -76,10 +98,13 @@ const NOISE_PATTERNS: readonly RegExp[] = [
 /**
  * Wording that names an allowance rather than a network block.
  *
- * The free lane counts its allowance per address, so a "free usage limit" line is one a
- * new exit can clear — that is why `quotaRotates` exists and defaults on. A paid workspace
- * cap is still account-scoped and rotates nothing; turning the switch off restores the old
- * record-only behaviour for it.
+ * A paid quota is spent by the credential, so a new exit reaches the same answer and
+ * `quotaRotates` gates it — off by default, because an exit cannot refill an invoice.
+ *
+ * The free lane is the exception inside this list: upstream's inference proxy forwards the
+ * client address as `x-zen-ip`, so that allowance is counted per exit address and a fresh
+ * exit does carry a fresh allowance. `FREE_ALLOWANCE` is matched before this list is read
+ * and never takes the `quotaRotates` gate; see `observe`.
  */
 const QUOTA_PATTERNS: readonly RegExp[] = [
   /free usage limit/i,
@@ -145,6 +170,12 @@ export class InfiniteEngine extends EventEmitter {
   #updateChecked = 0
   #updateAvailable = false
   #updateVersion = ""
+  /** The provider target read from the engine config, cached between rotations. */
+  #providerConfig: { readonly at: number; readonly value: ActiveProvider } | null = null
+  /** The lane watchdog: one probe at a time, never during a rotation. */
+  #watchdog: NodeJS.Timeout | null = null
+  #watchdogBusy = false
+  #watchdogStrikes = 0
 
   get settings() {
     return this.#settings
@@ -169,15 +200,21 @@ export class InfiniteEngine extends EventEmitter {
   }
 
   async load() {
+    let scrubKey = false
     try {
       const raw = JSON.parse(readFileSync(this.#file(), "utf8")) as Record<string, unknown>
       const stored = (raw.settings ?? {}) as Record<string, unknown>
       // A save written before this feature has no `quotaRotates`. That install kept
-      // recovery behind a manual Arm, and the limit Olivia is chasing is the one it kept
-      // missing — so the upgrade arms it once, and the sidebar can disarm it again.
+      // recovery behind a manual Arm, so the upgrade arms it once and the sidebar can
+      // disarm it again. `quotaRotates` is not forced on with it: an allowance is not
+      // something an exit can refill, and the default is now the record-only behaviour.
       const legacy = typeof stored !== "object" || !("quotaRotates" in stored)
 
       this.#settings = sanitizeSettings(stored)
+      // A key written by an older build is not resurrected and never written again. The
+      // probe resolves the key from the provider config at request time instead.
+      scrubKey = this.#settings.providerKey !== ""
+      this.#settings = { ...this.#settings, providerKey: "" }
       if (legacy) this.#settings = { ...this.#settings, autoRecover: true }
       this.#lane = infiniteLanes.includes(raw.lane as InfiniteLane) ? (raw.lane as InfiniteLane) : "direct"
       this.#armed = legacy ? true : raw.armed === true
@@ -192,24 +229,27 @@ export class InfiniteEngine extends EventEmitter {
             .slice(0, HISTORY_LIMIT)
             .map((record) => ({ ...record, verified: record.verified === true }))
         : []
-      // The endpoint is restored and applied, so a relaunch keeps using the lane it was on
-      // without paying for a fresh registration or a Tor bootstrap. The sidecar starts after
-      // this and inherits the variable, so it is recorded as the one that started.
-      if (typeof raw.endpoint === "string" && raw.endpoint) {
-        this.#endpoint = raw.endpoint
-        this.#service.adopt(raw.endpoint)
-        applyEndpoint(raw.endpoint)
-      }
+      // The endpoint is deliberately not restored. A bridge port belongs to the process
+      // that opened it, and the one in the saved state died with the last run; applying it
+      // here pointed the sidecar at a closed port before `activate` could re-prepare, which
+      // is the refused connect users saw on every launch. The lane is restored, then
+      // `boot` re-proves it and applies the endpoint it actually gets.
+      this.#endpoint = ""
+      this.#trace = null
     } catch {
       // No saved state is the normal first run, not a failure.
     }
+    // Rewrite the file at once when it carried a key: the plaintext should not survive a
+    // single further launch, even if nothing else in the settings changes.
+    if (scrubKey) this.#save()
     this.#emit()
   }
 
   #save() {
     const body = JSON.stringify(
       {
-        settings: this.#settings,
+        // The probe key is held for this session only; a state file is not a vault.
+        settings: { ...this.#settings, providerKey: "" },
         lane: this.#lane,
         endpoint: this.#endpoint,
         armed: this.#armed,
@@ -265,6 +305,10 @@ export class InfiniteEngine extends EventEmitter {
   setSettings(input: InfiniteSettings): InfiniteSettings {
     this.#settings = sanitizeSettings(input)
     if (!this.#settings.autoRecover) this.#armed = false
+    // Saving settings is a person answering the notice — a provider, a key, a model. Whatever
+    // the engine concluded before that answer is stale.
+    this.#stuck = ""
+    this.#providerConfig = null
     this.#save()
     this.#emit()
     return this.#settings
@@ -289,13 +333,23 @@ export class InfiniteEngine extends EventEmitter {
 
   /** Point the app at a lane and prove it answers. No rotation, just activation. */
   async activate(lane: InfiniteLane): Promise<InfiniteState> {
+    // Leaving the WARP lane gives the client its own mode back. Proxy mode is a change to
+    // the whole client, not to this app, so it is not left behind.
+    if (this.#lane === "warp" && lane !== "warp") await this.warp.restore().catch(() => "")
     this.#lane = lane
     this.#phase = "probing"
     this.#lastError = ""
     this.#provider = null
+    // The previous lane's endpoint belongs to a bridge this call has not prepared. Keeping
+    // it would show an address from the old lane and leave the sidecar dialling it after a
+    // failed switch; the route falls back to the machine's own until a new one is proven.
+    this.#endpoint = ""
+    this.#trace = null
+    applyEndpoint("")
     // A different lane is a different set of exits; strikes from the last one say nothing
     // about this one.
     this.#proof = proofReset(this.#proof)
+    this.#watchdogStrikes = 0
     this.#stuck = ""
     this.#emit()
 
@@ -403,14 +457,22 @@ export class InfiniteEngine extends EventEmitter {
     this.#provider = null
     this.#emit()
 
-    if (target === "direct") {
+    // `direct` has no exit to rotate, but it is where a first run starts. Refusing here is
+    // why an out-of-the-box install could watch the wall and never move: auto-recovery fired,
+    // the rotation returned "pick a lane", and nothing changed. Spend the recovery on the
+    // first lane this settings file allows instead.
+    const fallbacks = [...new Set(this.#settings.fallback.filter((entry) => entry !== "direct"))]
+    const order: InfiniteLane[] =
+      target === "direct" ? fallbacks : [target, ...fallbacks.filter((entry) => entry !== target)]
+
+    if (order.length === 0) {
       const result: RotateResult = {
         ok: false,
         from,
         to: from,
         lane: target,
         ms: Date.now() - started,
-        error: "the direct lane has no exit to rotate; pick WARP, Tor, or a proxy",
+        error: "the direct lane has no exit to rotate; pick WARP, Tor, or a proxy, or add one to the fallbacks",
       }
       this.#failures += 1
       this.#lastError = result.error
@@ -420,18 +482,16 @@ export class InfiniteEngine extends EventEmitter {
     }
 
     // A lane change before rotating, so the endpoint the app is handed matches the lane.
-    if (target !== this.#lane) {
+    // A rotation that started on `direct` only learns its lane from the attempt that wins.
+    const first = order[0]!
+    if (target !== "direct" && target !== this.#lane) {
       this.#lane = target
       this.#endpoint = ""
     }
 
-    // The target lane first, then the configured fallbacks. `direct` is never rotated
-    // into: the machine's own address is the one the limit arrived on.
-    const rest = this.#settings.fallback.filter((entry) => entry !== target && entry !== "direct")
-    const order: InfiniteLane[] = [target, ...new Set(rest)]
     const attempts = Math.max(1, this.#settings.tries)
     let lastError = ""
-    let lastLane: InfiniteLane = target
+    let lastLane: InfiniteLane = first
     let winner: InfiniteLane | null = null
 
     for (const [index, current] of order.entries()) {
@@ -472,6 +532,7 @@ export class InfiniteEngine extends EventEmitter {
         this.#rotations += 1
         // From here a limit line is evidence about this address, not about the last one.
         this.#proof = proofRotated(this.#proof, Date.now())
+        this.#watchdogStrikes = 0
         this.#since = Date.now()
         this.#phase = this.#armed ? "armed" : "ready"
         this.#rememberExit(step.trace.ip)
@@ -598,40 +659,154 @@ export class InfiniteEngine extends EventEmitter {
       }
     }
 
-    if (this.#settings.verifyProvider && this.#settings.providerEndpoint) {
-      // Ask with the key the app itself would send. No default key is baked in — an empty
-      // key means the provider decides whether the free lane accepts the address.
-      const config: ProviderConfig = {
-        endpoint: this.#settings.providerEndpoint,
-        key: this.#settings.providerKey,
-        model: this.#settings.providerModel,
-      }
-      const verdict = await providerProbe(config, outcome.trace.ip, {
-        timeoutMs: this.#settings.probeTimeoutMs,
-        model: this.#settings.providerModel,
-        key: this.#settings.providerKey,
-      })
-      this.#provider = verdict
-      this.#emit()
+    if (this.#settings.verifyProvider) {
+      const target = this.#probeTarget()
 
-      if (verdict.status === "limited" && !this.#settings.providerKey) {
-        // Park the address so the pool does not hand it back on the next attempt, and let
-        // the loop spend the next one on an address the provider has not refused. It also
-        // joins the recent-exit list, so a lane that returns it is refused before a probe.
-        if (lane === "proxy") this.proxies.failed(endpoint)
-        this.#rememberExit(outcome.trace.ip)
-        return { ok: false, error: `provider still limited on ${outcome.trace.ip}` }
+      // A provider on loopback never travels the lane: `NO_PROXY` excludes it, and its own
+      // pool counts its own quota. Probing it through a tunnel would answer about a route
+      // the session does not take — and mark a perfectly good exit unverified.
+      if (target.kind === "local") {
+        this.#provider = {
+          status: "unknown",
+          ip: outcome.trace.ip,
+          model: target.model,
+          code: 0,
+          at: Date.now(),
+          detail: "provider runs on this machine; the lane does not carry it",
+        }
+        this.#emit()
+        return { ok: true, endpoint, trace: outcome.trace, verified: false }
       }
 
-      // A limit under a real key is an account allowance: every exit serves the same
-      // account, so the address is kept. `unknown` keeps the exit for the same reason —
-      // a probe that could not answer is not evidence that the address is refused. Both
-      // land in the history as unverified.
-      return { ok: true, endpoint, trace: outcome.trace, verified: verdict.status === "ok" }
+      if (target.kind === "remote") {
+        // The endpoint and key come from the provider the session actually uses. A manually
+        // entered endpoint still wins, so a person can point the probe somewhere else.
+        const config: ProviderConfig = { endpoint: target.endpoint, key: target.key, model: target.model }
+        const verdict = await providerProbe(config, outcome.trace.ip, {
+          timeoutMs: this.#settings.probeTimeoutMs,
+          model: target.model,
+          key: target.key,
+          proxy: endpoint,
+        })
+        this.#provider = verdict
+        this.#emit()
+
+        if (verdict.status === "limited" && !target.key) {
+          // Park the address so the pool does not hand it back on the next attempt, and let
+          // the loop spend the next one on an address the provider has not refused. It also
+          // joins the recent-exit list, so a lane that returns it is refused before a probe.
+          if (lane === "proxy") this.proxies.failed(endpoint)
+          this.#rememberExit(outcome.trace.ip)
+          return { ok: false, error: `provider still limited on ${outcome.trace.ip}` }
+        }
+
+        // A limit under a real key is an account allowance: every exit serves the same
+        // account, so the address is kept. `unknown` keeps the exit for the same reason —
+        // a probe that could not answer is not evidence that the address is refused. Both
+        // land in the history as unverified.
+        return { ok: true, endpoint, trace: outcome.trace, verified: verdict.status === "ok" }
+      }
     }
 
     // Verification is off: the exit stands on its trace alone, and the history says so.
     return { ok: true, endpoint, trace: outcome.trace, verified: false }
+  }
+
+  /**
+   * The provider the probe should ask, from the panel or from the config the app is using.
+   *
+   * A manual endpoint wins when it is set, so the check can be pointed at any provider
+   * without touching `opencode.json`. Otherwise the answer is read from the same file the
+   * sidecar reads, which is the only place the session's real provider is written down.
+   */
+  #probeTarget(): ActiveProvider {
+    const manual = this.#settings.providerEndpoint
+    if (manual) return classifyProvider(manual, this.#settings.providerModel, this.#settings.providerKey)
+
+    // The config changes when a person clicks a model; a short cache keeps a rotation from
+    // reading and parsing the file once per attempt.
+    const now = Date.now()
+    if (this.#providerConfig && now - this.#providerConfig.at < PROVIDER_CACHE_MS) return this.#providerConfig.value
+
+    const value = readActiveProvider()
+    this.#providerConfig = { at: now, value }
+    return value
+  }
+
+  // ---------------------------------------------------------------- watchdog
+
+  /** Start the periodic lane check. Idempotent; `dispose` clears it. */
+  startWatchdog() {
+    if (this.#watchdog || this.#disposed) return
+    const timer = setInterval(() => void this.#watchOnce(), WATCHDOG_MS)
+    timer.unref?.()
+    this.#watchdog = timer
+  }
+
+  /**
+   * A lane that stops answering is put back to Direct.
+   *
+   * The sidecar does not know a bridge died; it keeps dialling the loopback port and every
+   * request fails with a refused connect that names no cause. Two failed checks in a row is
+   * enough evidence, and a person can always pick the lane again — staying on a dead port
+   * is the failure that never recovers on its own.
+   */
+  async #watchOnce() {
+    if (this.#disposed || this.#watchdogBusy) return
+    if (this.#rotating || this.#phase === "rotating") return
+    const dead = this.#lane
+    if (dead === "direct") return
+    if (!this.#endpoint) return
+
+    this.#watchdogBusy = true
+    try {
+      const outcome = await probe(this.#endpoint, this.#settings.probeTimeoutMs)
+
+      if (outcome.ok) {
+        if (this.#watchdogStrikes > 0) this.#watchdogStrikes = 0
+        this.#recordHealth(dead, true, outcome.latencyMs)
+        return
+      }
+
+      this.#watchdogStrikes += 1
+      this.#recordHealth(dead, false, outcome.latencyMs)
+      if (this.#watchdogStrikes < WATCHDOG_STRIKES) {
+        this.#emit()
+        return
+      }
+
+      await this.#fallbackToDirect(dead, outcome.error).catch(() => undefined)
+    } finally {
+      this.#watchdogBusy = false
+    }
+  }
+
+  /** Leave a dead lane for the machine's own route, and say so once. */
+  async #fallbackToDirect(dead: InfiniteLane, why: string) {
+    this.#watchdogStrikes = 0
+    this.#lane = "direct"
+    this.#endpoint = ""
+    this.#trace = null
+    applyEndpoint("")
+    // Proxy mode is a change to the whole WARP client; leaving the lane gives it back.
+    if (dead === "warp") await this.warp.restore().catch(() => "")
+
+    // Direct is not assumed: the machine's own route is probed so the panel shows a real
+    // address, or the failure that the lane switch exposed.
+    const direct = await probe("", this.#settings.probeTimeoutMs)
+    if (direct.ok) {
+      this.#trace = direct.trace
+      this.#since = Date.now()
+    }
+
+    this.#lastError = direct.ok
+      ? `${dead} stopped answering (${why}); back on the machine's own route`
+      : `${dead} stopped answering (${why}); the machine's own route did not answer either (${direct.error})`
+    this.#phase = this.#armed ? "armed" : "ready"
+    this.#recordHealth("direct", direct.ok, direct.latencyMs)
+    void this.#resume()
+    this.#save()
+    this.#emit()
   }
 
   // ---------------------------------------------------------------- limits
@@ -645,9 +820,13 @@ export class InfiniteEngine extends EventEmitter {
     if (!this.#settings.watchLimits) return
     if (NOISE_PATTERNS.some((pattern) => pattern.test(line))) return
 
-    const quota = QUOTA_PATTERNS.some((pattern) => pattern.test(line))
+    // The free lane's refusal also reads as "usage limit" prose. It is counted per exit
+    // address, so it must not inherit the quota gate below — rotation is the lever that
+    // clears it.
+    const free = FREE_ALLOWANCE.test(line)
+    const quota = !free && QUOTA_PATTERNS.some((pattern) => pattern.test(line))
     const network = LIMIT_PATTERNS.some((pattern) => pattern.test(line))
-    if (!quota && !network) return
+    if (!free && !quota && !network) return
 
     const now = Date.now()
     this.#noteWatch(line)
@@ -662,7 +841,7 @@ export class InfiniteEngine extends EventEmitter {
     const reading = proofLimit(this.#proof, now)
     this.#proof = reading.proof
     if (reading.verdict === "stuck") {
-      const notice = stuckNotice(reading.strike)
+      const notice = free ? freeLimitStuck(reading.strike) : stuckNotice(reading.strike)
       if (this.#stuck !== notice) {
         this.#stuck = notice
         this.#emit()
@@ -670,10 +849,9 @@ export class InfiniteEngine extends EventEmitter {
       return
     }
 
-    // An account allowance used to be a hard no: a new exit could not refill one. It is a
-    // setting now, because the free lane counts its allowance per address, which is the
-    // whole reason a rotation can clear a `FreeUsageLimitError`. A paid workspace cap still
-    // rotates nothing useful, so the switch is there to turn it back off.
+    // An account allowance is not refilled by a new address. This switch is the explicit
+    // opt-in for anyone who wants to spend a rotation on one anyway; it is off by default
+    // because the answer is already known for the free lane and the exits are not free.
     if (quota && !this.#settings.quotaRotates) return
 
     for (const [key, at] of this.#recentHits) {
@@ -905,6 +1083,13 @@ export class InfiniteEngine extends EventEmitter {
 
   async dispose() {
     this.#disposed = true
+    if (this.#watchdog) {
+      clearInterval(this.#watchdog)
+      this.#watchdog = null
+    }
+    // The WARP client belongs to the machine, not to this app. A quit while its lane is
+    // selected puts the mode it had before back before the process goes away.
+    await this.warp.restore().catch(() => "")
     await this.tor.stop().catch(() => undefined)
     this.removeAllListeners()
   }
@@ -932,7 +1117,7 @@ export function sanitizeSettings(input: unknown): InfiniteSettings {
       : fallback.fallback,
     pinnedProxy: typeof raw.pinnedProxy === "string" ? raw.pinnedProxy.trim().slice(0, 200) : "",
     watchLimits: raw.watchLimits !== false,
-    quotaRotates: raw.quotaRotates !== false,
+    quotaRotates: raw.quotaRotates === true,
     verifyProvider: raw.verifyProvider !== false,
     providerEndpoint: typeof raw.providerEndpoint === "string" ? raw.providerEndpoint.trim().slice(0, 300) : "",
     providerModel:
@@ -951,6 +1136,22 @@ function message(error: unknown) {
 const PROXY_VARS = ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"] as const
 
 /**
+ * The proxy environment this process inherited, captured before any lane overwrites it.
+ *
+ * A corporate VPN or a proxy-required network starts the app with `HTTPS_PROXY` already set.
+ * The direct lane used to delete those variables, which turned "back to Direct" into "back
+ * to no route at all" for exactly the users whose network needs them. Restoring the
+ * inherited values makes Direct mean the machine's own configuration, not an empty one.
+ */
+const inheritedProxy = new Map<string, string>(
+  PROXY_VARS.flatMap((name) => {
+    const value = process.env[name]
+    return value ? [[name, value] as const] : []
+  }),
+)
+const inheritedNoProxy = process.env.NO_PROXY ?? process.env.no_proxy ?? ""
+
+/**
  * Put the lane under the whole process tree.
  *
  * The sidecar CLI is spawned as a child of this process and inherits its environment, so
@@ -962,13 +1163,21 @@ export function applyEndpoint(endpoint: string) {
   const noProxy = "localhost,127.0.0.1,::1,0.0.0.0"
 
   for (const name of PROXY_VARS) {
-    if (endpoint) process.env[name] = endpoint
+    if (endpoint) {
+      process.env[name] = endpoint
+      continue
+    }
+    const inherited = inheritedProxy.get(name)
+    if (inherited) process.env[name] = inherited
     else delete process.env[name]
   }
 
   if (endpoint) {
     process.env.NO_PROXY = noProxy
     process.env.no_proxy = noProxy
+  } else if (inheritedNoProxy) {
+    process.env.NO_PROXY = inheritedNoProxy
+    process.env.no_proxy = inheritedNoProxy
   } else {
     delete process.env.NO_PROXY
     delete process.env.no_proxy

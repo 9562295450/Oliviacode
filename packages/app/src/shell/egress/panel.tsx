@@ -325,7 +325,7 @@ export function EgressPanel() {
             <Switch
               checked={draft().quotaRotates}
               onChange={(checked) => patch({ quotaRotates: checked })}
-              description="Treat a free or usage-limit line as an address limit too, not only a network block."
+              description="Spend a rotation when a quota line appears. Off by default: a free allowance is counted by the service, so a new exit reaches the same spent budget."
             >
               Rotate on quota
             </Switch>
@@ -398,7 +398,7 @@ export function EgressPanel() {
                 value={draft().providerEndpoint}
                 onInput={(event) => patch({ providerEndpoint: event.currentTarget.value })}
               />
-              <em>verification target — empty disables the provider check</em>
+              <em>verification target — empty uses the provider the app is configured with</em>
             </label>
 
             <label data-slot="egress-field" data-wide="">
@@ -422,7 +422,7 @@ export function EgressPanel() {
                 value={draft().providerKey}
                 onInput={(event) => patch({ providerKey: event.currentTarget.value })}
               />
-              <em>sent as the bearer token by the verification only</em>
+              <em>sent by the verification only; never written to disk</em>
             </label>
           </div>
         </section>
