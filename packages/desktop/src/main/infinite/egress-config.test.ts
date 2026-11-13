@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { join } from "node:path"
 import { chatEndpoint, classifyProvider, parseActiveProvider } from "./provider-config"
 import { parseTrace } from "./trace"
 import { logCandidates } from "./watcher"
@@ -154,20 +155,23 @@ describe("parseTrace", () => {
 })
 
 describe("logCandidates", () => {
+  // `join` uses the host separator, so the expected strings are built the same way. Literal
+  // Windows paths here passed on a developer machine and failed on the Linux runner.
+  const dataRoot =
+    process.platform === "win32" ? "C:\\Users\\x\\AppData\\Roaming\\app\\engine\\data" : "/home/x/.local/share/app"
+  const home = process.platform === "win32" ? "C:\\Users\\x" : "/home/x"
+
   test("the engine's own XDG data root comes first", () => {
-    const found = logCandidates(
-      { XDG_DATA_HOME: "C:\\Users\\x\\AppData\\Roaming\\app\\engine\\data", LOCALAPPDATA: "C:\\Users\\x\\AppData\\Local" },
-      "C:\\Users\\x",
-    )
-    expect(found[0]).toBe("C:\\Users\\x\\AppData\\Roaming\\app\\engine\\data\\opencode\\log")
+    const found = logCandidates({ XDG_DATA_HOME: dataRoot, LOCALAPPDATA: "/tmp/local" }, home)
+    expect(found[0]).toBe(join(dataRoot, "opencode", "log"))
   })
 
   test("a duplicate root is only listed once", () => {
-    const found = logCandidates({ XDG_DATA_HOME: "C:\\data", XDG_STATE_HOME: "C:\\data" }, "C:\\Users\\x")
-    expect(found.filter((entry) => entry === "C:\\data\\opencode\\log")).toHaveLength(1)
+    const found = logCandidates({ XDG_DATA_HOME: dataRoot, XDG_STATE_HOME: dataRoot }, home)
+    expect(found.filter((entry) => entry === join(dataRoot, "opencode", "log"))).toHaveLength(1)
   })
 
   test("the legacy home path is still checked", () => {
-    expect(logCandidates({}, "C:\\Users\\x")).toContain("C:\\Users\\x\\.local\\share\\opencode\\log")
+    expect(logCandidates({}, home)).toContain(join(home, ".local", "share", "opencode", "log"))
   })
 })
