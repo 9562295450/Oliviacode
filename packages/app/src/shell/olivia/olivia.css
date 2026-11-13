@@ -1256,6 +1256,7 @@
 
 [data-slot="olivia-row"][data-active] {
   border-radius: 0 5px 5px 0;
+  background: var(--v2-background-bg-layer-02);
 }
 
 /* The talon on a row runs the full height of the row: a session is a line item,
@@ -1275,7 +1276,7 @@
   width: 15px;
   color: var(--v2-text-text-weaker);
   font-family: var(--owl-font-mono);
-  font-size: 9px;
+  font-size: 10.5px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   text-align: end;
@@ -1302,6 +1303,17 @@
   font-size: 12px;
 }
 
+[data-slot="olivia-row-dir"] {
+  flex: 0 1 auto;
+  max-width: 38%;
+  overflow: hidden;
+  color: var(--v2-text-text-faint);
+  font-family: var(--owl-font-mono);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 [data-slot="olivia-queue-foot"] {
   display: flex;
   align-items: center;
@@ -1311,9 +1323,10 @@
   border-top: 1px solid var(--olivia-hair);
   color: var(--v2-text-text-faint);
   font-family: var(--owl-font-mono);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
+  padding-bottom: 4px;
 }
 
 [data-slot="olivia-sidebar-bottom"] {
@@ -1375,8 +1388,8 @@
 }
 
 [data-slot="olivia-block-label"] {
-  color: var(--v2-text-text-faint);
-  font-size: 9px;
+  color: var(--v2-text-text-muted);
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -1418,8 +1431,8 @@
 }
 
 [data-slot="olivia-kv"] dt {
-  color: var(--v2-text-text-faint);
-  font-size: 10px;
+  color: var(--v2-text-text-muted);
+  font-size: 11px;
   letter-spacing: 0.02em;
 }
 
@@ -1447,9 +1460,9 @@
   margin-top: auto;
   padding: 10px 14px;
   border-top: 1px solid var(--olivia-hair);
-  color: var(--v2-text-text-weaker);
+  color: var(--v2-text-text-faint);
   font-family: var(--owl-font-mono);
-  font-size: 9.5px;
+  font-size: 10.5px;
   letter-spacing: 0.04em;
 }
 

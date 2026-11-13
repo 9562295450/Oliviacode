@@ -70,7 +70,7 @@ export function DesktopUpdater(props: { api: ElectronAPI; version: string }) {
 
   return (
     <Show when={visible()}>
-      <div class="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-2" data-component="desktop-updater">
+      <div class="fixed bottom-12 right-4 z-[60] flex flex-col items-end gap-2" data-component="desktop-updater">
         <button
           type="button"
           class="flex items-center gap-2 rounded-full border border-v2-border-border-base bg-v2-background-bg-layer-01 px-3 py-1.5 text-[12px] text-v2-text-text-base shadow-lg transition-colors hover:bg-v2-background-bg-layer-02"

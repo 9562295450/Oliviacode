@@ -1,6 +1,9 @@
 name: publish
 
 # Builds the desktop app on clean runners and attaches the installers to a GitHub release.
+# Nothing is built until `verify` passes: typecheck, the egress recovery tests and the error-copy
+# gate. Each platform then boots its own packed app on a profile that has never run before, so a
+# regression that only reproduces on a fresh install fails the run instead of the users.
 # Tag a commit and push the tag:
 #   git tag v2.2.7 && git push origin v2.2.7
 # A platform whose artifact is already on the release is skipped, so a Windows installer built and
@@ -39,7 +42,37 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  # The gate that runs before any artifact is built. Every failure that reached users so far
+  # (raw provider JSON, an unnamed refused connection, a rotation loop that never proved it
+  # helped) passed the local machine and was found by a person. These are the same checks on a
+  # runner that has never held a config, a credential or a provisioned engine.
+  verify:
+    if: github.repository == '9562295450/Oliviacode'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck the desktop app
+        working-directory: packages/desktop
+        run: bun run typecheck
+
+      - name: Test egress rotation and provider recovery
+        run: bun test --cwd packages/desktop src/main/infinite --timeout 30000
+
+      - name: Error copy gate
+        shell: pwsh
+        run: ./scripts/check-error-copy.ps1
+
   prepare:
+    needs: verify
     if: github.repository == '9562295450/Oliviacode'
     runs-on: ubuntu-latest
     outputs:
@@ -117,6 +150,11 @@ jobs:
         working-directory: packages/desktop
         run: bun run pack
 
+      # The unpacked app is what the installer wraps. If it cannot paint its shell on a profile
+      # that has never run before, no installer above it is worth uploading.
+      - name: Boot the packed app on a clean profile
+        run: bun scripts/smoke-desktop.mjs
+
       - name: Pack NSIS installer
         working-directory: packages/desktop
         shell: pwsh
@@ -184,6 +222,14 @@ jobs:
         working-directory: packages/desktop
         run: bun run pack
 
+      - name: Install a virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      # --no-sandbox because Ubuntu 24.04 no longer grants unprivileged user namespaces; the
+      # packaged binary is the same one the AppImage wraps.
+      - name: Boot the packed app on a clean profile
+        run: xvfb-run -a bun scripts/smoke-desktop.mjs --no-sandbox
+
       - name: Publish artifacts
         env:
           TAG: ${{ needs.prepare.outputs.tag }}
@@ -237,6 +283,9 @@ jobs:
         working-directory: packages/desktop
         run: bun run pack
 
+      - name: Boot the packed app on a clean profile
+        run: bun scripts/smoke-desktop.mjs
+
       - name: Publish artifacts
         env:
           TAG: ${{ needs.prepare.outputs.tag }}
@@ -250,8 +299,8 @@ jobs:
           gh release upload "$TAG" release/* --clobber
 
   checksums:
-    needs: [prepare, windows, linux, macos]
-    if: always() && needs.prepare.result == 'success'
+    needs: [verify, prepare, windows, linux, macos]
+    if: always() && needs.verify.result == 'success' && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Rewrite SHA256SUMS.txt over every published asset

@@ -29,6 +29,7 @@ import {
 } from "../../shared/infinite"
 import { ProxyPool } from "./proxies"
 import { providerProbe, type ProviderConfig } from "./provider"
+import { proofLimit, proofReset, proofRotated, recoveryProof, stuckNotice, type RecoveryProof } from "./recovery"
 import { SidecarEndpoint } from "./sidecar-endpoint"
 import { probe, type Trace } from "./trace"
 import { Tor } from "./tor"
@@ -133,6 +134,10 @@ export class InfiniteEngine extends EventEmitter {
   #provider: ProviderVerdict | null = null
   /** The addresses of the last few successful exits, newest first. */
   #exits: string[] = []
+  /** How many fresh exits the provider has refused since the last manual rotation. */
+  #proof: RecoveryProof = recoveryProof
+  /** Set once rotation is proven not to clear the limit; empty while it may still help. */
+  #stuck = ""
   #rotating: Promise<RotateResult> | null = null
   #recentHits = new Map<string, number>()
   #disposed = false
@@ -244,6 +249,7 @@ export class InfiniteEngine extends EventEmitter {
       history: this.#history.slice(0, HISTORY_LIMIT),
       health: this.#health,
       watch: this.#watch,
+      stuck: this.#stuck,
       provider: this.#provider,
       updateAvailable: this.#updateAvailable,
       updateVersion: this.#updateVersion,
@@ -267,8 +273,13 @@ export class InfiniteEngine extends EventEmitter {
   setArmed(armed: boolean) {
     this.#armed = armed
     // Arming is the switch the sidebar offers. A persisted "recover automatically" that
-    // stayed off would make that button a no-op, so arming turns it on too.
+    // stayed off would make that button a no-op, so arming turns it on too. It is also a
+    // person asking the engine to try again, so the strikes collected on the old exits go.
     if (armed && !this.#settings.autoRecover) this.#settings = { ...this.#settings, autoRecover: true }
+    if (armed) {
+      this.#proof = proofReset(this.#proof)
+      this.#stuck = ""
+    }
     if (this.#phase !== "rotating") this.#phase = armed ? "armed" : this.#trace ? "ready" : "idle"
     this.#save()
     this.#emit()
@@ -282,6 +293,10 @@ export class InfiniteEngine extends EventEmitter {
     this.#phase = "probing"
     this.#lastError = ""
     this.#provider = null
+    // A different lane is a different set of exits; strikes from the last one say nothing
+    // about this one.
+    this.#proof = proofReset(this.#proof)
+    this.#stuck = ""
     this.#emit()
 
     const prepared = await this.#prepare(lane)
@@ -358,8 +373,19 @@ export class InfiniteEngine extends EventEmitter {
   /**
    * Rotate to a different exit address and verify it. Concurrent calls share one
    * rotation — two limit lines in the same second must not spend two registrations.
+   *
+   * This is the path a person takes, so it clears the strikes: they may have switched model,
+   * connected a provider, or restarted the tunnel since the last attempt, and none of that is
+   * visible to the engine.
    */
   rotate(lane?: InfiniteLane): Promise<RotateResult> {
+    this.#proof = proofReset(this.#proof)
+    this.#stuck = ""
+    return this.#rotateShared(lane)
+  }
+
+  /** The automatic path. It keeps the score, because nothing about the ticket changed. */
+  #rotateShared(lane?: InfiniteLane): Promise<RotateResult> {
     if (this.#rotating) return this.#rotating
     this.#rotating = this.#rotate(lane).finally(() => {
       this.#rotating = null
@@ -444,6 +470,8 @@ export class InfiniteEngine extends EventEmitter {
         this.#endpoint = step.endpoint
         applyEndpoint(this.#endpoint)
         this.#rotations += 1
+        // From here a limit line is evidence about this address, not about the last one.
+        this.#proof = proofRotated(this.#proof, Date.now())
         this.#since = Date.now()
         this.#phase = this.#armed ? "armed" : "ready"
         this.#rememberExit(step.trace.ip)
@@ -624,6 +652,24 @@ export class InfiniteEngine extends EventEmitter {
     const now = Date.now()
     this.#noteWatch(line)
 
+    // Already proven: another limit line on the same evidence buys nothing. Only a person gets
+    // out of this state — a manual rotation, a lane switch or re-arming clears the notice.
+    if (this.#stuck) return
+
+    // A limit that lands on an exit the engine just bought is evidence about the address. Two
+    // of those and the next rotation is a purchase with a known answer, so it is not made: the
+    // engine says what it learned instead of buying a third exit to learn it again.
+    const reading = proofLimit(this.#proof, now)
+    this.#proof = reading.proof
+    if (reading.verdict === "stuck") {
+      const notice = stuckNotice(reading.strike)
+      if (this.#stuck !== notice) {
+        this.#stuck = notice
+        this.#emit()
+      }
+      return
+    }
+
     // An account allowance used to be a hard no: a new exit could not refill one. It is a
     // setting now, because the free lane counts its allowance per address, which is the
     // whole reason a rotation can clear a `FreeUsageLimitError`. A paid workspace cap still
@@ -644,7 +690,7 @@ export class InfiniteEngine extends EventEmitter {
     this.#recoveries += 1
     this.#save()
     this.#emit()
-    void this.rotate().catch(() => undefined)
+    void this.#rotateShared().catch(() => undefined)
   }
 
   /** Record the latest limit line without pushing a snapshot per repeated line. */

@@ -91,14 +91,6 @@ export function OliviaInspector(props: { onClose: () => void }) {
                 </div>
               )}
             </Show>
-            <div>
-              <dt>Queue</dt>
-              <dd data-mono="">{tabs.store.length}</dd>
-            </div>
-            <div>
-              <dt>Recent</dt>
-              <dd data-mono="">{tabs.closed.length}</dd>
-            </div>
           </dl>
         </section>
 

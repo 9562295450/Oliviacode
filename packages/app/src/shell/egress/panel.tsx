@@ -191,6 +191,15 @@ export function EgressPanel() {
             )}
           </Show>
 
+          <Show when={state()?.stuck}>
+            {(notice) => (
+              <p data-slot="egress-stuck" role="status">
+                <Icon name="status" />
+                <span>{notice()}</span>
+              </p>
+            )}
+          </Show>
+
           <Show when={state()?.phase === "error" && state()?.lastError}>
             {(error) => <Linkified slot="egress-fault" tone="bad" text={error()} />}
           </Show>

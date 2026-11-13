@@ -422,6 +422,30 @@
   color: var(--v2-state-fg-warning);
 }
 
+/* Rotation has been proven not to clear the limit; this one tells the person what to do. */
+[data-slot="egress-stuck"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--v2-state-fg-danger) 38%, transparent);
+  background: color-mix(in srgb, var(--v2-state-fg-danger) 9%, transparent);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--v2-text-text);
+  overflow-wrap: anywhere;
+}
+
+[data-slot="egress-stuck"] svg {
+  width: 13px;
+  height: 13px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+  color: var(--v2-state-fg-danger);
+}
+
 [data-slot="egress-cards"] {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));

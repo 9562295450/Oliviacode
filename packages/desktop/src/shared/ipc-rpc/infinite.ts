@@ -55,6 +55,7 @@ export const InfiniteState = Schema.Struct({
   history: Schema.Array(Rotation),
   health: Schema.Array(Health),
   watch: Schema.String,
+  stuck: Schema.String,
   provider: Schema.NullOr(Provider),
   updateAvailable: Schema.Boolean,
   updateVersion: Schema.String,

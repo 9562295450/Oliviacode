@@ -42,6 +42,9 @@ export function OliviaSidebar() {
   const label = (tab: Tab) =>
     sessionTabTitle(tabs.info[tabKey(tab)]?.title, tab.type === "draft" ? "New session" : "Untitled session")
 
+  // Untitled rows are indistinguishable by name, so every row carries its folder.
+  const folder = (tab: Tab) => tabs.info[tabKey(tab)]?.directory?.split(/[\\/]/).filter(Boolean).at(-1)
+
   const select = (tab: Tab) => tabs.select(tab)
 
   const close = (tab: Tab) => {
@@ -121,6 +124,13 @@ export function OliviaSidebar() {
                 <span data-slot="olivia-row-title" title={label(tab)}>
                   {label(tab)}
                 </span>
+                <Show when={folder(tab)}>
+                  {(name) => (
+                    <span data-slot="olivia-row-dir" title={tabs.info[tabKey(tab)]?.directory}>
+                      {name()}
+                    </span>
+                  )}
+                </Show>
                 <button
                   type="button"
                   data-slot="olivia-row-close"

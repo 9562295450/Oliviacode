@@ -82,6 +82,11 @@ export type InfiniteState = {
   readonly health: readonly LaneHealth[]
   /** The limit the engine is watching for, in the words the sidecar used. */
   readonly watch: string
+  /**
+   * Set when rotation has been proven not to clear the limit: at least two fresh exit
+   * addresses were refused too. Empty while another rotation may still help.
+   */
+  readonly stuck: string
   /** The last provider check, or null when none has run since the engine started. */
   readonly provider: ProviderVerdict | null
   /** Whether a newer CLI release is available, per the update endpoint. */
