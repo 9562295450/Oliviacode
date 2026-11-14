@@ -4,7 +4,7 @@ import { Icon } from "@opencode/ui/icon"
 import { useCommand } from "@/shell/commands/command"
 import { useCurrentRoute } from "@/shell/state/layout"
 import { tabKey, useTabs, type Tab } from "@/shell/tabs/tabs"
-import { sessionTabTitle } from "@/shell/titlebar/tab-title"
+import { sessionRowLabel } from "@/session/title"
 import { OwlMark } from "./owl"
 import "./olivia.css"
 import "./owl-tokens.css"
@@ -40,7 +40,10 @@ export function OliviaSidebar() {
   }
 
   const label = (tab: Tab) =>
-    sessionTabTitle(tabs.info[tabKey(tab)]?.title, tab.type === "draft" ? "New session" : "Untitled session")
+    sessionRowLabel(
+      tabs.info[tabKey(tab)],
+      tab.type === "draft" ? "New session" : "Untitled session",
+    )
 
   // Untitled rows are indistinguishable by name, so every row carries its folder.
   const folder = (tab: Tab) => tabs.info[tabKey(tab)]?.directory?.split(/[\\/]/).filter(Boolean).at(-1)

@@ -3,7 +3,8 @@ export * as SessionTitle from "./title.js"
 import { isDeepStrictEqual } from "node:util"
 import { LLMClient, LLMEvent, Message, SystemPart } from "@opencode/ai/effect"
 import type { Agent } from "@opencode/schema/agent"
-import { Context, DateTime, Effect, Layer, Stream } from "effect"
+import { Context, DateTime, Effect, Layer, Schema, Stream } from "effect"
+import { and, asc, desc, eq, isNull, like, or, sql } from "drizzle-orm"
 import { Database } from "../database/database.js"
 import { Bus } from "../bus.js"
 import { makeLocationNode } from "@opencode/util/effect/app-node"
@@ -16,11 +17,28 @@ import type { SessionRunnerModel } from "./runner/model.js"
 import { SessionSchema } from "./schema.js"
 import { SessionUsage } from "./usage.js"
 import { SessionStore } from "./store.js"
+import { SessionMessageTable, SessionTable } from "./sql.js"
 
 const MAX_LENGTH = 100
 const MAX_PROVISIONAL_LENGTH = 60
 const MAX_CONTEXT_LENGTH = 8_000
 const MAX_FIRST_MESSAGE_LENGTH = 2_000
+/**
+ * How many untitled sessions one backfill pass will name.
+ *
+ * The pass costs one indexed read per session and no model calls, so the ceiling only exists
+ * to keep a first launch after an import from doing unbounded work before the window paints.
+ */
+const BACKFILL_LIMIT = 500
+/**
+ * How far into a session the backfill reads looking for a usable name.
+ *
+ * A first message is often a greeting, and a list of rows all reading "hi" is no better than a
+ * list of rows all reading "Untitled session". The pass takes the first message that carries
+ * enough text to identify the work, and falls back to the first message when none does.
+ */
+const BACKFILL_PROBE = 10
+const BACKFILL_MIN_CHARS = 12
 const titleChanged = Symbol("Session title changed")
 
 /**
@@ -40,6 +58,13 @@ export function provisionalTitle(text: string) {
 export interface Interface {
   /** Generates an initial title or regenerates one from bounded conversation history. */
   readonly generate: (sessionID: SessionSchema.ID) => Effect.Effect<void>
+  /**
+   * Names every session that still has no title from its own first user message.
+   *
+   * Costs no model call: the name is the provisional title, which is the first line of the
+   * prompt, collapsed and clipped. A session that has never been prompted is left alone.
+   */
+  readonly backfill: Effect.Effect<number>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/SessionTitle") {}
@@ -175,7 +200,55 @@ export const layer = Layer.effect(
         )
         .pipe(Effect.catchDefect((defect) => (defect === titleChanged ? Effect.void : Effect.die(defect))))
     })
-    return Service.of({ generate })
+
+    // A session is named the moment it is prompted, but a session created before that naming
+    // existed — an older install, an import, a client that posts its own title — keeps a null
+    // in the column and reads "Untitled session" in every list for the rest of its life. One
+    // pass at startup names them from the message the person already typed. No model call, so
+    // this is safe to run before the network is even up.
+    const backfill = Effect.gen(function* () {
+      const rows = yield* db
+        .select({ id: SessionTable.id, title: SessionTable.title, created: SessionTable.time_created })
+        .from(SessionTable)
+        .where(
+          and(
+            isNull(SessionTable.parent_id),
+            or(isNull(SessionTable.title), like(SessionTable.title, "New session - %")),
+          ),
+        )
+        .orderBy(desc(SessionTable.time_created))
+        .limit(BACKFILL_LIMIT)
+        .pipe(Effect.orDie)
+
+      let named = 0
+      for (const row of rows) {
+        if (!isExactRootFallback({ title: row.title ?? undefined, time: { created: row.created } })) continue
+        const sessionID = SessionSchema.ID.make(row.id)
+        const said = yield* db
+          .select({ text: sql<unknown>`json_extract(${SessionMessageTable.data}, '$.text')` })
+          .from(SessionMessageTable)
+          .where(and(eq(SessionMessageTable.session_id, sessionID), eq(SessionMessageTable.type, "user")))
+          .orderBy(asc(SessionMessageTable.seq))
+          .limit(BACKFILL_PROBE)
+          .pipe(Effect.orDie)
+        const texts = said.flatMap((entry) => (Schema.is(Schema.String)(entry.text) ? [entry.text] : []))
+        const substantive = texts.find((text) => text.replace(/\s+/g, " ").trim().length >= BACKFILL_MIN_CHARS)
+        const provisional = provisionalTitle(substantive ?? texts[0] ?? "")
+        if (!provisional || provisional === row.title) continue
+        // "hi" is a real first message and a useless name. A timestamp keeps a dozen rows of
+        // "hi" apart without pretending the session said something it did not.
+        const stamp =
+          substantive === undefined && typeof row.created === "number"
+            ? new Date(row.created).toISOString().slice(0, 16).replace("T", " ")
+            : ""
+        const title = stamp ? `${provisional} · ${stamp}` : provisional
+        yield* bus.publish(SessionEvent.Renamed, { sessionID, title })
+        named += 1
+      }
+      return named
+    }).pipe(Effect.catch(() => Effect.succeed(0)))
+
+    return Service.of({ generate, backfill })
   }),
 )
 

@@ -685,3 +685,92 @@ it.effect("preserves a manual rename completed while generation is in flight", (
     expect((yield* store.get(sessionID))?.title).toBe("Manual title")
   }),
 )
+
+it.effect("backfill names an untitled session from its first message without a model call", () =>
+  Effect.gen(function* () {
+    const sessionID = Session.ID.make("ses_backfill_untitled")
+    yield* insertSession(sessionID)
+    yield* prompt(sessionID, "  fix   the\nbuild  ")
+
+    const title = yield* SessionTitle.Service
+    const named = yield* title.backfill
+
+    const store = yield* SessionStore.Service
+    expect(named).toBe(1)
+    expect((yield* store.get(sessionID))?.title).toBe("fix the build")
+    // The point of the pass: a list of sessions becomes readable without spending a token.
+    expect(requests).toHaveLength(0)
+  }),
+)
+
+it.effect("backfill leaves a session that was never prompted unnamed", () =>
+  Effect.gen(function* () {
+    const sessionID = Session.ID.make("ses_backfill_silent")
+    yield* insertSession(sessionID)
+
+    const title = yield* SessionTitle.Service
+    expect(yield* title.backfill).toBe(0)
+
+    const store = yield* SessionStore.Service
+    expect((yield* store.get(sessionID))?.title).toBeUndefined()
+  }),
+)
+
+it.effect("backfill leaves a real title alone and ignores child sessions", () =>
+  Effect.gen(function* () {
+    const named = Session.ID.make("ses_backfill_named")
+    yield* insertSession(named, "A real title")
+    yield* prompt(named, "Something else entirely")
+
+    const title = yield* SessionTitle.Service
+    expect(yield* title.backfill).toBe(0)
+
+    const store = yield* SessionStore.Service
+    expect((yield* store.get(named))?.title).toBe("A real title")
+  }),
+)
+
+it.effect("backfill replaces a legacy timestamped fallback with the first message", () =>
+  Effect.gen(function* () {
+    const sessionID = Session.ID.make("ses_backfill_legacy")
+    const created = Date.parse("2026-07-30T18:45:03.662Z")
+    yield* insertSession(sessionID, "New session - 2026-07-30T18:45:03.662Z", created)
+    yield* prompt(sessionID, "Retry the legacy title")
+
+    const title = yield* SessionTitle.Service
+    expect(yield* title.backfill).toBe(1)
+
+    const store = yield* SessionStore.Service
+    expect((yield* store.get(sessionID))?.title).toBe("Retry the legacy title")
+  }),
+)
+
+it.effect("backfill skips a greeting for the first message that names the work", () =>
+  Effect.gen(function* () {
+    const sessionID = Session.ID.make("ses_backfill_greeting")
+    yield* insertSession(sessionID)
+    yield* prompt(sessionID, "hi")
+    yield* prompt(sessionID, "port the egress engine to the new loader")
+
+    const title = yield* SessionTitle.Service
+    expect(yield* title.backfill).toBe(1)
+
+    const store = yield* SessionStore.Service
+    expect((yield* store.get(sessionID))?.title).toBe("port the egress engine to the new loader")
+  }),
+)
+
+it.effect("backfill keeps short greetings apart with the session date", () =>
+  Effect.gen(function* () {
+    const sessionID = Session.ID.make("ses_backfill_short")
+    const created = Date.parse("2026-10-26T18:12:00.000Z")
+    yield* insertSession(sessionID, undefined, created)
+    yield* prompt(sessionID, "hi")
+
+    const title = yield* SessionTitle.Service
+    expect(yield* title.backfill).toBe(1)
+
+    const store = yield* SessionStore.Service
+    expect((yield* store.get(sessionID))?.title).toBe("hi · 2026-10-26 18:12")
+  }),
+)

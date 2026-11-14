@@ -750,21 +750,22 @@ export const { use: useTabs, provider: TabsProvider } = createSimpleContext({
 
         for (const key of removed) removeInfo(key)
       },
-      rememberSessionInfo(tab: SessionTab, session: SessionInfo, prompted: boolean) {
+      rememberSessionInfo(tab: SessionTab, session: SessionInfo, prompted: boolean, preview?: string) {
         const key = tabKey(tab)
         const current = info[key]
-
         const next = {
           title: session.title,
           directory: session.location.directory,
           prompted: current?.prompted === true || prompted,
+          preview: preview ?? current?.preview,
         }
 
         if (
           current &&
           current.title === next.title &&
           current.directory === next.directory &&
-          current.prompted === next.prompted
+          current.prompted === next.prompted &&
+          current.preview === next.preview
         )
           return
         console.debug("[tabs] update persisted session info", { key, sessionID: session.id, current, next })

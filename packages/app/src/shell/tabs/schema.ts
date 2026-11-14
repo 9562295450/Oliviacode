@@ -43,6 +43,14 @@ export const Info = Persistence.struct({
   title: Schema.optional(Schema.String),
   directory: Schema.optional(Schema.String),
   prompted: Schema.optional(Schema.Boolean),
+  /**
+   * The first thing the person typed, clipped.
+   *
+   * A session is named by the core from this same message, but the model-free name can lag a
+   * restart or arrive after the tab strip has already painted. Carrying the text here means a
+   * row reads as the work it holds from the first keystroke, not "Untitled session".
+   */
+  preview: Schema.optional(Schema.String),
 })
 
 export const Infos = Schema.Record(Schema.String, Schema.mutableKey(Info))

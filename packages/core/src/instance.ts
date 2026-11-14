@@ -122,6 +122,14 @@ export const graph = LayerNode.group(nodes)
 export type Services = LayerNode.Output<typeof graph>
 export type Error = FileSystem.DirectoryNotFoundError
 
+/**
+ * One title backfill per process.
+ *
+ * The session table is shared by every location, so without this guard each instance built
+ * for a second directory would repeat a pass that has already been done.
+ */
+let titlesBackfilled = false
+
 export interface Options {
   // Plugins this instance is born with; empty and absent are equivalent.
   readonly plugins?: InstancePlugins.List
@@ -176,6 +184,16 @@ export function layer(ref: Location.Ref, options: Options = {}): Layer.Layer<Ser
         ),
     ),
     Layer.tap((context) => Effect.addFinalizer(() => Context.get(context, LocationLifecycle.Service).shutdown)),
+    Layer.tap((context) =>
+      Effect.gen(function* () {
+        // One pass per process: the session table is global, so a second location's instance
+        // would only re-read rows the first pass already named.
+        if (titlesBackfilled) return
+        titlesBackfilled = true
+        const named = yield* Context.get(context, SessionTitle.Service).backfill
+        if (named > 0) yield* Effect.logInfo("session titles named from their first message", { named })
+      }),
+    ),
     Layer.tap(() =>
       Effect.logInfo("location services booted", {
         directory: ref.directory,

@@ -3,7 +3,7 @@ import { Icon } from "@opencode/ui/icon"
 import { usePlatform } from "@/runtime/platform/platform"
 import { useCurrentRoute } from "@/shell/state/layout"
 import { tabKey, useTabs } from "@/shell/tabs/tabs"
-import { sessionTabTitle } from "@/shell/titlebar/tab-title"
+import { sessionRowLabel } from "@/session/title"
 import { OliviaEgress } from "./egress-block"
 import { OliviaTheme } from "./theme-block"
 import { OwlMark } from "./owl"
@@ -43,7 +43,7 @@ export function OliviaInspector(props: { onClose: () => void }) {
     const tab = current()
 
     if (!tab) return surfaceLabel[route().type]
-    return sessionTabTitle(tabs.info[tabKey(tab)]?.title, "Untitled session")
+    return sessionRowLabel(tabs.info[tabKey(tab)], "Untitled session")
   })
 
   const server = () => {

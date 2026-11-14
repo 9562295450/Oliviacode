@@ -33,7 +33,7 @@ import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Dialog, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { sessionTreeIDs } from "@/session/requests/session-request-tree"
-import { sessionTitle } from "@/session/title"
+import { sessionPreview, sessionTitle } from "@/session/title"
 import { errorMessage } from "@/shell/layout/helpers"
 import { notifySessionTabsRemoved } from "./session-events"
 import {
@@ -291,10 +291,12 @@ function SessionTabEntry(
     const value = session()
 
     if (!value) return
+    const messages = props.serverCtx?.data.session.message.list(value.id)
     tabs.rememberSessionInfo(
       props.tab,
       value,
-      props.serverCtx?.data.session.message.list(value.id).some((message) => message.type === "user") ?? false,
+      messages?.some((message) => message.type === "user") ?? false,
+      sessionPreview(messages?.find((message) => message.type === "user")?.text),
     )
     const current = sdk()
 
