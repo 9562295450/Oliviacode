@@ -342,3 +342,48 @@ windows(
   },
   120_000,
 )
+
+// An update does not recreate a shortcut the previous install asked to keep, so a link written by
+// an install directory that has since changed keeps its old target. The install rewrites both
+// shell entries itself, and this checks that a stale link ends up on the executable just written.
+windows(
+  "points the shell entries at the executable this install writes",
+  async () => {
+    const installer = await harness()
+    const pwsh = async (script: string) =>
+      (await installer.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script])).stdout
+    const folders = await pwsh(
+      "[Environment]::GetFolderPath('Desktop'); [Environment]::GetFolderPath('Programs')",
+    )
+    const [desktop, programs] = folders
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+    const links = [path.join(desktop!, "OpenCode Installer Test.lnk"), path.join(programs!, "OpenCode Installer Test.lnk")]
+    const target = async (file: string) =>
+      pwsh(`(New-Object -ComObject WScript.Shell).CreateShortcut('${file}').TargetPath`)
+    const reaim = async (file: string, to: string) =>
+      pwsh(`$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${file}');$s.TargetPath='${to}';$s.Save()`)
+
+    try {
+      const install = path.join(installer.dir, "app")
+      const stale = path.join(installer.dir, "gone", "OpenCode.exe")
+      await mkdir(install, { recursive: true })
+      await Bun.write(path.join(install, "OpenCode.exe"), "app")
+      for (const link of links) await reaim(link, stale)
+
+      const exe = await installer.compile(
+        "shortcuts",
+        `  StrCpy $INSTDIR "$EXEDIR\\app"
+  !insertmacro repairShortcuts`,
+      )
+
+      expect((await installer.run([exe])).code).toBe(0)
+      for (const link of links) expect(await target(link), link).toBe(path.join(install, "OpenCode.exe"))
+    } finally {
+      for (const link of links) await rm(link, { force: true })
+      await installer.cleanup()
+    }
+  },
+  120_000,
+)

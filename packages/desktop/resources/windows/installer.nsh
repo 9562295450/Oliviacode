@@ -31,11 +31,42 @@
   nsExec::ExecToLog '"$SYSDIR\icacls.exe" "$INSTDIR" /grant "*S-1-15-2-2:(OI)(CI)(RX)"'
   Pop $0
   !insertmacro leaveSharedInstall
+  !insertmacro repairShortcuts
+!macroend
+
+; Points the shell entries at the executable this install just wrote.
+;
+; The template's addDesktopLink skips CreateShortCut when the previous install asked it to keep
+; shortcuts and this run is an update, and addStartMenuLink only renames a link that moved. So a
+; link written by an install directory that has since changed keeps pointing at the old executable
+; — which this install has just deleted — and Windows answers "the item that this shortcut refers
+; to has been changed or moved". The install knows the live path, so it writes it, every time.
+!macro repairShortcuts
+  CreateShortCut "$DESKTOP\${SHORTCUT_NAME}.lnk" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" "" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" 0
+  WinShell::SetLnkAUMI "$DESKTOP\${SHORTCUT_NAME}.lnk" "${APP_ID}"
+
+  ; The template puts the menu entry in a folder only when a menu category is configured.
+  !ifdef MENU_FILENAME
+    CreateDirectory "$SMPROGRAMS\${MENU_FILENAME}"
+    ClearErrors
+    CreateShortCut "$SMPROGRAMS\${MENU_FILENAME}\${SHORTCUT_NAME}.lnk" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" "" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" 0
+    WinShell::SetLnkAUMI "$SMPROGRAMS\${MENU_FILENAME}\${SHORTCUT_NAME}.lnk" "${APP_ID}"
+  !else
+    CreateShortCut "$SMPROGRAMS\${SHORTCUT_NAME}.lnk" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" "" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" 0
+    WinShell::SetLnkAUMI "$SMPROGRAMS\${SHORTCUT_NAME}.lnk" "${APP_ID}"
+  !endif
+
+  ; A pin stores its own copy of the target, so it does not follow the link above.
+  ${If} ${FileExists} "$QUICKLAUNCH\User Pinned\TaskBar\${SHORTCUT_NAME}.lnk"
+    CreateShortCut "$QUICKLAUNCH\User Pinned\TaskBar\${SHORTCUT_NAME}.lnk" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" "" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" 0
+    WinShell::SetLnkAUMI "$QUICKLAUNCH\User Pinned\TaskBar\${SHORTCUT_NAME}.lnk" "${APP_ID}"
+  ${EndIf}
+
+  System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
 !macroend
 
 ; Removes this channel's files from the shared directory, and the directory with the files every
-; channel shared once no other channel's uninstaller is left in it. A taskbar pin still starts the
-; old executable, so it is pointed at the new one.
+; channel shared once no other channel's uninstaller is left in it.
 !macro leaveSharedInstall
   ${If} $sharedInstallDir != ""
     Delete "$sharedInstallDir\${APP_EXECUTABLE_FILENAME}"
@@ -45,10 +76,6 @@
     FindClose $R0
     ${If} $R1 == ""
       RMDir /r $sharedInstallDir
-    ${EndIf}
-    ${If} ${FileExists} "$QUICKLAUNCH\User Pinned\TaskBar\${SHORTCUT_NAME}.lnk"
-      CreateShortCut "$QUICKLAUNCH\User Pinned\TaskBar\${SHORTCUT_NAME}.lnk" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" "" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" 0
-      WinShell::SetLnkAUMI "$QUICKLAUNCH\User Pinned\TaskBar\${SHORTCUT_NAME}.lnk" "${APP_ID}"
     ${EndIf}
   ${EndIf}
 !macroend
