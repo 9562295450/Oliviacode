@@ -4,6 +4,7 @@ import { homedir } from "node:os"
 import path from "node:path"
 import { app } from "electron"
 import { PresetRpcs } from "../../shared/ipc-rpc"
+import { Preset } from "../../shared/ipc-rpc/presets"
 import { readJsonFile, stripBom, writeCustomProvider, writePreset } from "./presets-config"
 
 /**
@@ -38,21 +39,6 @@ const MAX_REGISTRY_BYTES = 512 * 1024
 
 /** Registry fetches are user-initiated, but must still not hang the IPC layer. */
 const REGISTRY_TIMEOUT_MS = 20_000
-
-const Preset = Schema.Struct({
-  id: Schema.String,
-  label: Schema.String,
-  description: Schema.String,
-  provider: Schema.String,
-  baseURL: Schema.String,
-  docsURL: Schema.optionalKey(Schema.String),
-  keyHint: Schema.optionalKey(Schema.String),
-  /**
-   * Model ids the endpoint serves. Present only on entries whose provider id the engine
-   * catalogue does not know: applying one writes a custom provider instead of a base URL.
-   */
-  models: Schema.optionalKey(Schema.Array(Schema.String)),
-})
 
 /** Accepts the bare array form and the `{ presets: [...] }` form a gist usually has. */
 const Registry = Schema.Union([Schema.Struct({ presets: Schema.Array(Preset) }), Schema.Array(Preset)])

@@ -24,7 +24,7 @@
     {
       "id": "demonroute",
       "label": "Demon Route",
-      "description": "Community template. Defines the demonroute provider as a custom OpenAI-compatible provider, since the engine catalogue does not know that id yet. Supply the credential that service accepts; its terms are yours to keep.",
+      "description": "Community template. Use Demon Route as an OpenAI-compatible provider with these models. Supply the credential that service accepts; its terms are yours to keep.",
       "provider": "demonroute",
       "baseURL": "https://api.demonroute.com/v1",
       "docsURL": "https://demonroute.com/models",
