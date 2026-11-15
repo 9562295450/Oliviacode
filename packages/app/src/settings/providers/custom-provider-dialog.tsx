@@ -4,9 +4,9 @@ import { Divider } from "@opencode/ui/divider"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { TextInput } from "@opencode/ui/text-input"
 import { createSignal, Show, type Component } from "solid-js"
-import { Option, Schema } from "effect"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useServerSDK } from "@/runtime/server/client"
+import { usePlatform } from "@/runtime/platform/platform"
 import { formatServerError } from "@/runtime/server/errors"
 import { showToast } from "@/shell/notifications/toast"
 import "@/settings/settings.css"
@@ -24,6 +24,7 @@ export const DialogCustomProvider: Component<{
   const dialog = useDialog()
   const language = useLanguage()
   const sdk = useServerSDK()
+  const platform = usePlatform()
 
   const [name, setName] = createSignal("")
   const [baseURL, setBaseURL] = createSignal("")
@@ -74,28 +75,32 @@ export const DialogCustomProvider: Component<{
   }
 
   // The entry shapes an OpenAI-compatible `/models` route answers with: a bare ID, or an object that
-  // names one `id`, `model` or `name`. All three decode to the ID string.
-  const ModelEntry = Schema.Union([
-    Schema.String,
-    Schema.Struct({ id: Schema.String }),
-    Schema.Struct({ model: Schema.String }),
-    Schema.Struct({ name: Schema.String }),
-  ])
+  // names one `id`, `model` or `name`. Entries that name nothing are skipped rather than failing the
+  // whole list, because a single malformed entry should not hide every other model.
+  const readModelIDs = (body: unknown) => {
+    const root =
+      Array.isArray(body)
+        ? body
+        : body && typeof body === "object"
+          ? ((body as Record<string, unknown>).data ?? (body as Record<string, unknown>).models)
+          : undefined
 
-  const ModelList = Schema.Union([
-    Schema.Array(ModelEntry),
-    Schema.Struct({ data: Schema.Array(ModelEntry) }),
-    Schema.Struct({ models: Schema.Array(ModelEntry) }),
-  ])
+    if (!Array.isArray(root)) return []
 
-  const readModelIDs = (list: typeof ModelList.Type) => {
-    const entries = Schema.is(Schema.Array(ModelEntry))(list) ? list : "data" in list ? list.data : list.models
+    const ids = root.flatMap((entry) => {
+      if (typeof entry === "string") return entry.trim() ? [entry.trim()] : []
 
-    return entries.flatMap((entry) => {
-      if (Schema.is(Schema.String)(entry)) return [entry]
+      if (!entry || typeof entry !== "object") return []
 
-      return ["id" in entry ? entry.id : "model" in entry ? entry.model : entry.name]
+      const record = entry as Record<string, unknown>
+      const id = [record.id, record.model, record.name].find(
+        (value): value is string => typeof value === "string" && value.trim().length > 0,
+      )
+
+      return id ? [id.trim()] : []
     })
+
+    return [...new Set(ids)]
   }
 
   const detect = async () => {
@@ -122,9 +127,7 @@ export const DialogCustomProvider: Component<{
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
-      const body: unknown = await response.json()
-      const list = Schema.decodeUnknownOption(ModelList)(body)
-      const ids = Option.isSome(list) ? readModelIDs(list.value) : []
+      const ids = readModelIDs(await response.json().catch(() => undefined))
 
       if (ids.length === 0) throw new Error("no models")
 
@@ -164,16 +167,32 @@ export const DialogCustomProvider: Component<{
     try {
       // The provider is config; the secret is a credential. The model resolver applies the active
       // credential as the request key, so the key never lands in the config document.
-      await sdk.api.experimental.config.update({
-        providers: {
-          [id]: {
-            name: label,
-            package: COMPATIBLE_PACKAGE,
-            settings: { baseURL: base },
-            models: Object.fromEntries(modelIDs().map((model) => [model, { name: model }])),
+      //
+      // On desktop the config file is written directly: engine 2.3's Config.Patch accepts
+      // `providers` and drops it, so the SDK route would close this dialog and save nothing.
+      // Everywhere else the request still needs `shell`, which the schema requires even when the
+      // value is unchanged; omitting it fails with `Missing key at ["shell"]`.
+      if (platform.presets?.save) {
+        const written = await platform.presets.save({ id, name: label, baseURL: base, models: modelIDs() })
+
+        if (!written.ok) {
+          setError(written.error ?? language.t("settings.providers.custom.error.save"))
+
+          return
+        }
+      } else {
+        await sdk.api.experimental.config.update({
+          shell: null,
+          providers: {
+            [id]: {
+              name: label,
+              package: COMPATIBLE_PACKAGE,
+              settings: { baseURL: base },
+              models: Object.fromEntries(modelIDs().map((model) => [model, { name: model }])),
+            },
           },
-        },
-      })
+        })
+      }
 
       const key = apiKey().trim()
 

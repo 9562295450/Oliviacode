@@ -97,6 +97,11 @@ export type ElectronAPI = {
   presetList(): Promise<ProviderAddon[]>
   presetStarter(): Promise<ProviderAddon[]>
   presetApply(id: string): Promise<{ ok: boolean; path: string; error?: string }>
+  presetSave(entry: { id: string; name: string; baseURL: string; models: string[] }): Promise<{
+    ok: boolean
+    path: string
+    error?: string
+  }>
   updateState(): Promise<UpdateStatus>
   updateCheck(): Promise<UpdateStatus>
   updateDownload(): Promise<UpdateStatus>

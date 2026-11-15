@@ -172,6 +172,12 @@ export type PresetPlatform = {
   /** Entries in the shipped starter template. Offered, never installed on their own. */
   starter(): Promise<PresetInfo[]>
   apply(id: string): Promise<{ ok: boolean; path: string; error?: string }>
+  /** Desktop only: write a custom OpenAI-compatible provider straight into the engine config. */
+  save?(entry: { id: string; name: string; baseURL: string; models: string[] }): Promise<{
+    ok: boolean
+    path: string
+    error?: string
+  }>
 }
 
 export type EgressPlatform = {

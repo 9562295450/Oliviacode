@@ -1,9 +1,10 @@
 import { Effect, Schema } from "effect"
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
 import { app } from "electron"
 import { PresetRpcs } from "../../shared/ipc-rpc"
+import { readJsonFile, stripBom, writeCustomProvider, writeProviderBaseURL } from "./presets-config"
 
 /**
  * Provider addons.
@@ -77,7 +78,7 @@ function entries(parsed: typeof Registry.Type): readonly PresetEntry[] {
 
 function readLocal(): Stored[] {
   try {
-    const parsed = Schema.decodeUnknownSync(Registry)(JSON.parse(readFileSync(presetsFile(), "utf8")))
+    const parsed = Schema.decodeUnknownSync(Registry)(readJsonFile(presetsFile()))
 
     return entries(parsed).map((item) => ({ ...item, origin: "local" as const }))
   } catch {
@@ -88,7 +89,7 @@ function readLocal(): Stored[] {
 
 function readStarter(): Stored[] {
   try {
-    const parsed = Schema.decodeUnknownSync(Registry)(JSON.parse(readFileSync(starterFile(), "utf8")))
+    const parsed = Schema.decodeUnknownSync(Registry)(readJsonFile(starterFile()))
 
     return entries(parsed).map((item) => ({ ...item, origin: "starter" as const }))
   } catch {
@@ -98,7 +99,7 @@ function readStarter(): Stored[] {
 
 function readCache(): Stored[] {
   try {
-    const parsed = Schema.decodeUnknownSync(Registry)(JSON.parse(readFileSync(cacheFile(), "utf8")))
+    const parsed = Schema.decodeUnknownSync(Registry)(readJsonFile(cacheFile()))
 
     return entries(parsed).map((item) => ({ ...item, origin: "community" as const }))
   } catch {
@@ -139,7 +140,7 @@ async function fetchRegistry(url: string) {
     if (body.length > MAX_REGISTRY_BYTES)
       return { ok: false as const, url, addons: [], error: "Registry is larger than 512 KB; refusing it." }
 
-    const decoded = Schema.decodeUnknownSync(Registry)(JSON.parse(body))
+    const decoded = Schema.decodeUnknownSync(Registry)(JSON.parse(stripBom(body)))
     const list = entries(decoded)
     const addons = list.map((item) => ({ ...item, origin: "community" as const }))
 
@@ -171,30 +172,21 @@ function apply(id: string) {
 
   if (!addon) return { ok: false as const, path: target, error: `Unknown addon: ${id}` }
 
-  // A commented jsonc file cannot round-trip through JSON.parse without losing the comments,
-  // so refuse rather than rewrite it. The user adds the block by hand.
-  if (target.endsWith(".jsonc") && existsSync(target) && !parsesAsJson(readFileSync(target, "utf8")))
-    return {
-      ok: false as const,
-      path: target,
-      error: `${target} contains comments or trailing commas; add the provider block by hand.`,
-    }
+  const written = writeProviderBaseURL(target, addon.provider, addon.baseURL)
 
-  const config = existsSync(target) ? (JSON.parse(readFileSync(target, "utf8")) as Record<string, unknown>) : {}
-  const providers = (config.provider ?? {}) as Record<string, Record<string, unknown>>
-  const entry = providers[addon.provider] ?? {}
-  const options = { ...((entry.options ?? {}) as Record<string, unknown>), baseURL: addon.baseURL }
-
-  config.provider = { ...providers, [addon.provider]: { ...entry, options } }
-
-  mkdirSync(configDir(), { recursive: true })
-  writeFileSync(target, JSON.stringify(config, null, 2) + "\n")
+  if (!written.ok) return { ok: false as const, path: written.path, error: written.error }
 
   // A starter entry becomes an installed one the moment the user applies it, so the provider list
   // keeps showing it after a restart without re-reading the shipped template.
-  if (addon.origin === "starter" && !installed.some((item) => item.id === addon.id)) remember(addon)
+  if (addon.origin === "starter" && !installed.some((item) => item.id === addon.id)) {
+    try {
+      remember(addon)
+    } catch {
+      // The provider is already in the config; the cache only keeps the entry listed.
+    }
+  }
 
-  return { ok: true as const, path: target }
+  return { ok: true as const, path: written.path }
 }
 
 /** Adds an applied starter entry to the community cache so `list()` returns it from now on. */
@@ -216,13 +208,12 @@ function strip(entry: Stored): PresetEntry {
   }
 }
 
-function parsesAsJson(text: string) {
-  try {
-    JSON.parse(text)
-    return true
-  } catch {
-    return false
-  }
+/** Writes a user-typed provider into the same config file the engine reads. */
+function save(id: string, name: string, baseURL: string, models: readonly string[]) {
+  const candidates = configCandidates()
+  const target = candidates.find((file) => existsSync(file)) ?? candidates[0]!
+
+  return writeCustomProvider(target, { id, name, baseURL, models })
 }
 
 export const presetHandlers = PresetRpcs.toLayer(
@@ -232,6 +223,7 @@ export const presetHandlers = PresetRpcs.toLayer(
       PresetList: () => Effect.sync(() => list()),
       PresetStarter: () => Effect.sync(() => readStarter()),
       PresetApply: ({ id }) => Effect.sync(() => apply(id)),
+      PresetSave: ({ id, name, baseURL, models }) => Effect.sync(() => save(id, name, baseURL, models)),
     }),
   ),
 )

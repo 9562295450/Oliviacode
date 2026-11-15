@@ -69,4 +69,14 @@ export const PresetApply = Rpc.make("PresetApply", {
   }),
 })
 
-export const PresetRpcs = RpcGroup.make(PresetFetch, PresetList, PresetStarter, PresetApply)
+export const PresetSave = Rpc.make("PresetSave", {
+  payload: {
+    id: Schema.String,
+    name: Schema.String,
+    baseURL: Schema.String,
+    models: Schema.Array(Schema.String),
+  },
+  success: Schema.Struct({ ok: Schema.Boolean, path: Schema.String, error: Schema.optionalKey(Schema.String) }),
+})
+
+export const PresetRpcs = RpcGroup.make(PresetFetch, PresetList, PresetStarter, PresetApply, PresetSave)

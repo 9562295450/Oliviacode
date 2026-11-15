@@ -14,5 +14,6 @@ export function createPresetPlatform(api: ElectronAPI): PresetPlatform {
     list: () => api.presetList(),
     starter: () => api.presetStarter(),
     apply: (id) => api.presetApply(id),
+    save: (entry) => api.presetSave(entry),
   }
 }

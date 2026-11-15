@@ -1233,6 +1233,7 @@ export const dict = {
   "settings.providers.custom.detecting": "Detecting...",
   "settings.providers.custom.detected": "Found {{count}} models.",
   "settings.providers.custom.detectFailed": "Could not read the model list. Enter the model IDs by hand.",
+  "settings.providers.custom.error.save": "Could not save the provider.",
   "settings.providers.custom.error.name": "Enter a provider name.",
   "settings.providers.custom.error.exists": "A provider with the ID \"{{id}}\" already exists.",
   "settings.providers.custom.error.baseURL": "Enter an http or https base URL.",
