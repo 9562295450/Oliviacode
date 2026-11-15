@@ -38,6 +38,10 @@ see the platform notes below.
 - **Tested both ways.** `script/windows-installer.test.ts` gains a case that runs `customInstall`
   against an empty directory and asserts a non-zero exit.
 
+**Also in this build**
+- **Add-ons apply on engine 2.3**, and **custom providers are saved to disk** rather than held for
+  the session.
+
 **Carried from 2.2.19**
 - **The installer writes the shortcuts every time.** An update no longer keeps a desktop or Start
   Menu entry that pointed at an install directory this install had just removed; both entries and
