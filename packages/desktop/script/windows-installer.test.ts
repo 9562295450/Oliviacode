@@ -100,6 +100,7 @@ windows(
       ])
 
     try {
+      await Bun.write(path.join(installer.dir, "app/OpenCode.exe"), "app")
       await Bun.write(path.join(installer.dir, "app/runtime/icudtl.dat"), "runtime fixture")
       await Bun.write(path.join(installer.dir, "unrelated.txt"), "outside the installation")
       await succeed(["icacls.exe", path.join(installer.dir, "app"), "/grant", "*S-1-15-2-999-999-999:(OI)(CI)(F)"])
@@ -382,6 +383,29 @@ windows(
       for (const link of links) expect(await target(link), link).toBe(path.join(install, "OpenCode.exe"))
     } finally {
       for (const link of links) await rm(link, { force: true })
+      await installer.cleanup()
+    }
+  },
+  120_000,
+)
+
+// The old version is removed before the new files are written, so an extraction that stops early
+// leaves an empty directory. That must not be reported as a finished install.
+windows(
+  "fails instead of finishing an install with no executable",
+  async () => {
+    const installer = await harness()
+
+    try {
+      await mkdir(path.join(installer.dir, "app"), { recursive: true })
+      const exe = await installer.compile(
+        "missing",
+        `  StrCpy $INSTDIR "$EXEDIR\\app"
+  !insertmacro customInstall`,
+      )
+
+      expect((await installer.run([exe])).code).toBe(1)
+    } finally {
       await installer.cleanup()
     }
   },

@@ -31,6 +31,17 @@
   nsExec::ExecToLog '"$SYSDIR\icacls.exe" "$INSTDIR" /grant "*S-1-15-2-2:(OI)(CI)(RX)"'
   Pop $0
   !insertmacro leaveSharedInstall
+
+  ; The old version is uninstalled before the new files are written, so an extraction that stops
+  ; early leaves no executable at all. Finish as a failure with a visible reason, and leave the
+  ; shortcuts alone, instead of reporting success and aiming them at nothing.
+  ${IfNot} ${FileExists} "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
+    DetailPrint "No executable in $INSTDIR after the install."
+    SetErrorLevel 1
+    MessageBox MB_OK|MB_ICONSTOP "Oliviacode was not installed: $INSTDIR\${APP_EXECUTABLE_FILENAME} is missing. Run the installer again." /SD IDOK
+    Quit
+  ${EndIf}
+
   !insertmacro repairShortcuts
 !macroend
 
@@ -259,7 +270,11 @@
       ClearErrors
       Rename "$INSTDIR.update-$R1" $INSTDIR
       ${IfNot} ${Errors}
-        StrCpy $R0 "installed"
+        ; A rename that reported success and left no executable in place is not an install, and
+        ; the template stops extracting as soon as $R0 says "installed". Ask for the extraction.
+        ${If} ${FileExists} "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
+          StrCpy $R0 "installed"
+        ${EndIf}
       ${EndIf}
       SetOutPath $INSTDIR
     ${EndIf}
