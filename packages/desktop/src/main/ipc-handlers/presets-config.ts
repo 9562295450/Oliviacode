@@ -85,6 +85,21 @@ export function writeCustomProvider(
   })
 }
 
+/**
+ * Applies one preset entry. An entry without a models list only points a provider id the engine
+ * catalogue already knows at a base URL. An entry with one names a provider the catalogue does
+ * not know, so it is written as a full custom provider instead.
+ */
+export function writePreset(
+  file: string,
+  entry: { provider: string; label: string; baseURL: string; models?: readonly string[] },
+): WriteResult {
+  if (entry.models?.length)
+    return writeCustomProvider(file, { id: entry.provider, name: entry.label, baseURL: entry.baseURL, models: entry.models })
+
+  return writeProviderBaseURL(file, entry.provider, entry.baseURL)
+}
+
 /** A failure the user can act on: which file, which errno, which JSON position. */
 export function describeFailure(error: unknown, file: string) {
   const code = (error as NodeJS.ErrnoException | undefined)?.code

@@ -1,8 +1,9 @@
 # Provider add-ons
 
 An add-on is inert JSON. It names a provider id that the engine's own catalogue already knows,
-plus a base URL to point that provider at. It never carries a credential, never authenticates
-anything, and is never required for the app to work.
+plus a base URL to point that provider at — or, with a `models` list, a provider id the
+catalogue does not know yet, which applying defines as a custom provider. It never carries a
+credential, never authenticates anything, and is never required for the app to work.
 
 Nothing in the client source contains a provider endpoint. There are exactly four sources of
 add-ons, and every one is data the user controls:
@@ -39,6 +40,25 @@ Exactly one write, merged into the engine config owned by this app —
 Nothing else is touched. No credential is read, stored, or transmitted. The app never signs in
 on your behalf, never calls the endpoint when an add-on is applied, and never invents a model
 list — the engine supplies models from its own catalogue.
+
+An entry carrying a `models` list is the one exception to the shape above: its provider id is
+not in the engine's catalogue, so applying it writes a full custom provider instead —
+
+```json
+{
+  "provider": {
+    "<provider>": {
+      "name": "<label from the add-on>",
+      "package": "@ai-sdk/openai-compatible",
+      "settings": { "baseURL": "<baseURL from the add-on>" },
+      "models": { "<model id>": { "name": "<model id>" } }
+    }
+  }
+}
+```
+
+The model list is the entry's own data, typed by whoever wrote the entry; the app still invents
+nothing and calls nothing.
 
 A `.jsonc` config containing comments or trailing commas is never rewritten; the app refuses
 and says so instead of destroying your comments.
@@ -104,13 +124,16 @@ The document is either a bare array or an object with a `presets` array:
       "provider": "provider id already known to the engine",
       "baseURL": "https://example.invalid/v1",
       "docsURL": "https://example.invalid/",
-      "keyHint": "Optional line shown under the entry, e.g. which credential the endpoint expects"
+      "keyHint": "Optional line shown under the entry, e.g. which credential the endpoint expects",
+      "models": ["model-id-the-endpoint-serves"]
     }
   ]
 }
 ```
 
-Required: `id`, `label`, `description`, `provider`, `baseURL`. Optional: `docsURL`, `keyHint`.
+Required: `id`, `label`, `description`, `provider`, `baseURL`. Optional: `docsURL`, `keyHint`,
+`models`. A non-empty `models` list is for a provider id the engine's catalogue does not know:
+applying that entry writes a custom provider (see above) instead of only a base URL.
 Everything else is ignored, which is why [`community-presets.json`](./community-presets.json) can
 carry a `_readme` array for humans reading it on a gist.
 

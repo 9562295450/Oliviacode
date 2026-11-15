@@ -4,7 +4,8 @@ import { homedir } from "node:os"
 import path from "node:path"
 import { app } from "electron"
 import { PresetRpcs } from "../../shared/ipc-rpc"
-import { readJsonFile, stripBom, writeCustomProvider, writeProviderBaseURL } from "./presets-config"
+import { Preset } from "../../shared/ipc-rpc/presets"
+import { readJsonFile, stripBom, writeCustomProvider, writePreset } from "./presets-config"
 
 /**
  * Provider addons.
@@ -15,9 +16,11 @@ import { readJsonFile, stripBom, writeCustomProvider, writeProviderBaseURL } fro
  * entries arrive only when a user asks for a registry by URL; the response is validated,
  * size-capped, and cached in userData so the picker survives a restart.
  *
- * Nothing here touches credentials. Applying an addon writes one field — the provider's base
- * URL — into the engine config owned by this app. The engine's XDG config home is redirected
- * under userData before it starts, so this never reads or writes another installation's config.
+ * Nothing here touches credentials. Applying an addon writes the provider's base URL into the
+ * engine config owned by this app — or, for an entry carrying a models list, a full custom
+ * provider under an id the engine catalogue does not know. The engine's XDG config home is
+ * redirected under userData before it starts, so this never reads or writes another
+ * installation's config.
  */
 
 /** The global config the engine reads. Mirrors `Global.Path.config` in @opencode/core. */
@@ -36,16 +39,6 @@ const MAX_REGISTRY_BYTES = 512 * 1024
 
 /** Registry fetches are user-initiated, but must still not hang the IPC layer. */
 const REGISTRY_TIMEOUT_MS = 20_000
-
-const Preset = Schema.Struct({
-  id: Schema.String,
-  label: Schema.String,
-  description: Schema.String,
-  provider: Schema.String,
-  baseURL: Schema.String,
-  docsURL: Schema.optionalKey(Schema.String),
-  keyHint: Schema.optionalKey(Schema.String),
-})
 
 /** Accepts the bare array form and the `{ presets: [...] }` form a gist usually has. */
 const Registry = Schema.Union([Schema.Struct({ presets: Schema.Array(Preset) }), Schema.Array(Preset)])
@@ -172,7 +165,7 @@ function apply(id: string) {
 
   if (!addon) return { ok: false as const, path: target, error: `Unknown addon: ${id}` }
 
-  const written = writeProviderBaseURL(target, addon.provider, addon.baseURL)
+  const written = writePreset(target, addon)
 
   if (!written.ok) return { ok: false as const, path: written.path, error: written.error }
 
@@ -205,6 +198,7 @@ function strip(entry: Stored): PresetEntry {
     baseURL: entry.baseURL,
     ...(entry.docsURL ? { docsURL: entry.docsURL } : {}),
     ...(entry.keyHint ? { keyHint: entry.keyHint } : {}),
+    ...(entry.models ? { models: entry.models } : {}),
   }
 }
 
