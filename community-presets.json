@@ -28,14 +28,12 @@
       "provider": "demonroute",
       "baseURL": "https://api.demonroute.com/v1",
       "docsURL": "https://demonroute.com/models",
-      "keyHint": "Paste a Demon Route API key. Anonymous keys need no email.",
+      "keyHint": "OpenAI-compatible key, no free tier",
       "models": [
-        "glm-5.3-uncensored",
-        "glm-5.3-flash-abliterated",
-        "deepseek-v4.1-flash-1017-abliterated",
         "TheDrummer/Cydonia-24B-v4.1",
         "TheDrummer/UnslopNemo-12B-v4.1",
-        "Qwen/Qwen3-Coder-Next"
+        "Sao10K/L3.3-70B-Euryale-v2.3",
+        "Gryphe/MythoMax-L2-13b"
       ]
     }
   ]
