@@ -4,7 +4,7 @@ import { homedir } from "node:os"
 import path from "node:path"
 import { app } from "electron"
 import { PresetRpcs } from "../../shared/ipc-rpc"
-import { readJsonFile, stripBom, writeCustomProvider, writeProviderBaseURL } from "./presets-config"
+import { readJsonFile, stripBom, writeCustomProvider, writePreset } from "./presets-config"
 
 /**
  * Provider addons.
@@ -15,9 +15,11 @@ import { readJsonFile, stripBom, writeCustomProvider, writeProviderBaseURL } fro
  * entries arrive only when a user asks for a registry by URL; the response is validated,
  * size-capped, and cached in userData so the picker survives a restart.
  *
- * Nothing here touches credentials. Applying an addon writes one field — the provider's base
- * URL — into the engine config owned by this app. The engine's XDG config home is redirected
- * under userData before it starts, so this never reads or writes another installation's config.
+ * Nothing here touches credentials. Applying an addon writes the provider's base URL into the
+ * engine config owned by this app — or, for an entry carrying a models list, a full custom
+ * provider under an id the engine catalogue does not know. The engine's XDG config home is
+ * redirected under userData before it starts, so this never reads or writes another
+ * installation's config.
  */
 
 /** The global config the engine reads. Mirrors `Global.Path.config` in @opencode/core. */
@@ -45,6 +47,11 @@ const Preset = Schema.Struct({
   baseURL: Schema.String,
   docsURL: Schema.optionalKey(Schema.String),
   keyHint: Schema.optionalKey(Schema.String),
+  /**
+   * Model ids the endpoint serves. Present only on entries whose provider id the engine
+   * catalogue does not know: applying one writes a custom provider instead of a base URL.
+   */
+  models: Schema.optionalKey(Schema.Array(Schema.String)),
 })
 
 /** Accepts the bare array form and the `{ presets: [...] }` form a gist usually has. */
@@ -172,7 +179,7 @@ function apply(id: string) {
 
   if (!addon) return { ok: false as const, path: target, error: `Unknown addon: ${id}` }
 
-  const written = writeProviderBaseURL(target, addon.provider, addon.baseURL)
+  const written = writePreset(target, addon)
 
   if (!written.ok) return { ok: false as const, path: written.path, error: written.error }
 
@@ -205,6 +212,7 @@ function strip(entry: Stored): PresetEntry {
     baseURL: entry.baseURL,
     ...(entry.docsURL ? { docsURL: entry.docsURL } : {}),
     ...(entry.keyHint ? { keyHint: entry.keyHint } : {}),
+    ...(entry.models ? { models: entry.models } : {}),
   }
 }
 

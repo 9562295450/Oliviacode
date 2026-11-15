@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { stripBom, writeCustomProvider, writeProviderBaseURL } from "./presets-config"
+import { stripBom, writeCustomProvider, writePreset, writeProviderBaseURL } from "./presets-config"
 
 const BOM = "\uFEFF"
 
@@ -143,6 +143,70 @@ describe("writeCustomProvider", () => {
         package: "@ai-sdk/openai-compatible",
         settings: { baseURL: "https://example.test/v1" },
         models: { m1: { name: "m1" }, m2: { name: "m2" } },
+      })
+    } finally {
+      cleanup()
+    }
+  })
+})
+
+describe("writePreset", () => {
+  test("writes only the base URL for a provider the catalogue already knows", () => {
+    const { file, cleanup } = tempDir()
+
+    try {
+      const result = writePreset(file, {
+        provider: "opencode",
+        label: "OpenCode Zen",
+        baseURL: "https://opencode.ai/zen/v1",
+      })
+
+      expect(result).toEqual({ ok: true, path: file })
+      expect(JSON.parse(readFileSync(file, "utf8")).provider.opencode).toEqual({
+        options: { baseURL: "https://opencode.ai/zen/v1" },
+      })
+    } finally {
+      cleanup()
+    }
+  })
+
+  test("writes a custom provider when the entry carries a models list", () => {
+    const { file, cleanup } = tempDir()
+
+    try {
+      const result = writePreset(file, {
+        provider: "demonroute",
+        label: "Demon Route",
+        baseURL: "https://api.demonroute.com/v1",
+        models: ["m1", "m2"],
+      })
+
+      expect(result).toEqual({ ok: true, path: file })
+      expect(JSON.parse(readFileSync(file, "utf8")).provider.demonroute).toEqual({
+        name: "Demon Route",
+        package: "@ai-sdk/openai-compatible",
+        settings: { baseURL: "https://api.demonroute.com/v1" },
+        models: { m1: { name: "m1" }, m2: { name: "m2" } },
+      })
+    } finally {
+      cleanup()
+    }
+  })
+
+  test("treats an empty models list as a plain base URL entry", () => {
+    const { file, cleanup } = tempDir()
+
+    try {
+      const result = writePreset(file, {
+        provider: "opencode",
+        label: "OpenCode Zen",
+        baseURL: "https://opencode.ai/zen/v1",
+        models: [],
+      })
+
+      expect(result).toEqual({ ok: true, path: file })
+      expect(JSON.parse(readFileSync(file, "utf8")).provider.opencode).toEqual({
+        options: { baseURL: "https://opencode.ai/zen/v1" },
       })
     } finally {
       cleanup()

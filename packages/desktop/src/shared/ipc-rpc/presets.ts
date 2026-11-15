@@ -18,6 +18,11 @@ export const Preset = Schema.Struct({
   docsURL: Schema.optionalKey(Schema.String),
   /** Optional line shown next to the entry, for whatever credential the endpoint expects. */
   keyHint: Schema.optionalKey(Schema.String),
+  /**
+   * Model ids the endpoint serves. Present only when the provider id is not in the engine's
+   * catalogue: applying the entry then writes a custom provider instead of a base URL.
+   */
+  models: Schema.optionalKey(Schema.Array(Schema.String)),
 })
 
 export type Preset = typeof Preset.Type
@@ -33,6 +38,7 @@ export const Addon = Schema.Struct({
   baseURL: Schema.String,
   docsURL: Schema.optionalKey(Schema.String),
   keyHint: Schema.optionalKey(Schema.String),
+  models: Schema.optionalKey(Schema.Array(Schema.String)),
   origin: AddonOrigin,
 })
 

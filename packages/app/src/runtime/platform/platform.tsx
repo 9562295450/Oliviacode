@@ -154,6 +154,8 @@ export type PresetInfo = {
   baseURL: string
   docsURL?: string
   keyHint?: string
+  /** Model ids the endpoint serves; present only on entries applied as a custom provider. */
+  models?: string[]
   origin?: "local" | "starter" | "community"
 }
 
