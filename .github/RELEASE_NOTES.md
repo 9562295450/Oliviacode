@@ -59,7 +59,7 @@ see the platform notes below.
 - **`SHA256SUMS.txt` is only rewritten when `verify` passed.**
 
 ### Verify before you run
-- `Oliviacode-Setup-2.2.20.exe` — `CHECKSUM_PLACEHOLDER`.
+- `Oliviacode-Setup-2.2.20.exe` — 246 MB — SHA-256 `17dc3fa04cba9fd5c6c37c1de0bd2043c40cbee3444a3088a1f70e25944b1e2c`.
 - `SHA256SUMS.txt` carries the SHA-256 for every artifact on this release; it is rewritten from
   GitHub's own digests once the macOS and Linux jobs finish.
 - The 2.2.7 installer was scanned at VirusTotal with **0/50 detections** and the application binary
